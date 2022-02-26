@@ -1,5 +1,8 @@
 /// SPDX-License-Identifier: AGPL-3.0
 
+// One day, someone is going to try very hard to prevent you
+// from accessing one of these storage slots.
+
 pragma solidity 0.8.10;
 
 contract Dmap {
@@ -11,6 +14,7 @@ contract Dmap {
     constructor(address rootzone) {
         assembly {
             sstore(0, rootzone)
+            sstore(0, 3) // locked & dir
         }
     }
 
@@ -23,26 +27,21 @@ contract Dmap {
     }
 
     function get(address zone, bytes32 key) payable external
-      returns (bytes32 value, bool dir, bool lock) {
+      returns (bytes32 value, bytes flags) {
         bytes32 hkey = keccak256(abi.encode(zone, key));
         bytes32 flags;
         assembly {
             value := sload(hkey)
             flags := sload(add(hkey, 1))
-            dir := eq(1, and(flags, 1))
-            lock := eq(2, and(flags, 2))
         }
     }
 
-    function set(bytes32 key, bytes32 val, bool dir, bool lock) payable external {
+    function set(bytes32 key, bytes32 val, bytes32 flags) payable external {
         bytes32 hkey = keccak256(abi.encode(key, val));
-        bytes32 flags;
+        bytes32 prior;
         assembly {
-            flags := sload(add(hkey, 1))
-            if eq(flags, and(flags, 2)) { revert("LOCK", 4) }
-            flags := 0
-            if dir { flags := and(flags, 1) }
-            if lock { flags := and(flags, 2) }
+            prior := sload(add(hkey, 1))
+            if eq(2, and(prior, 2)) { revert("LOCK", 4) }
             sstore(hkey, val)
             sstore(add(hkey, 1), flags)
             log4(caller(), key, val, flags, 0, 0)
