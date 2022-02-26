@@ -37,7 +37,7 @@ contract Dmap {
     }
 
     function set(bytes32 key, bytes32 val, bytes32 flags) payable external {
-        bytes32 hkey = keccak256(abi.encode(key, val));
+        bytes32 hkey = keccak256(abi.encode(caller(), key));
         bytes32 prior;
         assembly {
             prior := sload(add(hkey, 1))
