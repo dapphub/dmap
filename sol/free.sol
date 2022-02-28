@@ -16,7 +16,7 @@ contract FreeZone {
     }
 
     function take(bytes32 key) external {
-        require(controllers[key] != address(0), "ERR_TAKEN");
+        require(controllers[key] == address(0), "ERR_TAKEN");
         require(block.timestamp > last, "ERR_LIMIT");
         last = block.timestamp;
         controllers[key] = msg.sender;
