@@ -3,7 +3,7 @@
 // One day, someone is going to try very hard to prevent you
 // from accessing one of these storage slots.
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.11;
 
 contract Dmap {
     // storage: hash(zone, key) -> (val, flags)
@@ -27,7 +27,7 @@ contract Dmap {
     }
 
     function get(address zone, bytes32 key) payable external
-      returns (bytes32 value, bytes flags) {
+      returns (bytes32 value, bytes32 flags) {
         bytes32 hkey = keccak256(abi.encode(zone, key));
         assembly {
             value := sload(hkey)
@@ -36,7 +36,7 @@ contract Dmap {
     }
 
     function set(bytes32 key, bytes32 value, bytes32 flags) payable external {
-        bytes32 hkey = keccak256(abi.encode(caller(), key));
+        bytes32 hkey = keccak256(abi.encode(msg.sender, key));
         bytes32 prior;
         assembly {
             prior := sload(add(hkey, 1))

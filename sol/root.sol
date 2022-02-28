@@ -1,15 +1,13 @@
 /// SPDX-License-Identifier: AGPL-3.0
-// The complete text of the (Apache) GNU Public License is available at these URLs:
-//     ipfs://
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.11;
 
 import { Dmap } from './dmap.sol';
 
 contract DmapRootZone {
     Dmap    public immutable dmap;
     uint256 public           last;
-    bytes32 public           mark;
+    bytes32 public           park;
     uint256 public immutable freq = 31 hours;
 
     event Mark(bytes32 indexed hash);
@@ -30,14 +28,14 @@ contract DmapRootZone {
         (bool ok, ) = block.coinbase.call{value:1 ether}("");
         if (!ok) revert ErrReceipt();
         last = block.timestamp;
-        mark = hash;
+        park = hash;
         emit Mark(hash);
     }
 
     function etch(bytes32 salt, bytes32 name, address zone) external {
-        bytes32 hash = keccak256(abi.encode(msg.sender, salt, name, zone));
-        if (block.timestamp >= last + freq) revert ErrExpired();
-        dmap.set(name, bytes32(bytes20(zone)), true, true);
+        bytes32 hash = keccak256(abi.encode(salt, name, zone));
+        if (hash != park) revert ErrExpired();
+        dmap.set(name, bytes32(bytes20(zone)), bytes32(uint(0x3))); // locked & dir
         emit Etch(name, zone);
     }
 }
