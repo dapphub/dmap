@@ -1,6 +1,7 @@
 
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
+const ethers = hh.ethers
 const { send, want, snapshot, revert, b32 } = require('minihat')
 
 describe('dmap', ()=>{
@@ -8,7 +9,12 @@ describe('dmap', ()=>{
     let rootzone
 //    let freezone
 
+    let ali, bob, cat
+    let ALI, BOB, CAT
     before(async ()=>{
+        [ali, bob, cat] = await ethers.getSigners();
+        [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
+
         await hh.run('deploy-mock-dmap')
         const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers)
         dmap = dapp.dmap
@@ -38,5 +44,12 @@ describe('dmap', ()=>{
         const val = '0x'+'22'.repeat(32)
         const flags = '0x'+'0'.repeat(63)+'1'
         const tx = await send(dmap.set, key, val, flags)
+
+        const topics = tx.logs[0].topics
+        want(topics).to.eql(
+            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), key, val, flags]
+        )
     })
+
+
 })
