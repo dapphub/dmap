@@ -43,7 +43,7 @@ contract Dmap {
             if eq(1, and(prior, 1)) { revert("LOCK", 4) }
             sstore(slot, value)
             sstore(add(slot, 1), flags)
-            log4(caller(), key, value, flags, 0, 0)
+            log4(0, 0, caller(), key, value, flags)
         }
     }
 

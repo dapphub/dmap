@@ -1,8 +1,7 @@
 
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
-const { want, snapshot, revert, b32 } = require('minihat')
-
+const { send, want, snapshot, revert, b32 } = require('minihat')
 
 describe('dmap', ()=>{
     let dmap
@@ -32,5 +31,12 @@ describe('dmap', ()=>{
         const root_free_slot = await dmap.slot(rootzone.address, b32('free'))
         const [root_free_value, root_free_flags] = await dmap.raw(root_free_slot)
 //        want(root_free_value).eq(freezone.address)
+    })
+
+    it('basic set', async () => {
+        const key = '0x'+'11'.repeat(32)
+        const val = '0x'+'22'.repeat(32)
+        const flags = '0x'+'0'.repeat(63)+'1'
+        const tx = await send(dmap.set, key, val, flags)
     })
 })
