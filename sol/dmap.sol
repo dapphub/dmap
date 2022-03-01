@@ -18,7 +18,7 @@ contract Dmap {
         }
     }
 
-    function raw(bytes32 slot) payable external
+    function raw(bytes32 slot) external view
       returns (bytes32 value, bytes32 flags) {
         assembly {
             value := sload(slot)
@@ -26,7 +26,7 @@ contract Dmap {
         }
     }
 
-    function get(address zone, bytes32 key) payable external
+    function get(address zone, bytes32 key) external view
       returns (bytes32 value, bytes32 flags) {
         bytes32 slot = keccak256(abi.encode(zone, key));
         assembly {
@@ -35,7 +35,7 @@ contract Dmap {
         }
     }
 
-    function set(bytes32 key, bytes32 value, bytes32 flags) payable external {
+    function set(bytes32 key, bytes32 value, bytes32 flags) external {
         bytes32 slot = keccak256(abi.encode(msg.sender, key));
         bytes32 prior;
         assembly {
@@ -46,4 +46,9 @@ contract Dmap {
             log4(caller(), key, value, flags, 0, 0)
         }
     }
+
+    function slot(address zone, bytes32 key) external pure returns (bytes32) {
+        return keccak256(abi.encode(zone, key));
+    }
+
 }

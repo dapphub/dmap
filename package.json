@@ -1,7 +1,12 @@
 {
+  "scripts": {
+    "pretest": "npx hardhat compile",
+    "test": "npx mocha test"
+  },
   "devDependencies": {
     "@etherpacks/dpack": "^0.0.27",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
-    "hardhat": "^2.8.3"
+    "hardhat": "^2.8.3",
+    "minihat": "^0.0.5"
   }
 }
