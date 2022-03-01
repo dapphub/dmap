@@ -1,4 +1,5 @@
 const fs = require('fs')
+const { getContractAddress } = require('@ethersproject/address')
 const dpack = require('@etherpacks/dpack')
 
 task('deploy-mock-dmap', async (args, hh)=> {
@@ -10,9 +11,15 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const root_type = await hh.artifacts.readArtifact('DmapRootZone')
     const root_deployer = await hh.ethers.getContractFactory('DmapRootZone')
 
-    // TODO precompute tx_root address
-    const tx_dmap = await dmap_deployer.deploy('0x0000000000000000000000000000000000000000')
+    const free_type = await hh.artifacts.readArtifact('FreeZone')
+    const free_deployer = await hh.ethers.getContractFactory('FreeZone')
+
+    const [ali] = await hh.ethers.getSigners()
+    const tx_count = await ali.getTransactionCount()
+    const root_address = getContractAddress({ from: ali.address, nonce: tx_count + 1 })
+    const tx_dmap = await dmap_deployer.deploy(root_address)
     const tx_root = await root_deployer.deploy(tx_dmap.address)
+    const tx_free = await free_deployer.deploy(tx_dmap.address)
 
     const pb = await dpack.builder(hh.network.name)
     await pb.packObject({
@@ -33,6 +40,12 @@ task('deploy-mock-dmap', async (args, hh)=> {
         artifact: root_type
     }, alsoPackType=true)
 
+    await pb.packObject({
+        objectname: 'freezone',
+        typename: 'FreeZone',
+        address: tx_free.address,
+        artifact: free_type
+    }, alsoPackType=true)
 
     const fullpack = await pb.build()
 
