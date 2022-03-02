@@ -48,13 +48,6 @@ describe('dmap', ()=>{
         const key = '0x'+'11'.repeat(32)
         const val = '0x'+'22'.repeat(32)
         const flags = '0x'+'0'.repeat(63)+'1'
-        const tx = await send(dmap.set, key, val, flags)
-    })
-
-    it('basic set', async () => {
-        const key = '0x'+'11'.repeat(32)
-        const val = '0x'+'22'.repeat(32)
-        const flags = '0x'+'0'.repeat(63)+'1'
         const rx = await send(dmap.set, key, val, flags)
 
         expectEvent(
