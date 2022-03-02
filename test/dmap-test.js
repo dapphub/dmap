@@ -92,7 +92,7 @@ describe('dmap', ()=>{
             }
             test1D('set', NOP, fill, clear, stay, one, two, bounds.dmap.set, verify)
         }
-        
+
         it('raw', async () => {
             const slot = await dmap.slot(ALI, key)
             await send(dmap.set, key, one, one)

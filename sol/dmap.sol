@@ -4,7 +4,6 @@
 // from accessing one of these storage slots.
 
 pragma solidity 0.8.11;
-import 'hardhat/console.sol';
 
 contract Dmap {
     // storage: hash(zone, key) -> (value, flags)
