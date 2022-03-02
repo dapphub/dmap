@@ -1,4 +1,3 @@
-
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
 
@@ -32,23 +31,26 @@ describe('dmap', ()=>{
 
     it('deploy postconditions', async ()=>{
         const [root_value, root_flags] = await dmap.raw('0x'+'0'.repeat(64))
-        const slice_start = (256 - 160) / 4 + 2
-        want('0x'.concat(root_value.slice(slice_start))).eq(rootzone.address.toLowerCase())
         const dmap_ref = await rootzone.dmap()
         want(dmap_ref).eq(dmap.address)
+
+        const [root_self, root_self_flags] = await dmap.get(rootzone.address, b32('root'))
+        want(root_self).eq(root_value)
+    })
+
+    it('address padding', async ()=> {
+        const [root_self, root_self_flags] = await dmap.get(rootzone.address, b32('root'))
+        const padded1 = ethers.utils.hexZeroPad(rootzone.address, 32)
+        const padded2 = rootzone.address + '00'.repeat(33-rootzone.address.length/2)
+        //console.log(root_self)
+        //console.log(padded1)
+        //console.log(padded2)
     })
 
     it('direct traverse', async ()=>{
         const root_free_slot = await dmap.slot(rootzone.address, b32('free'))
         const [root_free_value, root_free_flags] = await dmap.raw(root_free_slot)
 //        want(root_free_value).eq(freezone.address)  // for this bit, we'll want to register the 'free' zone in the 'root' zone as part of the deploy sequence
-    })
-
-    it('basic set', async () => {
-        const key = '0x'+'11'.repeat(32)
-        const val = '0x'+'22'.repeat(32)
-        const flags = '0x'+'0'.repeat(63)+'1'
-        const tx = await send(dmap.set, key, val, flags)
     })
 
     it('basic set', async () => {
@@ -65,7 +67,11 @@ describe('dmap', ()=>{
     })
 
     it('walk', async()=>{
-        const res = await lib.walk(dmap, ':free')
-        console.log(res)
+        const res = await lib.walk(dmap, ':root')
+        want(res.slice(0,42)).eq(rootzone.address.toLowerCase())
+        const res2 = await lib.walk(dmap, ':root.free')
+        want(
+            lib.walk(dmap, ':root.free.free')
+        ).rejectedWith('zero register')
     })
 })

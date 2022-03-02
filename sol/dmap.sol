@@ -13,7 +13,7 @@ contract Dmap {
 
     constructor(address rootzone) {
         assembly {
-            sstore(0, rootzone)
+            sstore(0, shl(96, rootzone))
             sstore(1, 3) // locked & 2^1
         }
     }
