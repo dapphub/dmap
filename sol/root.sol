@@ -20,14 +20,8 @@ contract DmapRootZone {
 
     constructor(Dmap d) {
         dmap = d;
-        bytes32 lockdir = bytes32(uint(3));
-        bytes32 locknodir = bytes32(uint(1));
-        dmap.set('dmap', bytes32(bytes20(address(d))), locknodir);
-        dmap.set('root', bytes32(bytes20(address(this))), lockdir);
-        dmap.set('', bytes32(bytes20(address(this))), lockdir);
-        emit Etch('dmap', address(d));
+        dmap.set('root', bytes32(bytes20(address(this))), bytes32(uint(3)));
         emit Etch('root', address(this));
-        emit Etch('', address(this));
     }
 
     function mark(bytes32 hash) external payable {
