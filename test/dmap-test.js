@@ -1,9 +1,12 @@
 
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
+
 const ethers = hh.ethers
 const { send, want, snapshot, revert, b32 } = require('minihat')
 const { expectEvent } = require('./utils/helpers')
+
+const lib = require('../dmap.js')
 
 describe('dmap', ()=>{
     let dmap
@@ -53,11 +56,16 @@ describe('dmap', ()=>{
         const val = '0x'+'22'.repeat(32)
         const flags = '0x'+'0'.repeat(63)+'1'
         const rx = await send(dmap.set, key, val, flags)
-        
+
         expectEvent(
             rx, undefined,
             [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), key, val, flags],
             '0x'
         )
+    })
+
+    it('walk', async()=>{
+        const res = await lib.walk(dmap, ':free')
+        console.log(res)
     })
 })
