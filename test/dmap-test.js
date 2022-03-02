@@ -3,10 +3,11 @@ const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
 
 const ethers = hh.ethers
-const { send, want, snapshot, revert, b32 } = require('minihat')
+const { send, want, snapshot, revert, b32, wad } = require('minihat')
 const { expectEvent } = require('./utils/helpers')
 
 const lib = require('../dmap.js')
+const utils = ethers.utils
 
 describe('dmap', ()=>{
     let dmap
@@ -40,8 +41,17 @@ describe('dmap', ()=>{
 
     it('direct traverse', async ()=>{
         const root_free_slot = await dmap.slot(rootzone.address, b32('free'))
+        const types = ['bytes32', 'bytes32', 'address']
+        const salt = '0x'+'10'.repeat(32)
+        const name = b32('free')
+        const zone = freezone.address
+        const values = [salt, name, zone]
+        const code = utils.defaultAbiCoder.encode(types, values)
+        await send(rootzone.mark, utils.keccak256(code), {value: wad(1)})
+        await send(rootzone.etch, salt, name, zone)
         const [root_free_value, root_free_flags] = await dmap.raw(root_free_slot)
-//        want(root_free_value).eq(freezone.address)  // for this bit, we'll want to register the 'free' zone in the 'root' zone as part of the deploy sequence
+        want(root_free_value).to.eql(utils.hexZeroPad(freezone.address, 32).toLowerCase())
+        want(Number(root_free_flags)).to.equal(3)
     })
 
     it('basic set', async () => {

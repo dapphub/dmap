@@ -3,8 +3,10 @@
 pragma solidity 0.8.11;
 
 import { Dmap } from './dmap.sol';
+import 'hardhat/console.sol';
 
 contract DmapRootZone {
+
     Dmap    public immutable dmap;
     uint256 public           last;
     bytes32 public           park;
@@ -37,7 +39,7 @@ contract DmapRootZone {
     function etch(bytes32 salt, bytes32 name, address zone) external {
         bytes32 hash = keccak256(abi.encode(salt, name, zone));
         if (hash != park) revert ErrExpired();
-        dmap.set(name, bytes32(bytes20(zone)), bytes32(uint(0x3))); // locked & dir
+        dmap.set(name, bytes32(uint256(uint160(zone))), bytes32(uint(0x3))); // locked & dir
         emit Etch(name, zone);
     }
 }
