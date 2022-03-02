@@ -3,10 +3,11 @@ const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
 
 const ethers = hh.ethers
-const { send, want, snapshot, revert, b32 } = require('minihat')
-const { expectEvent } = require('./utils/helpers')
+const { send, want, snapshot, revert, b32, wad } = require('minihat')
+const { expectEvent, test1D, check_gas} = require('./utils/helpers')
 
 const lib = require('../dmap.js')
+const {bounds} = require("./bounds");
 
 describe('dmap', ()=>{
     let dmap
@@ -67,5 +68,50 @@ describe('dmap', ()=>{
     it('walk', async()=>{
         const res = await lib.walk(dmap, ':free')
         console.log(res)
+    })
+
+    describe('gas', () => {
+        const key = b32('MyKey')
+        const NOP = async () => {}
+        const one = Buffer.from('10'.repeat(32), 'hex') // lock == 0
+        const two = Buffer.from('20'.repeat(32), 'hex')
+        {
+            const fill = async (prev, next) => {
+               return send(dmap.set, key, next, next)
+            }
+            const clear = async (prev, next) => {
+                await fill(prev, next)
+            }
+            const stay = async (prev) => {
+                return fill(prev, prev)
+            }
+            const verify = async (prev, next) => {
+                const res = await dmap.get(ALI, key)
+                want(Buffer.from(res.value.slice(2), 'hex')).to.eql(next)
+                want(Buffer.from(res.flags.slice(2), 'hex')).to.eql(next)
+            }
+            test1D('set', NOP, fill, clear, stay, one, two, bounds.dmap.set, verify)
+        }
+        
+        it('raw', async () => {
+            const slot = await dmap.slot(ALI, key)
+            await send(dmap.set, key, one, one)
+            const gas = await dmap.estimateGas.raw(slot)
+            const bound = bounds.dmap.raw
+            await check_gas(gas, bound[0], bound[1])
+        })
+
+        it('get', async () => {
+            await send(dmap.set, key, one, one)
+            const gas = await dmap.estimateGas.get(ALI, key)
+            const bound = bounds.dmap.get
+            await check_gas(gas, bound[0], bound[1])
+        })
+
+        it('slot', async () => {
+            const gas = await dmap.estimateGas.slot(ALI, key)
+            const bound = bounds.dmap.slot
+            await check_gas(gas, bound[0], bound[1])
+        })
     })
 })
