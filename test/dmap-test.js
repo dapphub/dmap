@@ -71,6 +71,11 @@ describe('dmap', ()=>{
 
     it('walk', async()=>{
         const res = await lib.walk(dmap, ':root')
-        console.log(res)
+        console.dir(res, {depth:null})
+        const res2 = await lib.walk(dmap, ':root.free')
+        console.dir(res2, {depth:null})
+        want(
+            lib.walk(dmap, ':root.free.free')
+        ).rejectedWith('zero register')
     })
 })

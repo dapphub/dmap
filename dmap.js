@@ -19,6 +19,9 @@ lib._walk = async (dmap, path, register, ctx, trace) => {
     if (path.length == 0) {
         return [null, register, trace]
     }
+    if (register == '0x' + '00'.repeat(32)) {
+        return ['zero register', register, trace]
+    }
 
     const [rune, key, rest] = lib.chomp(path)
     console.log(`chomped ${rune} ${key} ${rest}`)
@@ -48,5 +51,7 @@ lib._walk = async (dmap, path, register, ctx, trace) => {
 lib.walk = async (dmap, path) => {
     const [root, ] = await dmap.raw('0x' + '00'.repeat(32))
     console.log('root', root)
-    return await lib._walk(dmap, path, root, {locked:true}, [])
+    const [err, register, trace] = await lib._walk(dmap, path, root, {locked:true}, [])
+    if (err) throw new Error(`FAIL WALK:\n${err}\n${JSON.stringify(trace,null,2)}`)
+    return trace
 }
