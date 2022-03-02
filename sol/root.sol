@@ -3,10 +3,8 @@
 pragma solidity 0.8.11;
 
 import { Dmap } from './dmap.sol';
-import 'hardhat/console.sol';
 
 contract DmapRootZone {
-
     Dmap    public immutable dmap;
     uint256 public           last;
     bytes32 public           park;
