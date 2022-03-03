@@ -72,7 +72,7 @@ describe('dmap', ()=>{
         want(res.slice(0,42)).eq(rootzone.address.toLowerCase())
         const res2 = await lib.walk(dmap, ':root.free')
         await want(
-            lib.walk(dmap, ':root.free.free')
+            lib.walk(dmap, ':root.free.free.free')
         ).rejectedWith('zero register')
     })
 })
