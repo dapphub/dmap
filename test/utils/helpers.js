@@ -5,6 +5,7 @@
 // Copyright (c) 2018 OpenZeppelin
 // https://github.com/OpenZeppelin/openzeppelin-test-helpers/blob/master/LICENSE
 
+const { ethers } = require("hardhat");
 const {expect} = require("chai");
 
 // matches eventName
@@ -33,4 +34,9 @@ function expectEvent (receipt, eventName, eventArgs = {}, data = undefined) {
     expect(found).to.equal(true, `No '${eventName}' events found with args ${args}`);
 }
 
-module.exports = { expectEvent }
+function padRight(addrStr) {
+    const numBits = 256 - 160
+    return ethers.BigNumber.from(addrStr).shl(numBits).toHexString()
+}
+
+module.exports = { expectEvent, padRight }

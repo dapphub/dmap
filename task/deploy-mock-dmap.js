@@ -1,6 +1,7 @@
 const fs = require('fs')
 const { getContractAddress } = require('@ethersproject/address')
 const dpack = require('@etherpacks/dpack')
+const { b32, send } = require("minihat");
 
 task('deploy-mock-dmap', async (args, hh)=> {
     const packdir = args.packdir ?? './pack/'
@@ -20,6 +21,15 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const tx_dmap = await dmap_deployer.deploy(root_address)
     const tx_root = await root_deployer.deploy(tx_dmap.address)
     const tx_free = await free_deployer.deploy(tx_dmap.address)
+
+    const salt = b32('salt')
+    const name = b32('free')
+    const zone = tx_free.address
+    const types = [ "bytes32", "bytes32", "address" ]
+    const encoded = ethers.utils.defaultAbiCoder.encode(types, [ salt, name, zone ])
+    const commitment = hh.ethers.utils.keccak256(encoded)
+    await send(tx_root.mark, commitment, { value: ethers.utils.parseEther('1') })
+    await send(tx_root.etch, salt, name, zone)
 
     const pb = await dpack.builder(hh.network.name)
     await pb.packObject({

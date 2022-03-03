@@ -8,9 +8,6 @@
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@types/mocha": "^9.0.0",
     "hardhat": "^2.8.3",
-    "minihat": "^0.0.5",
-    "ts-mocha": "^8.0.0",
-    "ts-node": "^10.2.1",
-    "typescript": "^4.4.2"
+    "minihat": "^0.0.5"
   }
 }
