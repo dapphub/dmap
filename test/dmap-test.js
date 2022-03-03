@@ -3,7 +3,7 @@ const hh = require('hardhat')
 
 const ethers = hh.ethers
 const { send, want, snapshot, revert, b32 } = require('minihat')
-const { expectEvent } = require('./utils/helpers')
+const { expectEvent, padRight } = require('./utils/helpers')
 
 const lib = require('../dmap.js')
 
@@ -50,7 +50,8 @@ describe('dmap', ()=>{
     it('direct traverse', async ()=>{
         const root_free_slot = await dmap.slot(rootzone.address, b32('free'))
         const [root_free_value, root_free_flags] = await dmap.raw(root_free_slot)
-//        want(root_free_value).eq(freezone.address)  // for this bit, we'll want to register the 'free' zone in the 'root' zone as part of the deploy sequence
+        want(root_free_value).eq(padRight(freezone.address))
+        want(Number(root_free_flags)).to.equal(3)
     })
 
     it('basic set', async () => {
