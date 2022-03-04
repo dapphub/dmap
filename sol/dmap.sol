@@ -4,7 +4,6 @@
 // from accessing one of these storage slots.
 
 pragma solidity 0.8.11;
-import 'hardhat/console.sol';
 
 contract Dmap {
     // storage: hash(zone, key) -> (value, flags)
@@ -29,8 +28,10 @@ contract Dmap {
 
     function get(address zone, bytes32 key) external view
       returns (bytes32 value, bytes32 flags) {
-        bytes32 slot = keccak256(abi.encode(zone, key));
         assembly {
+            mstore(0, zone)
+            mstore(32, key)
+            let slot := keccak256(0, 64)
             value := sload(slot)
             flags := sload(add(slot, 1))
         }
