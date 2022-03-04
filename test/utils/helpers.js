@@ -7,6 +7,7 @@
 
 const { ethers } = require("hardhat");
 const {expect} = require("chai");
+const { want } = require('minihat')
 
 // matches eventName
 // matches data if defined
@@ -39,4 +40,11 @@ function padRight(addrStr) {
     return ethers.BigNumber.from(addrStr).shl(numBits).toHexString()
 }
 
-module.exports = { expectEvent, padRight }
+async function check_gas (gas, minGas, maxGas) {
+  await want(gas.toNumber()).to.be.at.most(maxGas);
+  if( gas.toNumber() < minGas ) {
+    console.log("gas reduction: previous min=", minGas, " gas used=", gas.toNumber());
+  }
+}
+
+module.exports = { expectEvent, padRight, check_gas }
