@@ -28,19 +28,21 @@ contract Dmap {
 
     function get(address zone, bytes32 key) external view
       returns (bytes32 value, bytes32 flags) {
-        bytes32 slot = keccak256(abi.encode(zone, key));
         assembly {
+            mstore(0, zone)
+            mstore(32, key)
+            let slot := keccak256(0, 64)
             value := sload(slot)
             flags := sload(add(slot, 1))
         }
     }
 
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
-        bytes32 slot = keccak256(abi.encode(msg.sender, key));
-        bytes32 prior;
         assembly {
-            prior := sload(add(slot, 1))
-            if eq(1, and(prior, 1)) { revert("LOCK", 4) }
+            mstore(0, caller())
+            mstore(32, key)
+            let slot := keccak256(0, 64)
+            if eq(1, and(sload(add(slot, 1)), 1)) { revert("LOCK", 4) }
             sstore(slot, value)
             sstore(add(slot, 1), flags)
             log4(0, 0, caller(), key, value, flags)

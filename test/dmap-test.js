@@ -3,7 +3,9 @@ const hh = require('hardhat')
 
 const ethers = hh.ethers
 const { send, want, snapshot, revert, b32 } = require('minihat')
-const { expectEvent, padRight } = require('./utils/helpers')
+const { expectEvent, padRight, check_gas} = require('./utils/helpers')
+const { bounds } = require('./bounds')
+const constants = ethers.constants
 
 const lib = require('../dmap.js')
 
@@ -75,4 +77,67 @@ describe('dmap', ()=>{
             lib.walk(dmap, ':root.free.free.free')
         ).rejectedWith('zero register')
     })
+
+    describe('gas', () => {
+        const key = b32('MyKey')
+        const one = Buffer.from('10'.repeat(32), 'hex') // lock == 0
+        const two = Buffer.from('20'.repeat(32), 'hex')
+        describe('set', () => {
+
+            describe('no change', () => {
+                it('0->0', async () => {
+                    const rx = await send(dmap.set, key, constants.HashZero, constants.HashZero)
+                    const bound = bounds.dmap.set[0][0]
+                    await check_gas(rx.gasUsed, bound[0], bound[1])
+                })
+                it('1->1', async () => {
+                    await send(dmap.set, key, one, one)
+                    const rx = await send(dmap.set, key, one, one)
+                    const bound = bounds.dmap.set[1][1]
+                    await check_gas(rx.gasUsed, bound[0], bound[1])
+                })
+            })
+            describe('change', () => {
+                it('0->1', async () => {
+                    const rx = await send(dmap.set, key, one, one)
+                    const bound = bounds.dmap.set[0][1]
+                    await check_gas(rx.gasUsed, bound[0], bound[1])
+                })
+                it('1->0', async () => {
+                    await send(dmap.set, key, one, one)
+                    const rx = await send(dmap.set, key, constants.HashZero, constants.HashZero)
+                    const bound = bounds.dmap.set[1][0]
+                    await check_gas(rx.gasUsed, bound[0], bound[1])
+                })
+                it('1->2', async () => {
+                    await send(dmap.set, key, one, one)
+                    const rx = await send(dmap.set, key, two, two)
+                    const bound = bounds.dmap.set[1][2]
+                    await check_gas(rx.gasUsed, bound[0], bound[1])
+                })
+            })
+        })
+
+        it('raw', async () => {
+            const slot = await dmap.slot(ALI, key)
+            await send(dmap.set, key, one, one)
+            const gas = await dmap.estimateGas.raw(slot)
+            const bound = bounds.dmap.raw
+            await check_gas(gas, bound[0], bound[1])
+        })
+
+        it('get', async () => {
+            await send(dmap.set, key, one, one)
+            const gas = await dmap.estimateGas.get(ALI, key)
+            const bound = bounds.dmap.get
+            await check_gas(gas, bound[0], bound[1])
+        })
+
+        it('slot', async () => {
+            const gas = await dmap.estimateGas.slot(ALI, key)
+            const bound = bounds.dmap.slot
+            await check_gas(gas, bound[0], bound[1])
+        })
+    })
+
 })
