@@ -4,6 +4,7 @@
 // from accessing one of these storage slots.
 
 pragma solidity 0.8.11;
+import 'hardhat/console.sol';
 
 contract Dmap {
     // storage: hash(zone, key) -> (value, flags)
@@ -36,17 +37,16 @@ contract Dmap {
     }
 
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
-        bytes32 slot;
-        bytes32 prior_or_encoding0;
-        bytes32 encoding1;
+        bytes32 slot_or_encoding0;
+        bytes32 prior_or_encoding1;
         assembly {
-            mstore(160, caller())
-            mstore(192, key)
-            slot := keccak256(160, 64)
-            prior_or_encoding0 := sload(add(slot, 1))
-            if eq(1, and(prior_or_encoding0, 1)) { revert("LOCK", 4) }
-            sstore(slot, value)
-            sstore(add(slot, 1), flags)
+            mstore(128, caller())
+            mstore(160, key)
+            slot_or_encoding0 := keccak256(128, 64)
+            prior_or_encoding1 := sload(add(slot_or_encoding0, 1))
+            if eq(1, and(prior_or_encoding1, 1)) { revert("LOCK", 4) }
+            sstore(slot_or_encoding0, value)
+            sstore(add(slot_or_encoding0, 1), flags)
             log4(0, 0, caller(), key, value, flags)
         }
     }
