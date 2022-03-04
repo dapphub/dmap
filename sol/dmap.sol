@@ -37,15 +37,14 @@ contract Dmap {
 
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
         bytes32 slot;
-        bytes32 prior;
-        bytes32 encoding0;
+        bytes32 prior_or_encoding0;
         bytes32 encoding1;
         assembly {
             mstore(160, caller())
             mstore(192, key)
             slot := keccak256(160, 64)
-            prior := sload(add(slot, 1))
-            if eq(1, and(prior, 1)) { revert("LOCK", 4) }
+            prior_or_encoding0 := sload(add(slot, 1))
+            if eq(1, and(prior_or_encoding0, 1)) { revert("LOCK", 4) }
             sstore(slot, value)
             sstore(add(slot, 1), flags)
             log4(0, 0, caller(), key, value, flags)
