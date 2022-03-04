@@ -50,7 +50,13 @@ contract Dmap {
     }
 
     function slot(address zone, bytes32 key) external pure returns (bytes32) {
-        return keccak256(abi.encode(zone, key));
+        bytes32 slot;
+        assembly {
+            mstore(0, zone)
+            mstore(32, key)
+            slot := keccak256(0, 64)
+        }
+        return slot;
     }
 
 }
