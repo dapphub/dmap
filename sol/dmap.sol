@@ -39,7 +39,7 @@ contract Dmap {
 
     error LOCK();
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
-        bytes16 locksel = LOCK.selector;
+        bytes4 locksel = LOCK.selector;
         assembly {
             log4(0, 0, caller(), key, value, flags)
             mstore(32, key)
