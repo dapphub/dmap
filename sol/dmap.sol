@@ -39,13 +39,13 @@ contract Dmap {
 
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
         assembly {
-            mstore(0, caller())
+            log4(0, 0, caller(), key, value, flags)
             mstore(32, key)
+            mstore(0, caller())
             let slot := keccak256(0, 64)
             if and(sload(add(slot, 1)), 1) { revert("LOCK", 4) }
             sstore(slot, value)
             sstore(add(slot, 1), flags)
-            log4(0, 0, caller(), key, value, flags)
         }
     }
 
