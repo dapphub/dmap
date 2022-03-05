@@ -38,8 +38,8 @@ contract Dmap {
     }
 
     error LOCK();
+    bytes4 constant locksel = 0xa4f0d7d0; // keccak256("LOCK()")
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
-        bytes4 locksel = LOCK.selector;
         assembly {
             log4(0, 0, caller(), key, value, flags)
             mstore(32, key)
