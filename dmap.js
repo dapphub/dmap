@@ -1,4 +1,17 @@
+const ebnf = require('ebnf')
+
 module.exports = lib = {}
+
+lib.grammar = `
+dpath ::= (chunk)* EOF
+chunk ::= (rune) (name)
+name  ::= [a-z0-9]+
+rune  ::= ":" | "."
+`
+
+lib.parser = new ebnf.Parser(ebnf.Grammars.W3C.getRules(lib.grammar))
+
+lib.parse =s=> lib.parser.getAST(s)
 
 lib.chomp = (path) => {
     if (path.length == 0) throw new Error(`chomp: empty path`)
