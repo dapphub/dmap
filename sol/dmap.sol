@@ -43,8 +43,8 @@ contract Dmap {
             mstore(32, key)
             mstore(0, caller())
             let slot := keccak256(0, 64)
-            if and(sload(add(slot, 1)), 1) { revert("LOCK", 4) }
             sstore(slot, value)
+            if and(sload(add(slot, 1)), 1) { revert("LOCK", 4) }
             sstore(add(slot, 1), flags)
         }
     }
