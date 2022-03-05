@@ -38,7 +38,7 @@ contract Dmap {
     }
 
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
-        bool rev = false;
+        bool rev;
         assembly {
             log4(0, 0, caller(), key, value, flags)
             mstore(32, key)
@@ -49,7 +49,7 @@ contract Dmap {
             sstore(slot0, value)
             sstore(slot1, flags)
         }
-        if( rev ) { revert('LOCK'); }
+        require(!rev, 'LOCK');
     }
 
     function slot(address zone, bytes32 key) external pure returns (bytes32 slot) {
