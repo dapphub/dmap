@@ -37,6 +37,8 @@ contract Dmap {
         }
     }
 
+    error LOCK();
+    bytes4 constant locksel = 0xa4f0d7d0; // keccak256("LOCK()")
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
         assembly {
             log4(0, 0, caller(), key, value, flags)
@@ -44,7 +46,10 @@ contract Dmap {
             mstore(0, caller())
             let slot0 := keccak256(0, 64)
             let slot1 := add(slot0, 1)
-            if and(1, sload(slot1)) { revert("LOCK", 4) }
+            if and(1, sload(slot1)) {
+                mstore(0, locksel)
+                revert(0, 4)
+            }
             sstore(slot0, value)
             sstore(slot1, flags)
         }
