@@ -41,10 +41,11 @@ contract Dmap {
         assembly {
             mstore(0, caller())
             mstore(32, key)
-            let slot := keccak256(0, 64)
-            if eq(1, and(sload(add(slot, 1)), 1)) { revert("LOCK", 4) }
-            sstore(slot, value)
-            sstore(add(slot, 1), flags)
+            let slot0 := keccak256(0, 64)
+            let slot1 := add(slot0, 1)
+            if eq(1, and(1, sload(slot1))) { revert("LOCK", 4) }
+            sstore(slot0, value)
+            sstore(slot1, flags)
             log4(0, 0, caller(), key, value, flags)
         }
     }
