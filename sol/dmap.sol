@@ -21,8 +21,8 @@ contract Dmap {
     function raw(bytes32 slot) external view
       returns (bytes32 value, bytes32 flags) {
         assembly {
-            value := sload(slot)
             flags := sload(add(slot, 1))
+            value := sload(slot)
         }
     }
 
@@ -32,26 +32,30 @@ contract Dmap {
             mstore(0, zone)
             mstore(32, key)
             let slot := keccak256(0, 64)
-            value := sload(slot)
             flags := sload(add(slot, 1))
+            value := sload(slot)
         }
     }
 
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
         assembly {
-            mstore(0, caller())
+            log4(0, 0, caller(), key, value, flags)
             mstore(32, key)
+            mstore(0, caller())
             let slot0 := keccak256(0, 64)
             let slot1 := add(slot0, 1)
-            if eq(1, and(1, sload(slot1))) { revert("LOCK", 4) }
+            if and(1, sload(slot1)) { revert("LOCK", 4) }
             sstore(slot0, value)
             sstore(slot1, flags)
-            log4(0, 0, caller(), key, value, flags)
         }
     }
 
-    function slot(address zone, bytes32 key) external pure returns (bytes32) {
-        return keccak256(abi.encode(zone, key));
+    function slot(address zone, bytes32 key) external pure returns (bytes32 slot) {
+        assembly {
+            mstore(0, zone)
+            mstore(32, key)
+            slot := keccak256(0, 64)
+        }
     }
 
 }
