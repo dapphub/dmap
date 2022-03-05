@@ -2,12 +2,14 @@ const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
 
 const ethers = hh.ethers
-const { send, want, snapshot, revert, b32 } = require('minihat')
+const { send, want, snapshot, revert, b32, fail} = require('minihat')
 const { expectEvent, padRight, check_gas} = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const constants = ethers.constants
 
 const lib = require('../dmap.js')
+
+const debug = require('debug')('dmap:test')
 
 describe('dmap', ()=>{
     let dmap
@@ -76,6 +78,13 @@ describe('dmap', ()=>{
         await want(
             lib.walk(dmap, ':root.free.free.free')
         ).rejectedWith('zero register')
+    })
+
+    it('lock', async () => {
+        debug('first set')
+        await send(dmap.set, b32("hello"), b32("hello"), '0x'+'00'.repeat(31)+'01')
+        debug('second set')
+        await fail('LOCK', dmap.set, b32("hello"), b32("hello"), '0x'+'00'.repeat(31)+'01')
     })
 
     describe('gas', () => {

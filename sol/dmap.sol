@@ -38,16 +38,18 @@ contract Dmap {
     }
 
     function set(bytes32 key, bytes32 value, bytes32 flags) external {
+        bool rev;
         assembly {
             log4(0, 0, caller(), key, value, flags)
             mstore(32, key)
             mstore(0, caller())
             let slot0 := keccak256(0, 64)
             let slot1 := add(slot0, 1)
-            if and(1, sload(slot1)) { revert("LOCK", 4) }
+            rev := and(1, sload(slot1))
             sstore(slot0, value)
             sstore(slot1, flags)
         }
+        require(!rev, 'LOCK');
     }
 
     function slot(address zone, bytes32 key) external pure returns (bytes32 slot) {
