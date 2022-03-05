@@ -21,8 +21,8 @@ contract Dmap {
     function raw(bytes32 slot) external view
       returns (bytes32 value, bytes32 flags) {
         assembly {
-            value := sload(slot)
             flags := sload(add(slot, 1))
+            value := sload(slot)
         }
     }
 

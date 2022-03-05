@@ -1,6 +1,6 @@
 module.exports.bounds = {
   dmap: {
-    raw:  [26054, 26054],
+    raw:  [26048, 26048],
     get:  [26241, 26241],
     slot: [22054, 22054],
     set: {
