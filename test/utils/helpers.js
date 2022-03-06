@@ -8,6 +8,7 @@
 const { ethers } = require("hardhat");
 const {expect} = require("chai");
 const { want } = require('minihat')
+const {hexZeroPad} = require("@ethersproject/bytes");
 
 // matches eventName
 // matches data if defined
@@ -37,7 +38,8 @@ function expectEvent (receipt, eventName, eventArgs = {}, data = undefined) {
 
 function padRight(addrStr) {
     const numBits = 256 - 160
-    return ethers.BigNumber.from(addrStr).shl(numBits).toHexString()
+    const hexstr = ethers.BigNumber.from(addrStr).shl(numBits).toHexString()
+    return hexZeroPad(hexstr, 32);
 }
 
 async function check_gas (gas, minGas, maxGas) {
