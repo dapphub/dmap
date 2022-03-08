@@ -1,5 +1,7 @@
 module.exports = lib = {}
 
+const multiformats = require('multiformats')
+
 lib.chomp = (path) => {
     if (path.length == 0) throw new Error(`chomp: empty path`)
     const rune = path[0]
@@ -50,23 +52,20 @@ lib.walk = async (dmap, path) => {
 }
 
 lib.prepareCID = (_cid, lock) => {
-    const cid = Buffer.from(_cid)
-    const numBytes = cid.byteLength
-    if (numBytes >= 64 || numBytes <= 33) throw new Error(`Unsupported CID length.`)
-    const hashStart = numBytes - 32
-    const hash = cid.slice(hashStart)
+    const cid = multiformats.CID.parse(_cid)
+    if (cid.multihash.size != 32) throw new Error(`Unsupported multihash code`)
+    if (cid.version != 1) throw new Error(`Unsupported CID version`)
     let flags = new Array(32).fill(0);
-    flags.splice(0, hashStart, ...cid.slice(0, hashStart))
+    flags[0] = cid.code
+    flags[1] = cid.multihash.code
     if (lock) flags[31] = 1
-    return [hash, flags]
+    return [cid.multihash.digest, flags]
 }
 
 lib.unpackCID = (value, flags) => {
-    const valueBuffer = Buffer.from(value.slice(2), "hex")
-    const flagsBuffer = Buffer.from(flags.slice(2), "hex")
-    let terminator = flagsBuffer.findIndex(char => char === 0);
-    if (terminator === -1) terminator = 31
-    const prefix = flagsBuffer.slice(0, terminator)
-    const cidBuf = Buffer.concat([prefix, valueBuffer])
-    return cidBuf.toString()
+    const cidCode = Buffer.from(flags.slice(2), 'hex')[0]
+    const hashCode = Buffer.from(flags.slice(2), 'hex')[1]
+    const digest = multiformats.digest.create(hashCode, Buffer.from(value.slice(2), "hex"))
+    const cid = multiformats.CID.createV1(cidCode, digest)
+    return cid.toString()
 }

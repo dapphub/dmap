@@ -5,7 +5,7 @@ const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
 const {padRight} = require("./utils/helpers");
 
-describe('freezone', ()=>{
+describe('rootzone', ()=>{
     let dmap
     let rootzone
     let freezone

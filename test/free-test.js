@@ -3,7 +3,6 @@ const hh = require('hardhat')
 
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, want } = require('minihat')
-const assert = require('assert');
 const lib = require('../dmap.js')
 
 describe('freezone', ()=>{
@@ -19,9 +18,8 @@ describe('freezone', ()=>{
     const value2 = b32('def')
     const lock = '0x' + '0'.repeat(63) + '1'
     const open = '0x' + '0'.repeat(64)
-    const cid      = 'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa'
-    const cidLimit = 'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa0123'
-    const cidLong  = 'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa01234'
+    const cid1 = 'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa' // IPLD path and keccak-256
+    const cid2 = 'baelbmidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa' // sha3-256 codes
 
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
@@ -95,30 +93,27 @@ describe('freezone', ()=>{
         await fail('ERR_GIVE', freezone.give, key, CAT)
     })
 
-    it('store CID', async ()=>{
+    it('store default CID', async ()=>{
         await send(freezone.take, key)
-        const [value, flags] = lib.prepareCID(cid, false)
+        const [value, flags] = lib.prepareCID(cid1, false)
         await send(freezone.set, key, value, flags)
 
-        const [lockValue, lockFlags] = lib.prepareCID(cid, true)
+        const [lockValue, lockFlags] = lib.prepareCID(cid1, true)
         await send(freezone.set, key, lockValue, lockFlags)
         await fail('LOCK', freezone.set, key, lockValue, lockFlags)
 
         const [readValue, readFlags] = await dmap.get(freezone.address, key)
         const resCID = lib.unpackCID(readValue, readFlags)
-        want(cid).eq(resCID)
+        want(cid1).eq(resCID)
     })
 
-    it('CID limits', async ()=>{
+    it('store alternate CID', async ()=>{
         await send(freezone.take, key)
-
-        assert.throws(() => { lib.prepareCID(cidLong, false) }, Error);
-        assert.throws(() => { lib.prepareCID(value1, false) }, Error);
-
-        const [value, flags] = lib.prepareCID(cidLimit, true)
+        const [value, flags] = lib.prepareCID(cid2, false)
         await send(freezone.set, key, value, flags)
+
         const [readValue, readFlags] = await dmap.get(freezone.address, key)
         const resCID = lib.unpackCID(readValue, readFlags)
-        want(cidLimit).eq(resCID)
+        want(cid2).eq(resCID)
     })
 })
