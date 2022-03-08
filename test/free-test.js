@@ -3,6 +3,8 @@ const hh = require('hardhat')
 
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, want } = require('minihat')
+const assert = require('assert');
+const lib = require('../dmap.js')
 
 describe('freezone', ()=>{
     let dmap
@@ -12,11 +14,14 @@ describe('freezone', ()=>{
     let ali, bob, cat
     let ALI, BOB, CAT
 
-    const key = b32('123')
-    const value = b32('abc')
+    const key    = b32('123')
+    const value1 = b32('abc')
     const value2 = b32('def')
     const lock = '0x' + '0'.repeat(63) + '1'
     const open = '0x' + '0'.repeat(64)
+    const cid      = 'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa'
+    const cidLimit = 'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa0123'
+    const cidLong  = 'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa01234'
 
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
@@ -35,15 +40,15 @@ describe('freezone', ()=>{
     })
 
     it('set without control', async ()=>{
-        await fail('ERR_SET', freezone.set, key, value, lock)
+        await fail('ERR_SET', freezone.set, key, value1, lock)
     })
 
     it('set after take', async ()=>{
         await send(freezone.take, key)
-        await send(freezone.set, key, value, open)
+        await send(freezone.set, key, value1, open)
         const [res_value, res_flags] = await dmap.get(freezone.address, key)
 
-        want(ethers.utils.hexlify(value)).eq(res_value)
+        want(ethers.utils.hexlify(value1)).eq(res_value)
         want(ethers.utils.hexlify(open)).eq(res_flags)
 
         await send(freezone.set, key, value2, lock)
@@ -51,18 +56,21 @@ describe('freezone', ()=>{
 
         want(ethers.utils.hexlify(value2)).eq(res_value_2)
         want(ethers.utils.hexlify(lock)).eq(res_flags_2)
+
+        await fail('LOCK', freezone.set, key, value1, lock)
+        await fail('LOCK', freezone.set, key, value1, open)
     })
 
     it('sets after give', async ()=>{
         await send(freezone.take, key)
         await send(freezone.give, key, BOB)
 
-        await fail('ERR_SET', freezone.set, key, value, lock)
+        await fail('ERR_SET', freezone.set, key, value1, lock)
 
-        await send(freezone.connect(bob).set, key, value, lock)
+        await send(freezone.connect(bob).set, key, value1, lock)
         const [res_value, res_flags] = await dmap.connect(bob).get(freezone.address, key)
 
-        want(ethers.utils.hexlify(value)).eq(res_value)
+        want(ethers.utils.hexlify(value1)).eq(res_value)
         want(ethers.utils.hexlify(lock)).eq(res_flags)
     })
 
@@ -80,10 +88,37 @@ describe('freezone', ()=>{
 
     it('give without control', async ()=>{
         await fail('ERR_GIVE', freezone.give, key, BOB)
-        await fail('ERR_SET', freezone.connect(bob).set, key, value, lock)
+        await fail('ERR_SET', freezone.connect(bob).set, key, value1, lock)
 
         await send(freezone.take, key)
         await send(freezone.give, key, BOB)
         await fail('ERR_GIVE', freezone.give, key, CAT)
+    })
+
+    it('store CID', async ()=>{
+        await send(freezone.take, key)
+        const [value, flags] = lib.prepareCID(cid, false)
+        await send(freezone.set, key, value, flags)
+
+        const [lockValue, lockFlags] = lib.prepareCID(cid, true)
+        await send(freezone.set, key, lockValue, lockFlags)
+        await fail('LOCK', freezone.set, key, lockValue, lockFlags)
+
+        const [readValue, readFlags] = await dmap.get(freezone.address, key)
+        const resCID = lib.unpackCID(readValue, readFlags)
+        want(cid).eq(resCID)
+    })
+
+    it('CID limits', async ()=>{
+        await send(freezone.take, key)
+
+        assert.throws(() => { lib.prepareCID(cidLong, false) }, Error);
+        assert.throws(() => { lib.prepareCID(value1, false) }, Error);
+
+        const [value, flags] = lib.prepareCID(cidLimit, true)
+        await send(freezone.set, key, value, flags)
+        const [readValue, readFlags] = await dmap.get(freezone.address, key)
+        const resCID = lib.unpackCID(readValue, readFlags)
+        want(cidLimit).eq(resCID)
     })
 })

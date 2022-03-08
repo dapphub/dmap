@@ -48,3 +48,25 @@ lib.walk = async (dmap, path) => {
     const trace = await lib._walk(dmap, path, root, {locked:true}, [])
     return trace[trace.length-1].register
 }
+
+lib.prepareCID = (_cid, lock) => {
+    const cid = Buffer.from(_cid)
+    const numBytes = cid.byteLength
+    if (numBytes >= 64 || numBytes <= 33) throw new Error(`Unsupported CID length.`)
+    const hashStart = numBytes - 32
+    const hash = cid.slice(hashStart)
+    let flags = new Array(32).fill(0);
+    flags.splice(0, hashStart, ...cid.slice(0, hashStart))
+    if (lock) flags[31] = 1
+    return [hash, flags]
+}
+
+lib.unpackCID = (value, flags) => {
+    const valueBuffer = Buffer.from(value.slice(2), "hex")
+    const flagsBuffer = Buffer.from(flags.slice(2), "hex")
+    let terminator = flagsBuffer.findIndex(char => char === 0);
+    if (terminator === -1) terminator = 31
+    const prefix = flagsBuffer.slice(0, terminator)
+    const cidBuf = Buffer.concat([prefix, valueBuffer])
+    return cidBuf.toString()
+}
