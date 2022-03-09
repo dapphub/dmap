@@ -1,6 +1,9 @@
 module.exports = lib = {}
 
 const multiformats = require('multiformats')
+const prefLenIndex = 29
+const hashLenIndex = 30
+const lockIndex = 31
 
 lib.chomp = (path) => {
     if (path.length == 0) throw new Error(`chomp: empty path`)
@@ -51,21 +54,30 @@ lib.walk = async (dmap, path) => {
     return trace[trace.length-1].register
 }
 
-lib.prepareCID = (_cid, lock) => {
-    const cid = multiformats.CID.parse(_cid)
-    if (cid.multihash.size != 32) throw new Error(`Unsupported multihash code`)
-    if (cid.version != 1) throw new Error(`Unsupported CID version`)
-    let flags = new Array(32).fill(0);
-    flags[0] = cid.code
-    flags[1] = cid.multihash.code
-    if (lock) flags[31] = 1
-    return [cid.multihash.digest, flags]
+lib.prepareCID = (cidStr, lock) => {
+    const cid = multiformats.CID.parse(cidStr)
+    if (cid.multihash.size > 32) throw new Error(`Hash exceeds 256 bits`)
+    const prefixLen = cid.byteLength - cid.multihash.size
+    const flags = new Uint8Array(32).fill(0)
+    const value = new Uint8Array(32).fill(0)
+
+    value.set(cid.bytes.slice(-cid.multihash.size), 32-cid.multihash.size)
+    flags.set(cid.bytes.slice(0, prefixLen), 0)
+    if (lock) flags[lockIndex] = 1
+    flags[prefLenIndex] = prefixLen
+    flags[hashLenIndex] = cid.multihash.size
+    return [value, flags]
 }
 
-lib.unpackCID = (value, flags) => {
-    const cidCode = Buffer.from(flags.slice(2), 'hex')[0]
-    const hashCode = Buffer.from(flags.slice(2), 'hex')[1]
-    const digest = multiformats.digest.create(hashCode, Buffer.from(value.slice(2), "hex"))
-    const cid = multiformats.CID.createV1(cidCode, digest)
+lib.unpackCID = (valueStr, flagsStr) => {
+    const value = Buffer.from(valueStr.slice(2), 'hex')
+    const flags = Buffer.from(flagsStr.slice(2), 'hex')
+    const prefixLen = flags[prefLenIndex]
+    const hashLen = flags[hashLenIndex]
+    const cidBytes = new Uint8Array(prefixLen + hashLen)
+
+    cidBytes.set(flags.slice(0, prefixLen), 0)
+    cidBytes.set(value.slice(32 - hashLen), prefixLen)
+    const cid = multiformats.CID.decode(cidBytes)
     return cid.toString()
 }

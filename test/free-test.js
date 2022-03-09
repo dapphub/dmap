@@ -1,5 +1,6 @@
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
+const assert = require('assert');
 
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, want } = require('minihat')
@@ -18,8 +19,11 @@ describe('freezone', ()=>{
     const value2 = b32('def')
     const lock = '0x' + '0'.repeat(63) + '1'
     const open = '0x' + '0'.repeat(64)
-    const cid1 = 'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa' // IPLD path and keccak-256
-    const cid2 = 'baelbmidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa' // sha3-256 codes
+    const cidDefault =    'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa'
+    const cidSHA3 =       'baelbmidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa'
+    const cidV0 =         'QmbizqGE1E1rES19m9CKNkLYfbbAHNnYFwE6cMe8JVV33H'
+    const cidBlake2b160 = 'bafkzjzaccro7xvz25wxmpggcqm7v755cf3jpjhpxl4'
+    const cid512 =        'bafkrgqa4i3c7xsn45ajkgb3yyo52su6n766tnirxkkhx7qf4gohgb3wvrqv5uflwn5tqparnbt434kevuyh7lxwu6mxw5m55ne2l76zj5jrlg'
 
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
@@ -93,27 +97,25 @@ describe('freezone', ()=>{
         await fail('ERR_GIVE', freezone.give, key, CAT)
     })
 
-    it('store default CID', async ()=>{
-        await send(freezone.take, key)
-        const [value, flags] = lib.prepareCID(cid1, false)
-        await send(freezone.set, key, value, flags)
+    it('store CID variants', async ()=>{
+        const cids = [cidDefault, cidSHA3, cidV0, cidBlake2b160]
+        for (const [index, cid] of cids.entries()) {
+            const key = b32(index.toString())
+            await send(freezone.take, key)
+            const [value, flags] = lib.prepareCID(cid, false)
+            await send(freezone.set, key, value, flags)
 
-        const [lockValue, lockFlags] = lib.prepareCID(cid1, true)
-        await send(freezone.set, key, lockValue, lockFlags)
-        await fail('LOCK', freezone.set, key, lockValue, lockFlags)
+            const[lockValue, lockFlags] = lib.prepareCID(cid, true)
+            await send(freezone.set, key, lockValue, lockFlags)
+            await fail('LOCK', freezone.set, key, lockValue, lockFlags)
 
-        const [readValue, readFlags] = await dmap.get(freezone.address, key)
-        const resCID = lib.unpackCID(readValue, readFlags)
-        want(cid1).eq(resCID)
+            const [readValue, readFlags] = await dmap.get(freezone.address, key)
+            const resCID = lib.unpackCID(readValue, readFlags)
+            want(cid).eq(resCID)
+        }
     })
 
-    it('store alternate CID', async ()=>{
-        await send(freezone.take, key)
-        const [value, flags] = lib.prepareCID(cid2, false)
-        await send(freezone.set, key, value, flags)
-
-        const [readValue, readFlags] = await dmap.get(freezone.address, key)
-        const resCID = lib.unpackCID(readValue, readFlags)
-        want(cid2).eq(resCID)
+    it('store 512 CID', async ()=>{
+        assert.throws(() => { lib.prepareCID(cid512, false) }, /Hash exceeds 256 bits/);
     })
 })
