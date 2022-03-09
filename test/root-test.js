@@ -42,21 +42,21 @@ describe('freezone', ()=>{
 
     it('cooldown', async ()=>{
         const commitment = await getCommitment(b32('zone1'), zone1)
-        await fail('ErrPending', rootzone.mark, commitment, { value: ethers.utils.parseEther('1') })
+        await fail('ErrPending', rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
         await wait(hh, 60 * 60 * 30)
-        await fail('ErrPending', rootzone.mark, commitment, { value: ethers.utils.parseEther('1') })
+        await fail('ErrPending', rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
         await wait(hh, 60 * 60)
-        await send(rootzone.mark, commitment, { value: ethers.utils.parseEther('1') })
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
     })
 
     it('fee', async ()=>{
         await wait(hh, delay_period)
         const aliStartBalance = await ali.getBalance()
         const commitment = await getCommitment(b32('zone1'), zone1)
-        await fail('ErrPayment', rootzone.mark, commitment)
-        await fail('ErrPayment', rootzone.mark, commitment, { value: ethers.utils.parseEther('0.9') })
-        await fail('ErrPayment', rootzone.mark, commitment, { value: ethers.utils.parseEther('1.1') })
-        await send(rootzone.mark, commitment, { value: ethers.utils.parseEther('1') })
+        await fail('ErrPayment', rootzone.hark, commitment)
+        await fail('ErrPayment', rootzone.hark, commitment, { value: ethers.utils.parseEther('0.9') })
+        await fail('ErrPayment', rootzone.hark, commitment, { value: ethers.utils.parseEther('1.1') })
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
         const aliEndBalance = await ali.getBalance()
         want((aliStartBalance.sub(ethers.utils.parseEther('1.0'))).gt(aliEndBalance)).true
         want((aliStartBalance.sub(ethers.utils.parseEther('1.5'))).lt(aliEndBalance)).true
@@ -65,7 +65,7 @@ describe('freezone', ()=>{
     it('etch fail wrong hash', async ()=>{
         await wait(hh, delay_period)
         const commitment = await getCommitment(b32('zone1'), zone1)
-        await send(rootzone.mark, commitment, { value: ethers.utils.parseEther('1') })
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
         await fail('ErrExpired', rootzone.etch, b32('wrong_salt'), b32('zone1'), zone1)
         await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
     })
@@ -73,18 +73,18 @@ describe('freezone', ()=>{
     it('etch fail rewrite zone', async ()=>{
         await wait(hh, delay_period)
         const commitment = await getCommitment(b32('free'), zone1)
-        await send(rootzone.mark, commitment, { value: ethers.utils.parseEther('1') })
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
         await fail('revert', rootzone.etch, b32('salt'), b32('free'), zone1)
     })
 
     it('state updates', async ()=>{
         await wait(hh, delay_period)
         const commitment = await getCommitment(b32('zone1'), zone1)
-        await send(rootzone.mark, commitment, { value: ethers.utils.parseEther('1') })
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
 
         await wait(hh, delay_period)
         const newCommitment = await getCommitment(b32('zone2'), zone2)
-        await send(rootzone.mark, newCommitment, { value: ethers.utils.parseEther('1') })
+        await send(rootzone.hark, newCommitment, { value: ethers.utils.parseEther('1') })
 
         await fail('ErrExpired', rootzone.etch, b32('salt'), b32('zone1'), zone1)
         await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
