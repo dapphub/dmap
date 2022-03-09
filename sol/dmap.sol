@@ -14,9 +14,10 @@ contract Dmap {
     bytes32 immutable FLAG_LOCK = bytes32(uint256(1 << 255));
 
     constructor(address rootzone) {
+        bytes32 LOCK = FLAG_LOCK;
         assembly {
             sstore(0, shl(96, rootzone))
-            sstore(1, shl(3, 254)) // FLAG_LOCK && FLAG_1
+            sstore(1, LOCK)
         }
     }
 
@@ -39,18 +40,16 @@ contract Dmap {
         }
     }
 
-    error LOCK();
-    bytes4 constant locksel = 0xa4f0d7d0; // keccak256("LOCK()")
     function set(bytes32 name, bytes32 meta, bytes32 data) external {
-        bytes32 _FLAG_LOCK = FLAG_LOCK; // assembly access not supported
+        bytes32 LOCK = FLAG_LOCK;
         assembly {
             log4(0, 0, caller(), name, data, meta)
             mstore(32, name)
             mstore(0, caller())
             let slot0 := keccak256(0, 64)
             let slot1 := add(slot0, 1)
-            if and(_FLAG_LOCK, sload(slot1)) {
-                mstore(0, locksel)
+            if and(LOCK, sload(slot1)) {
+                mstore(0, "LOCK")
                 revert(0, 4)
             }
             sstore(slot0, data)
