@@ -6,7 +6,7 @@
 pragma solidity 0.8.11;
 
 contract Dmap {
-    // storage: hash(zone, name) -> (data, meta)
+    // storage: hash(zone, name) -> (meta, data)
     // flags: locked (2^0) & appflags
     // log4: zone, key, value, flags
     // err: "LOCK"
@@ -21,7 +21,7 @@ contract Dmap {
     }
 
     function raw(bytes32 slot) external view
-      returns (bytes32 data, bytes32 meta) {
+      returns (bytes32 meta, bytes32 data) {
         assembly {
             meta := sload(add(slot, 1))
             data := sload(slot)
@@ -29,7 +29,7 @@ contract Dmap {
     }
 
     function get(address zone, bytes32 name) external view
-      returns (bytes32 data, bytes32 meta) {
+      returns (bytes32 meta, bytes32 data) {
         assembly {
             mstore(0, zone)
             mstore(32, name)
@@ -41,7 +41,7 @@ contract Dmap {
 
     error LOCK();
     bytes4 constant locksel = 0xa4f0d7d0; // keccak256("LOCK()")
-    function set(bytes32 name, bytes32 data, bytes32 meta) external {
+    function set(bytes32 name, bytes32 meta, bytes32 data) external {
         bytes32 _FLAG_LOCK = FLAG_LOCK; // assembly access not supported
         assembly {
             log4(0, 0, caller(), name, data, meta)

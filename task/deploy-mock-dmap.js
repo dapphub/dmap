@@ -9,8 +9,8 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const dmap_type = await hh.artifacts.readArtifact('Dmap')
     const dmap_deployer = await hh.ethers.getContractFactory('Dmap')
 
-    const root_type = await hh.artifacts.readArtifact('DmapRootZone')
-    const root_deployer = await hh.ethers.getContractFactory('DmapRootZone')
+    const root_type = await hh.artifacts.readArtifact('RootZone')
+    const root_deployer = await hh.ethers.getContractFactory('RootZone')
 
     const free_type = await hh.artifacts.readArtifact('FreeZone')
     const free_deployer = await hh.ethers.getContractFactory('FreeZone')
@@ -45,7 +45,7 @@ task('deploy-mock-dmap', async (args, hh)=> {
     // put everything else in a 'full' pack
     await pb.packObject({
         objectname: 'rootzone',
-        typename: 'DmapRootZone',
+        typename: 'RootZone',
         address: tx_root.address,
         artifact: root_type
     }, alsoPackType=true)
@@ -62,7 +62,8 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const show =(o)=> JSON.stringify(o, null, 2)
 
     fs.writeFileSync(packdir + `Dmap.json`, show(dmap_type))
-    fs.writeFileSync(packdir + `DmapRootZone.json`, show(root_type))
+    fs.writeFileSync(packdir + `RootZone.json`, show(root_type))
+    fs.writeFileSync(packdir + `FreeZone.json`, show(root_type))
 
     fs.writeFileSync(packdir + `dmap_core_${hh.network.name}.dpack.json`, show(corepack))
     fs.writeFileSync(packdir + `dmap_full_${hh.network.name}.dpack.json`, show(fullpack))
