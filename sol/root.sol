@@ -23,8 +23,8 @@ contract RootZone {
         dmap = d;
         bytes32 DMAP = bytes32(bytes20(address(dmap)));
         bytes32 SELF = bytes32(bytes20(address(this)));
-        dmap.set('dmap', DMAP, LOCK);
-        dmap.set('root', SELF, LOCK);
+        dmap.set('dmap', LOCK, DMAP);
+        dmap.set('root', LOCK, SELF);
         emit Etch('dmap', address(dmap));
         emit Etch('root', address(this));
     }
@@ -42,7 +42,7 @@ contract RootZone {
     function etch(bytes32 salt, bytes32 name, address zone) external {
         bytes32 hash = keccak256(abi.encode(salt, name, zone));
         if (hash != mark) revert ErrExpired();
-        dmap.set(name, bytes32(bytes20(zone)), LOCK);
+        dmap.set(name, LOCK, bytes32(bytes20(zone)));
         emit Etch(name, zone);
     }
 }

@@ -17,7 +17,7 @@ describe('freezone', ()=>{
     const key    = b32('123')
     const value1 = b32('abc')
     const value2 = b32('def')
-    const lock = '0x' + '0'.repeat(63) + '1'
+    const lock = '0x' + '8' + '0'.repeat(63)
     const open = '0x' + '0'.repeat(64)
     const cidDefault =    'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa'
     const cidSHA3 =       'baelbmidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa'
@@ -42,35 +42,35 @@ describe('freezone', ()=>{
     })
 
     it('set without control', async ()=>{
-        await fail('ERR_SET', freezone.set, key, value1, lock)
+        await fail('ERR_OWNER', freezone.set, key, lock, value1)
     })
 
     it('set after take', async ()=>{
         await send(freezone.take, key)
-        await send(freezone.set, key, value1, open)
-        const [res_value, res_flags] = await dmap.get(freezone.address, key)
+        await send(freezone.set, key, open, value1)
+        const [res_flags, res_value] = await dmap.get(freezone.address, key)
 
         want(ethers.utils.hexlify(value1)).eq(res_value)
         want(ethers.utils.hexlify(open)).eq(res_flags)
 
-        await send(freezone.set, key, value2, lock)
-        const [res_value_2, res_flags_2] = await dmap.get(freezone.address, key)
+        await send(freezone.set, key, lock, value2)
+        const [res_flags_2, res_value_2] = await dmap.get(freezone.address, key)
 
         want(ethers.utils.hexlify(value2)).eq(res_value_2)
         want(ethers.utils.hexlify(lock)).eq(res_flags_2)
 
-        await fail('LOCK', freezone.set, key, value1, lock)
-        await fail('LOCK', freezone.set, key, value1, open)
+        await fail('LOCK', freezone.set, key, lock, value1)
+        await fail('LOCK', freezone.set, key, open, value1)
     })
 
     it('sets after give', async ()=>{
         await send(freezone.take, key)
         await send(freezone.give, key, BOB)
 
-        await fail('ERR_SET', freezone.set, key, value1, lock)
+        await fail('ERR_OWNER', freezone.set, key, lock, value1)
 
-        await send(freezone.connect(bob).set, key, value1, lock)
-        const [res_value, res_flags] = await dmap.connect(bob).get(freezone.address, key)
+        await send(freezone.connect(bob).set, key, lock, value1)
+        const [res_flags, res_value] = await dmap.connect(bob).get(freezone.address, key)
 
         want(ethers.utils.hexlify(value1)).eq(res_value)
         want(ethers.utils.hexlify(lock)).eq(res_flags)
@@ -89,12 +89,12 @@ describe('freezone', ()=>{
     })
 
     it('give without control', async ()=>{
-        await fail('ERR_GIVE', freezone.give, key, BOB)
-        await fail('ERR_SET', freezone.connect(bob).set, key, value1, lock)
+        await fail('ERR_OWNER', freezone.give, key, BOB)
+        await fail('ERR_OWNER', freezone.connect(bob).set, key, lock, value1)
 
         await send(freezone.take, key)
         await send(freezone.give, key, BOB)
-        await fail('ERR_GIVE', freezone.give, key, CAT)
+        await fail('ERR_OWNER', freezone.give, key, CAT)
     })
 
     it('store CID variants', async ()=>{
@@ -102,15 +102,15 @@ describe('freezone', ()=>{
         for (const [index, cid] of cids.entries()) {
             const key = b32(index.toString())
             await send(freezone.take, key)
-            const [value, flags] = lib.prepareCID(cid, false)
-            await send(freezone.set, key, value, flags)
+            const [flags, value] = lib.prepareCID(cid, false)
+            await send(freezone.set, key, flags, value)
 
-            const[lockValue, lockFlags] = lib.prepareCID(cid, true)
-            await send(freezone.set, key, lockValue, lockFlags)
-            await fail('LOCK', freezone.set, key, lockValue, lockFlags)
+            const[lockFlags, lockValue] = lib.prepareCID(cid, true)
+            await send(freezone.set, key, lockFlags, lockValue)
+            await fail('LOCK', freezone.set, key, lockFlags, lockValue)
 
-            const [readValue, readFlags] = await dmap.get(freezone.address, key)
-            const resCID = lib.unpackCID(readValue, readFlags)
+            const [readFlags, readValue] = await dmap.get(freezone.address, key)
+            const resCID = lib.unpackCID(readFlags, readValue)
             want(cid).eq(resCID)
         }
     })

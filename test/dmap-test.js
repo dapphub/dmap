@@ -34,11 +34,11 @@ describe('dmap', ()=>{
     })
 
     it('deploy postconditions', async ()=>{
-        const [root_value, root_flags] = await dmap.raw('0x'+'0'.repeat(64))
+        const [root_flags, root_value] = await dmap.raw('0x'+'0'.repeat(64))
         const dmap_ref = await rootzone.dmap()
         want(dmap_ref).eq(dmap.address)
 
-        const [root_self, root_self_flags] = await dmap.get(rootzone.address, b32('root'))
+        const [root_self_flags, root_self] = await dmap.get(rootzone.address, b32('root'))
         want(root_self).eq(root_value)
     })
 
@@ -53,16 +53,17 @@ describe('dmap', ()=>{
 
     it('direct traverse', async ()=>{
         const root_free_slot = await dmap.slot(rootzone.address, b32('free'))
-        const [root_free_value, root_free_flags] = await dmap.raw(root_free_slot)
+        const [root_free_flags, root_free_value] = await dmap.raw(root_free_slot)
         want(root_free_value).eq(padRight(freezone.address))
-        want(Number(root_free_flags)).to.equal(3)
+        const flags = Buffer.from(root_free_flags.slice(2), 'hex')[0]
+        want(flags & lib.FLAG_LOCK).to.equal(lib.FLAG_LOCK)
     })
 
     it('basic set', async () => {
         const key = '0x'+'11'.repeat(32)
         const val = '0x'+'22'.repeat(32)
-        const flags = '0x'+'0'.repeat(63)+'1'
-        const rx = await send(dmap.set, key, val, flags)
+        const flags = '0x'+'1'+'0'.repeat(63)
+        const rx = await send(dmap.set, key, flags, val)
 
         expectEvent(
             rx, undefined,
@@ -82,9 +83,9 @@ describe('dmap', ()=>{
 
     it('lock', async () => {
         debug('first set')
-        await send(dmap.set, b32("hello"), b32("hello"), '0x'+'00'.repeat(31)+'01')
+        await send(dmap.set, b32("hello"), '0x'+'80'+'00'.repeat(31), b32("hello"))
         debug('second set')
-        await fail('LOCK', dmap.set, b32("hello"), b32("hello"), '0x'+'00'.repeat(31)+'01')
+        await fail('LOCK', dmap.set, b32("hello"), '0x'+'80'+'00'.repeat(31), b32("hello"))
     })
 
     describe('gas', () => {
