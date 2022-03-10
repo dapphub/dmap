@@ -34,16 +34,16 @@ describe('dmap', ()=>{
     })
 
     it('deploy postconditions', async ()=>{
-        const [root_flags, root_value] = await dmap.raw('0x'+'0'.repeat(64))
+        const [root_meta, root_data] = await dmap.raw('0x'+'0'.repeat(64))
         const dmap_ref = await rootzone.dmap()
         want(dmap_ref).eq(dmap.address)
 
-        const [root_self_flags, root_self] = await dmap.get(rootzone.address, b32('root'))
-        want(root_self).eq(root_value)
+        const [root_self_meta, root_self] = await dmap.get(rootzone.address, b32('root'))
+        want(root_self).eq(root_data)
     })
 
     it('address padding', async ()=> {
-        const [root_self, root_self_flags] = await dmap.get(rootzone.address, b32('root'))
+        const [root_self_meta, root_self] = await dmap.get(rootzone.address, b32('root'))
         const padded1 = ethers.utils.hexZeroPad(rootzone.address, 32)
         const padded2 = rootzone.address + '00'.repeat(33-rootzone.address.length/2)
         //console.log(root_self)
@@ -53,21 +53,21 @@ describe('dmap', ()=>{
 
     it('direct traverse', async ()=>{
         const root_free_slot = await dmap.slot(rootzone.address, b32('free'))
-        const [root_free_flags, root_free_value] = await dmap.raw(root_free_slot)
-        want(root_free_value).eq(padRight(freezone.address))
-        const flags = Buffer.from(root_free_flags.slice(2), 'hex')[0]
+        const [root_free_meta, root_free_data] = await dmap.raw(root_free_slot)
+        want(root_free_data).eq(padRight(freezone.address))
+        const flags = Buffer.from(root_free_meta.slice(2), 'hex')[0]
         want(flags & lib.FLAG_LOCK).to.equal(lib.FLAG_LOCK)
     })
 
     it('basic set', async () => {
-        const key = '0x'+'11'.repeat(32)
-        const val = '0x'+'22'.repeat(32)
-        const flags = '0x'+'1'+'0'.repeat(63)
-        const rx = await send(dmap.set, key, flags, val)
+        const name = '0x'+'11'.repeat(32)
+        const data = '0x'+'22'.repeat(32)
+        const meta = '0x'+'1'+'0'.repeat(63)
+        const rx = await send(dmap.set, name, meta, data)
 
         expectEvent(
             rx, undefined,
-            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), key, val, flags],
+            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, data, meta],
             '0x'
         )
     })
@@ -89,39 +89,39 @@ describe('dmap', ()=>{
     })
 
     describe('gas', () => {
-        const key = b32('MyKey')
-        const one = Buffer.from('10'.repeat(32), 'hex') // lock == 0
-        const two = Buffer.from('20'.repeat(32), 'hex')
+        const name = b32('MyKey')
+        const one  = Buffer.from('10'.repeat(32), 'hex') // lock == 0
+        const two  = Buffer.from('20'.repeat(32), 'hex')
         describe('set', () => {
 
             describe('no change', () => {
                 it('0->0', async () => {
-                    const rx = await send(dmap.set, key, constants.HashZero, constants.HashZero)
+                    const rx = await send(dmap.set, name, constants.HashZero, constants.HashZero)
                     const bound = bounds.dmap.set[0][0]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
                 it('1->1', async () => {
-                    await send(dmap.set, key, one, one)
-                    const rx = await send(dmap.set, key, one, one)
+                    await send(dmap.set, name, one, one)
+                    const rx = await send(dmap.set, name, one, one)
                     const bound = bounds.dmap.set[1][1]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
             })
             describe('change', () => {
                 it('0->1', async () => {
-                    const rx = await send(dmap.set, key, one, one)
+                    const rx = await send(dmap.set, name, one, one)
                     const bound = bounds.dmap.set[0][1]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
                 it('1->0', async () => {
-                    await send(dmap.set, key, one, one)
-                    const rx = await send(dmap.set, key, constants.HashZero, constants.HashZero)
+                    await send(dmap.set, name, one, one)
+                    const rx = await send(dmap.set, name, constants.HashZero, constants.HashZero)
                     const bound = bounds.dmap.set[1][0]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
                 it('1->2', async () => {
-                    await send(dmap.set, key, one, one)
-                    const rx = await send(dmap.set, key, two, two)
+                    await send(dmap.set, name, one, one)
+                    const rx = await send(dmap.set, name, two, two)
                     const bound = bounds.dmap.set[1][2]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
@@ -129,22 +129,22 @@ describe('dmap', ()=>{
         })
 
         it('raw', async () => {
-            const slot = await dmap.slot(ALI, key)
-            await send(dmap.set, key, one, one)
+            const slot = await dmap.slot(ALI, name)
+            await send(dmap.set, name, one, one)
             const gas = await dmap.estimateGas.raw(slot)
             const bound = bounds.dmap.raw
             await check_gas(gas, bound[0], bound[1])
         })
 
         it('get', async () => {
-            await send(dmap.set, key, one, one)
-            const gas = await dmap.estimateGas.get(ALI, key)
+            await send(dmap.set, name, one, one)
+            const gas = await dmap.estimateGas.get(ALI, name)
             const bound = bounds.dmap.get
             await check_gas(gas, bound[0], bound[1])
         })
 
         it('slot', async () => {
-            const gas = await dmap.estimateGas.slot(ALI, key)
+            const gas = await dmap.estimateGas.slot(ALI, name)
             const bound = bounds.dmap.slot
             await check_gas(gas, bound[0], bound[1])
         })

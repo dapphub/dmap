@@ -14,9 +14,9 @@ describe('freezone', ()=>{
     let ali, bob, cat
     let ALI, BOB, CAT
 
-    const key    = b32('123')
-    const value1 = b32('abc')
-    const value2 = b32('def')
+    const name  = b32('123')
+    const data1 = b32('abc')
+    const data2 = b32('def')
     const lock = '0x' + '8' + '0'.repeat(63)
     const open = '0x' + '0'.repeat(64)
     const cidDefault =    'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa'
@@ -42,75 +42,75 @@ describe('freezone', ()=>{
     })
 
     it('set without control', async ()=>{
-        await fail('ERR_OWNER', freezone.set, key, lock, value1)
+        await fail('ERR_OWNER', freezone.set, name, lock, data1)
     })
 
     it('set after take', async ()=>{
-        await send(freezone.take, key)
-        await send(freezone.set, key, open, value1)
-        const [res_flags, res_value] = await dmap.get(freezone.address, key)
+        await send(freezone.take, name)
+        await send(freezone.set, name, open, data1)
+        const [res_meta, res_data] = await dmap.get(freezone.address, name)
 
-        want(ethers.utils.hexlify(value1)).eq(res_value)
-        want(ethers.utils.hexlify(open)).eq(res_flags)
+        want(ethers.utils.hexlify(data1)).eq(res_data)
+        want(ethers.utils.hexlify(open)).eq(res_meta)
 
-        await send(freezone.set, key, lock, value2)
-        const [res_flags_2, res_value_2] = await dmap.get(freezone.address, key)
+        await send(freezone.set, name, lock, data2)
+        const [res_meta_2, res_data_2] = await dmap.get(freezone.address, name)
 
-        want(ethers.utils.hexlify(value2)).eq(res_value_2)
-        want(ethers.utils.hexlify(lock)).eq(res_flags_2)
+        want(ethers.utils.hexlify(data2)).eq(res_data_2)
+        want(ethers.utils.hexlify(lock)).eq(res_meta_2)
 
-        await fail('LOCK', freezone.set, key, lock, value1)
-        await fail('LOCK', freezone.set, key, open, value1)
+        await fail('LOCK', freezone.set, name, lock, data1)
+        await fail('LOCK', freezone.set, name, open, data1)
     })
 
     it('sets after give', async ()=>{
-        await send(freezone.take, key)
-        await send(freezone.give, key, BOB)
+        await send(freezone.take, name)
+        await send(freezone.give, name, BOB)
 
-        await fail('ERR_OWNER', freezone.set, key, lock, value1)
+        await fail('ERR_OWNER', freezone.set, name, lock, data1)
 
-        await send(freezone.connect(bob).set, key, lock, value1)
-        const [res_flags, res_value] = await dmap.connect(bob).get(freezone.address, key)
+        await send(freezone.connect(bob).set, name, lock, data1)
+        const [res_meta, res_data] = await dmap.connect(bob).get(freezone.address, name)
 
-        want(ethers.utils.hexlify(value1)).eq(res_value)
-        want(ethers.utils.hexlify(lock)).eq(res_flags)
+        want(ethers.utils.hexlify(data1)).eq(res_data)
+        want(ethers.utils.hexlify(lock)).eq(res_meta)
     })
 
     it('take taken', async ()=>{
-        await send(freezone.take, key)
+        await send(freezone.take, name)
 
-        await fail('ERR_TAKEN', freezone.take, key)
-        await fail('ERR_TAKEN', freezone.connect(bob).take, key)
+        await fail('ERR_TAKEN', freezone.take, name)
+        await fail('ERR_TAKEN', freezone.connect(bob).take, name)
 
-        await send(freezone.give, key, BOB)
+        await send(freezone.give, name, BOB)
 
-        await fail('ERR_TAKEN', freezone.take, key)
-        await fail('ERR_TAKEN', freezone.connect(cat).take, key)
+        await fail('ERR_TAKEN', freezone.take, name)
+        await fail('ERR_TAKEN', freezone.connect(cat).take, name)
     })
 
     it('give without control', async ()=>{
-        await fail('ERR_OWNER', freezone.give, key, BOB)
-        await fail('ERR_OWNER', freezone.connect(bob).set, key, lock, value1)
+        await fail('ERR_OWNER', freezone.give, name, BOB)
+        await fail('ERR_OWNER', freezone.connect(bob).set, name, lock, data1)
 
-        await send(freezone.take, key)
-        await send(freezone.give, key, BOB)
-        await fail('ERR_OWNER', freezone.give, key, CAT)
+        await send(freezone.take, name)
+        await send(freezone.give, name, BOB)
+        await fail('ERR_OWNER', freezone.give, name, CAT)
     })
 
     it('store CID variants', async ()=>{
         const cids = [cidDefault, cidSHA3, cidV0, cidBlake2b160]
         for (const [index, cid] of cids.entries()) {
-            const key = b32(index.toString())
-            await send(freezone.take, key)
-            const [flags, value] = lib.prepareCID(cid, false)
-            await send(freezone.set, key, flags, value)
+            const name = b32(index.toString())
+            await send(freezone.take, name)
+            const [meta, data] = lib.prepareCID(cid, false)
+            await send(freezone.set, name, meta, data)
 
-            const[lockFlags, lockValue] = lib.prepareCID(cid, true)
-            await send(freezone.set, key, lockFlags, lockValue)
-            await fail('LOCK', freezone.set, key, lockFlags, lockValue)
+            const[lock_meta, lock_data] = lib.prepareCID(cid, true)
+            await send(freezone.set, name, lock_meta, lock_data)
+            await fail('LOCK', freezone.set, name, lock_meta, lock_data)
 
-            const [readFlags, readValue] = await dmap.get(freezone.address, key)
-            const resCID = lib.unpackCID(readFlags, readValue)
+            const [read_meta, read_data] = await dmap.get(freezone.address, name)
+            const resCID = lib.unpackCID(read_meta, read_data)
             want(cid).eq(resCID)
         }
     })

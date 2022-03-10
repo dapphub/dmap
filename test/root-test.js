@@ -90,7 +90,7 @@ describe('rootzone', ()=>{
         await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
 
         const root_zone2_slot = await dmap.slot(rootzone.address, b32('zone2'))
-        const [, root_zone2_value] = await dmap.raw(root_zone2_slot)
-        want(root_zone2_value).eq(padRight(zone2))
+        const [, root_zone2_data] = await dmap.raw(root_zone2_slot)
+        want(root_zone2_data).eq(padRight(zone2))
     })
 })
