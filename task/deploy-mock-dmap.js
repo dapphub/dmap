@@ -63,7 +63,7 @@ task('deploy-mock-dmap', async (args, hh)=> {
 
     fs.writeFileSync(packdir + `Dmap.json`, show(dmap_type))
     fs.writeFileSync(packdir + `RootZone.json`, show(root_type))
-    fs.writeFileSync(packdir + `FreeZone.json`, show(root_type))
+    fs.writeFileSync(packdir + `FreeZone.json`, show(free_type))
 
     fs.writeFileSync(packdir + `dmap_core_${hh.network.name}.dpack.json`, show(corepack))
     fs.writeFileSync(packdir + `dmap_full_${hh.network.name}.dpack.json`, show(fullpack))

@@ -5,7 +5,7 @@ const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
 const {padRight} = require("./utils/helpers");
 
-describe('freezone', ()=>{
+describe('rootzone', ()=>{
     let dmap
     let rootzone
     let freezone
@@ -90,7 +90,7 @@ describe('freezone', ()=>{
         await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
 
         const root_zone2_slot = await dmap.slot(rootzone.address, b32('zone2'))
-        const [root_zone2_value, _root_zone2_flags] = await dmap.raw(root_zone2_slot)
-        want(root_zone2_value).eq(padRight(zone2))
+        const [, root_zone2_data] = await dmap.raw(root_zone2_slot)
+        want(root_zone2_data).eq(padRight(zone2))
     })
 })
