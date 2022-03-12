@@ -6,12 +6,9 @@
 pragma solidity 0.8.11;
 
 contract Dmap {
-    // storage: hash(zone, name) -> (meta, data)
-    // flags: locked (2^0) & appflags
-    // log4: zone, key, value, flags
-    // err: "LOCK"
-
-    bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000; // 1 << 255
+    bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
+    bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
+    error            LOCK();  // export in ABI
 
     constructor(address rootzone) {
         assembly {
@@ -39,8 +36,8 @@ contract Dmap {
         }
     }
 
-    error LOCK();
-    bytes4 constant locksel = 0xa4f0d7d0; // keccak256("LOCK()")
+
+
     function set(bytes32 name, bytes32 meta, bytes32 data) external {
         assembly {
             log4(0, 0, caller(), name, data, meta)
@@ -49,7 +46,7 @@ contract Dmap {
             let slot0 := keccak256(0, 64)
             let slot1 := add(slot0, 1)
             if and(FLAG_LOCK, sload(slot1)) {
-                mstore(0, locksel)
+                mstore(0, SIG_LOCK)
                 revert(0, 4)
             }
             sstore(slot0, data)
