@@ -5,6 +5,9 @@ const prefLenIndex = 2
 const hashLenIndex = 3
 lib.FLAG_LOCK = 1 << 7
 
+const fail =s=> { throw new Error(s) }
+const need =(b,s)=> b || fail(s)
+
 lib.chomp = (path) => {
     if (path.length == 0) throw new Error(`chomp: empty path`)
     const rune = path[0]
@@ -25,7 +28,7 @@ lib._walk = async (dmap, path, register, ctx, trace) => {
         return trace
     }
     if (register == '0x' + '00'.repeat(32)) {
-        throw new Error(`zero register`)
+        fail(`zero register`)
     }
 
     const [rune, name, rest] = lib.chomp(path)
@@ -37,26 +40,31 @@ lib._walk = async (dmap, path, register, ctx, trace) => {
     const islocked = (Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) != 0
     //console.log('got', data, meta)
     if (rune == ':') {
-        if (!ctx.locked) throw new Error(`Encountered ':' in unlocked subpath`)
-        if (!islocked) throw new Error(`Entry is not locked`)
+        need(ctx.locked, `Encountered ':' in unlocked subpath`)
+        need(islocked, `Entry is not locked`)
         return await lib._walk(dmap, rest, data, {locked:true}, trace)
     } else if (rune == '.') {
         return await lib._walk(dmap, rest, data, {locked:false}, trace)
     } else {
-        throw new Error(`unrecognized rune`)
+        fail(`unrecognized rune`)
     }
-    throw new Error(`panic: unreachable`)
+    fail(`panic: unreachable`)
+}
+
+lib._slot = async (dmap, key) => {
+    need(dmap.provider, `walk: no provider on given dmap object`)
+    return await dmap.provider.getStorageAt(dmap.address, key)
 }
 
 lib.walk = async (dmap, path) => {
-    const [, root] = await dmap.raw('0x' + '00'.repeat(32))
+    const root = await lib._slot(dmap, '0x' + '00'.repeat(32))
     const trace = await lib._walk(dmap, path, root, {locked:true}, [])
     return trace[trace.length-1].register
 }
 
 lib.prepareCID = (cidStr, lock) => {
     const cid = multiformats.CID.parse(cidStr)
-    if (cid.multihash.size > 32) throw new Error(`Hash exceeds 256 bits`)
+    need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
     const prefixLen = cid.byteLength - cid.multihash.size
     const meta = new Uint8Array(32).fill(0)
     const data = new Uint8Array(32).fill(0)

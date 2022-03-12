@@ -34,12 +34,11 @@ describe('dmap', ()=>{
     })
 
     it('deploy postconditions', async ()=>{
-        const [root_meta, root_data] = await dmap.raw('0x'+'0'.repeat(64))
         const dmap_ref = await rootzone.dmap()
         want(dmap_ref).eq(dmap.address)
 
         const [root_self_meta, root_self] = await dmap.get(rootzone.address, b32('root'))
-        want(root_self).eq(root_data)
+        want(root_self.slice(0,42)).eq(rootzone.address.toLowerCase())
     })
 
     it('address padding', async ()=> {
@@ -49,14 +48,6 @@ describe('dmap', ()=>{
         //console.log(root_self)
         //console.log(padded1)
         //console.log(padded2)
-    })
-
-    it('direct traverse', async ()=>{
-        const root_free_slot = await dmap.slot(rootzone.address, b32('free'))
-        const [root_free_meta, root_free_data] = await dmap.raw(root_free_slot)
-        want(root_free_data).eq(padRight(freezone.address))
-        const flags = Buffer.from(root_free_meta.slice(2), 'hex')[0]
-        want(flags & lib.FLAG_LOCK).to.equal(lib.FLAG_LOCK)
     })
 
     it('basic set', async () => {
@@ -128,14 +119,6 @@ describe('dmap', ()=>{
             })
         })
 
-        it('raw', async () => {
-            const slot = await dmap.slot(ALI, name)
-            await send(dmap.set, name, one, one)
-            const gas = await dmap.estimateGas.raw(slot)
-            const bound = bounds.dmap.raw
-            await check_gas(gas, bound[0], bound[1])
-        })
-
         it('get', async () => {
             await send(dmap.set, name, one, one)
             const gas = await dmap.estimateGas.get(ALI, name)
@@ -143,11 +126,6 @@ describe('dmap', ()=>{
             await check_gas(gas, bound[0], bound[1])
         })
 
-        it('slot', async () => {
-            const gas = await dmap.estimateGas.slot(ALI, name)
-            const bound = bounds.dmap.slot
-            await check_gas(gas, bound[0], bound[1])
-        })
-    })
+   })
 
 })

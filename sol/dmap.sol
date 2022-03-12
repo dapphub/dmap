@@ -17,14 +17,6 @@ contract Dmap {
         }
     }
 
-    function raw(bytes32 slot) external view
-      returns (bytes32 meta, bytes32 data) {
-        assembly {
-            meta := sload(add(slot, 1))
-            data := sload(slot)
-        }
-    }
-
     function get(address zone, bytes32 name) external view
       returns (bytes32 meta, bytes32 data) {
         assembly {
@@ -35,8 +27,6 @@ contract Dmap {
             data := sload(slot)
         }
     }
-
-
 
     function set(bytes32 name, bytes32 meta, bytes32 data) external {
         assembly {
@@ -51,14 +41,6 @@ contract Dmap {
             }
             sstore(slot0, data)
             sstore(slot1, meta)
-        }
-    }
-
-    function slot(address zone, bytes32 name) external pure returns (bytes32 slot) {
-        assembly {
-            mstore(0, zone)
-            mstore(32, name)
-            slot := keccak256(0, 64)
         }
     }
 
