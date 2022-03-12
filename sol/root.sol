@@ -25,8 +25,10 @@ contract RootZone {
         bytes32 SELF = bytes32(bytes20(address(this)));
         dmap.set('dmap', LOCK, DMAP);
         dmap.set('root', LOCK, SELF);
+        dmap.set('', LOCK, SELF);
         emit Etch('dmap', address(dmap));
         emit Etch('root', address(this));
+        emit Etch('', address(this));
     }
 
     function hark(bytes32 hash) external payable {
