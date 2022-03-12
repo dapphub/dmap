@@ -2,7 +2,6 @@ module.exports = lib = {}
 
 const multiformats = require('multiformats')
 const prefLenIndex = 2
-const hashLenIndex = 3
 lib.FLAG_LOCK = 1 << 7
 
 const fail =s=> { throw new Error(s) }
@@ -73,7 +72,6 @@ lib.prepareCID = (cidStr, lock) => {
     meta.set(cid.bytes.slice(0, prefixLen), 32 - prefixLen)
     if (lock) meta[0] |= lib.FLAG_LOCK
     meta[prefLenIndex] = prefixLen
-    meta[hashLenIndex] = cid.multihash.size
     return [meta, data]
 }
 
@@ -81,7 +79,8 @@ lib.unpackCID = (metaStr, dataStr) => {
     const data = Buffer.from(dataStr.slice(2), 'hex')
     const meta = Buffer.from(metaStr.slice(2), 'hex')
     const prefixLen = meta[prefLenIndex]
-    const hashLen = meta[hashLenIndex]
+    const specs = multiformats.CID.inspectBytes(meta.slice(-prefixLen));
+    const hashLen = specs.digestSize
     const cidBytes = new Uint8Array(prefixLen + hashLen)
 
     cidBytes.set(meta.slice(-prefixLen), 0)
