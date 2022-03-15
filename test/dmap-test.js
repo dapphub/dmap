@@ -58,7 +58,7 @@ describe('dmap', ()=>{
 
         expectEvent(
             rx, undefined,
-            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, data, meta],
+            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, meta, data],
             '0x'
         )
     })
