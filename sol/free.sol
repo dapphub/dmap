@@ -1,3 +1,5 @@
+/// SPDX-License-Identifier: AGPL-3.0
+
 // free as in free-for-all
 
 pragma solidity 0.8.11;
