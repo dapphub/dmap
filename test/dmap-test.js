@@ -18,6 +18,7 @@ describe('dmap', ()=>{
 
     let ali, bob, cat
     let ALI, BOB, CAT
+    const LOCK = '0x80'+'00'.repeat(31)
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
@@ -33,12 +34,23 @@ describe('dmap', ()=>{
         await revert(hh)
     })
 
+    const check_entry = async (usr, key, _meta, _data) => {
+        const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
+        const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
+        const res = await dmap.get(usr, key)
+        want(res.meta).to.eql(meta)
+        want(res.data).to.eql(data)
+    }
+
     it('deploy postconditions', async ()=>{
         const dmap_ref = await rootzone.dmap()
         want(dmap_ref).eq(dmap.address)
 
         const [root_self_meta, root_self] = await dmap.get(rootzone.address, b32('root'))
         want(root_self.slice(0,42)).eq(rootzone.address.toLowerCase())
+
+        await check_entry(ALI, b32('1'), constants.HashZero, constants.HashZero)
+        await check_entry(BOB, b32('1'), constants.HashZero, constants.HashZero)
     })
 
     it('address padding', async ()=> {
@@ -52,8 +64,8 @@ describe('dmap', ()=>{
 
     it('basic set', async () => {
         const name = '0x'+'11'.repeat(32)
-        const data = '0x'+'22'.repeat(32)
         const meta = '0x'+'1'+'0'.repeat(63)
+        const data = '0x'+'22'.repeat(32)
         const rx = await send(dmap.set, name, meta, data)
 
         expectEvent(
@@ -61,6 +73,7 @@ describe('dmap', ()=>{
             [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, meta, data],
             '0x'
         )
+        await check_entry(ALI, name, meta, data)
     })
 
     it('walk', async()=>{
@@ -72,11 +85,62 @@ describe('dmap', ()=>{
         ).rejectedWith('zero register')
     })
 
-    it('lock', async () => {
-        debug('first set')
-        await send(dmap.set, b32("hello"), '0x'+'80'+'00'.repeat(31), b32("hello"))
-        debug('second set')
-        await fail('LOCK', dmap.set, b32("hello"), '0x'+'80'+'00'.repeat(31), b32("hello"))
+    describe('lock', () => {
+
+
+        const check_ext_unchanged = async () => {
+            const zero = constants.HashZero
+            await check_entry(BOB, b32("1"), zero, zero)
+            await check_entry(ALI, b32("2"), zero, zero)
+        }
+
+        it('set without data', async () => {
+            // set just lock bit, nothing else
+            await send(dmap.set, b32("1"), LOCK, constants.HashZero)
+            await check_entry(ALI, b32("1"), LOCK, constants.HashZero)
+
+            // should fail whether or not ali attempts to change something
+            await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
+            await fail('LOCK', dmap.set, b32("1"), LOCK, constants.HashZero)
+            await fail('LOCK', dmap.set, b32("1"), constants.HashZero, b32('hello'))
+            await fail('LOCK', dmap.set, b32("1"), LOCK, b32('hello'))
+            await check_ext_unchanged()
+        })
+
+        it('set with data', async () => {
+            // set lock and data
+            await send(dmap.set, b32("1"), LOCK, b32('hello'))
+            await check_entry(ALI, b32("1"), LOCK, b32('hello'))
+            await fail('LOCK', dmap.set, b32("1"), LOCK, b32('hello'))
+            await check_ext_unchanged()
+        })
+
+        it("set a few times, then lock", async () => {
+            await send(dmap.set, b32("1"), constants.HashZero, constants.HashZero)
+            await check_entry(ALI, b32("1"), constants.HashZero, constants.HashZero)
+
+            await send(dmap.set, b32("1"), constants.HashZero, b32('hello'))
+            await check_entry(ALI, b32("1"), constants.HashZero, b32('hello'))
+
+            await send(dmap.set, b32("1"), constants.HashZero, b32('goodbye'))
+            await check_entry(ALI, b32("1"), constants.HashZero, b32('goodbye'))
+
+            await send(dmap.set, b32("1"), LOCK, b32('goodbye'))
+            await check_entry(ALI, b32("1"), LOCK, b32('goodbye'))
+
+            await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
+            await check_ext_unchanged()
+        })
+
+        it("0x7ffff... doesn't lock, 0xffff... locks", async () => {
+            const FLIP_LOCK = '0x7'+'f'.repeat(63)
+            await send(dmap.set, b32("1"), FLIP_LOCK, constants.HashZero)
+
+            const neg_one = '0x'+'ff'.repeat(32)
+            await send(dmap.set, b32("1"), neg_one, constants.HashZero)
+            await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
+            await check_ext_unchanged()
+        })
     })
 
     describe('gas', () => {
