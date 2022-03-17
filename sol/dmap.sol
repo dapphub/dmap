@@ -23,8 +23,9 @@ contract Dmap {
             mstore(0, zone)
             mstore(32, name)
             let slot := keccak256(0, 64)
-            meta := sload(add(slot, 1))
-            data := sload(slot)
+            mstore(0, sload(add(slot, 1)))
+            mstore(32, sload(slot))
+            return(0, 64)
         }
     }
 
