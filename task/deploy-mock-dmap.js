@@ -19,7 +19,7 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const tx_count = await ali.getTransactionCount()
     const root_address = getContractAddress({ from: ali.address, nonce: tx_count + 1 })
     const tx_dmap = await dmap_deployer.deploy(root_address)
-    await tx_dmap.deployed();
+    await tx_dmap.deployed()
     const tx_root = await root_deployer.deploy(tx_dmap.address)
     const tx_free = await free_deployer.deploy(tx_dmap.address)
     await tx_root.deployed()

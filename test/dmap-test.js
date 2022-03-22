@@ -3,7 +3,7 @@ const hh = require('hardhat')
 
 const ethers = hh.ethers
 const { send, want, snapshot, revert, b32, fail} = require('minihat')
-const { expectEvent, padRight, check_gas} = require('./utils/helpers')
+const { expectEvent, check_gas} = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const constants = ethers.constants
 
