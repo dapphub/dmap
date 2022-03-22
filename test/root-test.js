@@ -3,7 +3,6 @@ const hh = require('hardhat')
 
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
-const {padRight} = require("./utils/helpers");
 
 describe('rootzone', ()=>{
     let dmap

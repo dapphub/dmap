@@ -88,3 +88,8 @@ lib.unpackCID = (metaStr, dataStr) => {
     const cid = multiformats.CID.decode(cidBytes)
     return cid.toString()
 }
+
+lib.readCID = async (dmap, zone, name) => {
+    const [read_meta, read_data] = await dmap.get(zone, name)
+    return lib.unpackCID(read_meta, read_data)
+}
