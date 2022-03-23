@@ -3,6 +3,7 @@ const hh = require('hardhat')
 
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
+const { expectEvent } = require('./utils/helpers')
 
 describe('rootzone', ()=>{
     let dmap
@@ -105,5 +106,20 @@ describe('rootzone', ()=>{
 
         await fail('ErrExpired', rootzone.etch, b32('salt'), b32('zone1'), zone1)
         await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
+    })
+
+    it('Hark event', async () => {
+        await wait(hh, delay_period)
+        const commitment = await getCommitment(b32('zone1'), zone1)
+        const rx = await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+        expectEvent(rx, "Hark", [commitment])
+    })
+
+    it('Etch event', async () => {
+        await wait(hh, delay_period)
+        const commitment = await getCommitment(b32('zone1'), zone1)
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+        const rx = await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
+        expectEvent(rx, "Etch", ['0x' + b32('zone1').toString('hex'), zone1])
     })
 })
