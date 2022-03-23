@@ -5,6 +5,7 @@ const assert = require('assert');
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, want } = require('minihat')
 const lib = require('../dmap.js')
+const constants = ethers.constants
 
 describe('freezone', ()=>{
     let dmap
@@ -39,6 +40,12 @@ describe('freezone', ()=>{
 
     beforeEach(async ()=>{
         await revert(hh)
+    })
+
+    it('init', async () => {
+        want(await freezone.dmap()).to.eql(dmap.address)
+        want(await freezone.last()).to.eql(constants.Zero)
+        want(await freezone.controllers(name)).to.eql(constants.AddressZero)
     })
 
     it('set without control', async ()=>{
