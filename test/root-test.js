@@ -4,6 +4,7 @@ const hh = require('hardhat')
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
 const { expectEvent } = require('./utils/helpers')
+const debug = require('debug')('dmap:test')
 
 describe('rootzone', ()=>{
     let dmap
@@ -38,6 +39,25 @@ describe('rootzone', ()=>{
 
     beforeEach(async ()=>{
         await revert(hh)
+    })
+
+    it('init', async () => {
+        const mark = await getCommitment(b32('free'), freezone.address)
+        const filters = [
+            rootzone.filters.Etch('0x' + b32('dmap').toString('hex'), dmap.address),
+            rootzone.filters.Etch('0x' + b32('root').toString('hex'), rootzone.address),
+            rootzone.filters.Etch('0x', rootzone.address),
+            rootzone.filters.Hark(mark),
+            rootzone.filters.Etch('0x' + b32('free').toString('hex'), freezone.address),
+        ]
+        for (const f of filters) {
+            const res = await rootzone.queryFilter(f)
+            want(res.length).to.eql(1)
+            debug(res[0].event, res[0].args)
+        }
+        want(await rootzone.dmap()).to.eql(dmap.address)
+        want(Number(await rootzone.last())).to.be.greaterThan(0)
+        want(await rootzone.mark()).to.eql(mark)
     })
 
     it('cooldown', async ()=>{
