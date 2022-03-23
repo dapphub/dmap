@@ -69,6 +69,24 @@ describe('rootzone', ()=>{
         await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
     })
 
+    it('error priority', async () => {
+        await wait(hh, delay_period)
+        const commitment = await getCommitment(b32('zone1'), zone1)
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+
+        // pending, payment, receipt
+        await fail('ErrPending', rootzone.hark, commitment, { value: ethers.utils.parseEther('0.9') })
+        // payment, receipt
+        await wait(hh, delay_period)
+        await fail('ErrPayment', rootzone.hark, commitment, { value: ethers.utils.parseEther('0.9') })
+
+        // receipt
+        await hh.network.provider.send(
+            "hardhat_setCoinbase", [rootzone.address] // not payable
+        )
+        await fail('ErrReceipt', rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+    })
+
     it('etch fail rewrite zone', async ()=>{
         await wait(hh, delay_period)
         const commitment = await getCommitment(b32('free'), zone1)
