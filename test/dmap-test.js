@@ -51,6 +51,13 @@ describe('dmap', ()=>{
 
         await check_entry(ALI, b32('1'), constants.HashZero, constants.HashZero)
         await check_entry(BOB, b32('1'), constants.HashZero, constants.HashZero)
+
+        // dmap.get returns (meta, data), internal storage is (data, meta)
+        const rootData = await dmap.provider.getStorageAt(dmap.address, 0)
+        const rootMeta = await dmap.provider.getStorageAt(dmap.address, 1)
+        want(ethers.utils.hexDataSlice(rootData, 0, 20))
+            .to.eql(rootzone.address.toLowerCase())
+        want(rootMeta).to.eql(LOCK)
     })
 
     it('address padding', async ()=> {
