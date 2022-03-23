@@ -3,6 +3,8 @@ const hh = require('hardhat')
 
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
+const { expectEvent } = require('./utils/helpers')
+const debug = require('debug')('dmap:test')
 
 describe('rootzone', ()=>{
     let dmap
@@ -39,6 +41,25 @@ describe('rootzone', ()=>{
         await revert(hh)
     })
 
+    it('init', async () => {
+        const mark = await getCommitment(b32('free'), freezone.address)
+        const filters = [
+            rootzone.filters.Etch('0x' + b32('dmap').toString('hex'), dmap.address),
+            rootzone.filters.Etch('0x' + b32('root').toString('hex'), rootzone.address),
+            rootzone.filters.Etch('0x', rootzone.address),
+            rootzone.filters.Hark(mark),
+            rootzone.filters.Etch('0x' + b32('free').toString('hex'), freezone.address),
+        ]
+        for (const f of filters) {
+            const res = await rootzone.queryFilter(f)
+            want(res.length).to.eql(1)
+            debug(res[0].event, res[0].args)
+        }
+        want(await rootzone.dmap()).to.eql(dmap.address)
+        want(Number(await rootzone.last())).to.be.greaterThan(0)
+        want(await rootzone.mark()).to.eql(mark)
+    })
+
     it('cooldown', async ()=>{
         const commitment = await getCommitment(b32('zone1'), zone1)
         await fail('ErrPending', rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
@@ -69,6 +90,24 @@ describe('rootzone', ()=>{
         await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
     })
 
+    it('error priority', async () => {
+        await wait(hh, delay_period)
+        const commitment = await getCommitment(b32('zone1'), zone1)
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+
+        // pending, payment, receipt
+        await fail('ErrPending', rootzone.hark, commitment, { value: ethers.utils.parseEther('0.9') })
+        // payment, receipt
+        await wait(hh, delay_period)
+        await fail('ErrPayment', rootzone.hark, commitment, { value: ethers.utils.parseEther('0.9') })
+
+        // receipt
+        await hh.network.provider.send(
+            "hardhat_setCoinbase", [rootzone.address] // not payable
+        )
+        await fail('ErrReceipt', rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+    })
+
     it('etch fail rewrite zone', async ()=>{
         await wait(hh, delay_period)
         const commitment = await getCommitment(b32('free'), zone1)
@@ -89,6 +128,21 @@ describe('rootzone', ()=>{
         await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
     })
 
+    it('Hark event', async () => {
+        await wait(hh, delay_period)
+        const commitment = await getCommitment(b32('zone1'), zone1)
+        const rx = await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+        expectEvent(rx, "Hark", [commitment])
+    })
+
+    it('Etch event', async () => {
+        await wait(hh, delay_period)
+        const commitment = await getCommitment(b32('zone1'), zone1)
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+        const rx = await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
+        expectEvent(rx, "Etch", ['0x' + b32('zone1').toString('hex'), zone1])
+    })
+
     it('coinbase recursive callback', async () => {
         const mc_type = await ethers.getContractFactory('RecursiveCoinbase', ali)
         const mc = await mc_type.deploy()
@@ -98,7 +152,7 @@ describe('rootzone', ()=>{
 
         await wait(hh, delay_period)
         const commitment = await getCommitment(b32('zone1'), zone1)
-        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+        await send(rootzone.hark, commitment, {value: ethers.utils.parseEther('1')})
         want(await rootzone.mark()).to.eql(commitment)
     })
 })
