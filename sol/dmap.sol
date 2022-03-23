@@ -6,52 +6,44 @@
 pragma solidity 0.8.11;
 
 contract Dmap {
-    // storage: hash(zone, key) -> (value, flags)
-    // flags: locked (2^0) & appflags
-    // log4: zone, key, value, flags
-    // err: "LOCK"
+    bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
+    bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
+    error            LOCK();  // export in ABI
 
     constructor(address rootzone) {
         assembly {
             sstore(0, shl(96, rootzone))
-            sstore(1, 3) // locked & 2^1
+            sstore(1, FLAG_LOCK)
         }
     }
 
-    function raw(bytes32 slot) external view
-      returns (bytes32 value, bytes32 flags) {
-        assembly {
-            value := sload(slot)
-            flags := sload(add(slot, 1))
-        }
-    }
-
-    function get(address zone, bytes32 key) external view
-      returns (bytes32 value, bytes32 flags) {
+    function get(address zone, bytes32 name) external view
+      returns (bytes32 meta, bytes32 data) {
         assembly {
             mstore(0, zone)
-            mstore(32, key)
+            mstore(32, name)
             let slot := keccak256(0, 64)
-            value := sload(slot)
-            flags := sload(add(slot, 1))
+            mstore(0, sload(add(slot, 1)))
+            mstore(32, sload(slot))
+            return(0, 64)
         }
     }
 
-    function set(bytes32 key, bytes32 value, bytes32 flags) external {
+    function set(bytes32 name, bytes32 meta, bytes32 data) external {
         assembly {
+            log4(0, 0, caller(), name, meta, data)
+            mstore(32, name)
             mstore(0, caller())
-            mstore(32, key)
             let slot0 := keccak256(0, 64)
             let slot1 := add(slot0, 1)
-            if eq(1, and(1, sload(slot1))) { revert("LOCK", 4) }
-            sstore(slot0, value)
-            sstore(slot1, flags)
-            log4(0, 0, caller(), key, value, flags)
+            if iszero(and(FLAG_LOCK, sload(slot1))) {
+                sstore(slot0, data)
+                sstore(slot1, meta)
+                return(0, 0)
+            }
+            mstore(0, SIG_LOCK)
+            revert(0, 4)
         }
-    }
-
-    function slot(address zone, bytes32 key) external pure returns (bytes32) {
-        return keccak256(abi.encode(zone, key));
     }
 
 }

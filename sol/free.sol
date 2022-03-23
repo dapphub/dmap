@@ -1,3 +1,5 @@
+/// SPDX-License-Identifier: AGPL-3.0
+
 // free as in free-for-all
 
 pragma solidity 0.8.11;
@@ -24,13 +26,13 @@ contract FreeZone {
     }
 
     function give(bytes32 key, address recipient) external {
-        require(controllers[key] == msg.sender, "ERR_GIVE");
+        require(controllers[key] == msg.sender, "ERR_OWNER");
         controllers[key] = recipient;
         emit Give(msg.sender, key, recipient);
     }
 
-    function set(bytes32 key, bytes32 value, bytes32 flags) external {
-        require(controllers[key] == msg.sender, "ERR_SET");
-        dmap.set(key, value, flags);
+    function set(bytes32 key, bytes32 meta, bytes32 data) external {
+        require(controllers[key] == msg.sender, "ERR_OWNER");
+        dmap.set(key, meta, data);
     }
 }

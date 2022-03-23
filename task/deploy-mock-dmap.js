@@ -9,8 +9,8 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const dmap_type = await hh.artifacts.readArtifact('Dmap')
     const dmap_deployer = await hh.ethers.getContractFactory('Dmap')
 
-    const root_type = await hh.artifacts.readArtifact('DmapRootZone')
-    const root_deployer = await hh.ethers.getContractFactory('DmapRootZone')
+    const root_type = await hh.artifacts.readArtifact('RootZone')
+    const root_deployer = await hh.ethers.getContractFactory('RootZone')
 
     const free_type = await hh.artifacts.readArtifact('FreeZone')
     const free_deployer = await hh.ethers.getContractFactory('FreeZone')
@@ -19,8 +19,11 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const tx_count = await ali.getTransactionCount()
     const root_address = getContractAddress({ from: ali.address, nonce: tx_count + 1 })
     const tx_dmap = await dmap_deployer.deploy(root_address)
+    await tx_dmap.deployed()
     const tx_root = await root_deployer.deploy(tx_dmap.address)
     const tx_free = await free_deployer.deploy(tx_dmap.address)
+    await tx_root.deployed()
+    await tx_free.deployed()
 
     const salt = b32('salt')
     const name = b32('free')
@@ -28,7 +31,7 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const types = [ "bytes32", "bytes32", "address" ]
     const encoded = ethers.utils.defaultAbiCoder.encode(types, [ salt, name, zone ])
     const commitment = hh.ethers.utils.keccak256(encoded)
-    await send(tx_root.mark, commitment, { value: ethers.utils.parseEther('1') })
+    await send(tx_root.hark, commitment, { value: ethers.utils.parseEther('1') })
     await send(tx_root.etch, salt, name, zone)
 
     const pb = await dpack.builder(hh.network.name)
@@ -45,7 +48,7 @@ task('deploy-mock-dmap', async (args, hh)=> {
     // put everything else in a 'full' pack
     await pb.packObject({
         objectname: 'rootzone',
-        typename: 'DmapRootZone',
+        typename: 'RootZone',
         address: tx_root.address,
         artifact: root_type
     }, alsoPackType=true)
@@ -62,7 +65,8 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const show =(o)=> JSON.stringify(o, null, 2)
 
     fs.writeFileSync(packdir + `Dmap.json`, show(dmap_type))
-    fs.writeFileSync(packdir + `DmapRootZone.json`, show(root_type))
+    fs.writeFileSync(packdir + `RootZone.json`, show(root_type))
+    fs.writeFileSync(packdir + `FreeZone.json`, show(free_type))
 
     fs.writeFileSync(packdir + `dmap_core_${hh.network.name}.dpack.json`, show(corepack))
     fs.writeFileSync(packdir + `dmap_full_${hh.network.name}.dpack.json`, show(fullpack))
