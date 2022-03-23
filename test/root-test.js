@@ -42,11 +42,12 @@ describe('rootzone', ()=>{
     })
 
     it('init', async () => {
+        const mark = await getCommitment(b32('free'), freezone.address)
         const filters = [
             rootzone.filters.Etch('0x' + b32('dmap').toString('hex'), dmap.address),
             rootzone.filters.Etch('0x' + b32('root').toString('hex'), rootzone.address),
             rootzone.filters.Etch('0x', rootzone.address),
-            rootzone.filters.Hark(await getCommitment(b32('free'), freezone.address)),
+            rootzone.filters.Hark(mark),
             rootzone.filters.Etch('0x' + b32('free').toString('hex'), freezone.address),
         ]
         for (const f of filters) {
@@ -54,6 +55,9 @@ describe('rootzone', ()=>{
             want(res.length).to.eql(1)
             debug(res[0].event, res[0].args)
         }
+        want(await rootzone.dmap()).to.eql(dmap.address)
+        want(Number(await rootzone.last())).to.be.greaterThan(0)
+        want(await rootzone.mark()).to.eql(mark)
     })
 
     it('cooldown', async ()=>{
