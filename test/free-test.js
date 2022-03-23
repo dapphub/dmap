@@ -5,6 +5,7 @@ const assert = require('assert');
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, want } = require('minihat')
 const lib = require('../dmap.js')
+const {expectEvent} = require("./utils/helpers");
 const constants = ethers.constants
 
 describe('freezone', ()=>{
@@ -124,5 +125,17 @@ describe('freezone', ()=>{
 
     it('store 512 CID', async ()=>{
         assert.throws(() => { lib.prepareCID(cid512, false) }, /Hash exceeds 256 bits/);
+    })
+
+    describe('Give event', () => {
+        it('take', async () => {
+            const rx = await send(freezone.take, name)
+            expectEvent(rx, "Give", [constants.AddressZero, '0x'+name.toString('hex'), ALI])
+        })
+        it('give', async () => {
+            await send(freezone.take, name)
+            const rx = await send(freezone.give, name, BOB)
+            expectEvent(rx, "Give", [ALI, '0x'+name.toString('hex'), BOB])
+        })
     })
 })
