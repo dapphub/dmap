@@ -88,4 +88,17 @@ describe('rootzone', ()=>{
         await fail('ErrExpired', rootzone.etch, b32('salt'), b32('zone1'), zone1)
         await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
     })
+
+    it('coinbase recursive callback', async () => {
+        const mc_type = await ethers.getContractFactory('RecursiveCoinbase', ali)
+        const mc = await mc_type.deploy()
+        await hh.network.provider.send(
+            "hardhat_setCoinbase", [mc.address]
+        )
+
+        await wait(hh, delay_period)
+        const commitment = await getCommitment(b32('zone1'), zone1)
+        await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
+        want(await rootzone.mark()).to.eql(commitment)
+    })
 })
