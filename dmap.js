@@ -3,14 +3,20 @@ const ebnf = require('ebnf')
 module.exports = lib = {}
 
 lib.grammar = `
-dpath ::= (chunk)* EOF
-chunk ::= (rune) (name)
+dpath ::= (step)* EOF
+step  ::= (rune) (name)
 name  ::= [a-z0-9]+
 rune  ::= ":" | "."
 `
 
 lib.parser = new ebnf.Parser(ebnf.Grammars.W3C.getRules(lib.grammar))
-lib.parse =s=> lib.parser.getAST(s)
+lib.parse =s=> {
+    const ast = lib.parser.getAST(s)
+    const flat = lib.postparse(ast)
+    console.log(JSON.stringify(flat, null, 2))
+    return flat[1]
+}
+lib.postparse =ast=> [ast.text, ast.children.map(lib.postparse)]
 
 const multiformats = require('multiformats')
 const prefLenIndex = 2
@@ -19,21 +25,8 @@ lib.FLAG_LOCK = 1 << 7
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
 
-lib.chomp = (path) => {
-    if (path.length == 0) throw new Error(`chomp: empty path`)
-    const rune = path[0]
-    const rest = path.slice(1)
-    const re = /^[A-Za-z]+/
-    const words = rest.match(re)
-    //console.log('chomping', rune, rest, words)
-    if (words.length == 0) throw new Error(`chomp: empty name after rune`)
-    const name = words[0]
-    const subpath = rest.slice(name.length)
-    return [rune, name, subpath]
-}
-
 lib._walk = async (dmap, path, register, ctx, trace) => {
-    //console.log(`walk ${path} ${register} ${ctx.locked}`)
+    console.log(`walk ${path} ${register} ${ctx.locked}`)
     trace.push({ path, register, ctx })
     if (path.length == 0) {
         return trace
@@ -42,8 +35,17 @@ lib._walk = async (dmap, path, register, ctx, trace) => {
         fail(`zero register`)
     }
 
-    const [rune, name, rest] = lib.chomp(path)
-    //console.log(`chomped ${rune} ${name} ${rest}`)
+    const step = path[0]
+    const rune = step[1][0]
+    const name = step[1][1]
+    rest = path.slice(1)
+    console.log(`path ${path}`)
+    console.log(`step ${step}`)
+    console.log(`name ${name}`)
+    console.log(`rune ${rune}`)
+    console.log(`rest ${rest}`)
+    //const [rune, name, rest] = lib.chomp(path)
+    console.log(`chomped ${rune} ${name} ${rest}`)
     const addr = '0x' + register.slice(2, 21 * 2) // 0x 00...
     const fullname = '0x' + Buffer.from(name).toString('hex') + '00'.repeat(32-name.length)
     //console.log('get', addr, fullname)
@@ -57,7 +59,7 @@ lib._walk = async (dmap, path, register, ctx, trace) => {
     } else if (rune == '.') {
         return await lib._walk(dmap, rest, data, {locked:false}, trace)
     } else {
-        fail(`unrecognized rune`)
+        fail(`unrecognized rune: ${rune}`)
     }
     fail(`panic: unreachable`)
 }
@@ -69,7 +71,8 @@ lib._slot = async (dmap, key) => {
 
 lib.walk = async (dmap, path) => {
     const root = await lib._slot(dmap, '0x' + '00'.repeat(32))
-    const trace = await lib._walk(dmap, path, root, {locked:true}, [])
+    const ast = lib.parse(path)
+    const trace = await lib._walk(dmap, ast, root, {locked:true}, [])
     return trace[trace.length-1].register
 }
 
