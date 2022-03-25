@@ -140,8 +140,10 @@ describe('freezone', ()=>{
             await fail('LOCK', freezone.set, name, lock_meta, lock_data)
 
             const [read_meta, read_data] = await dmap.get(freezone.address, name)
-            const resCID = lib.unpackCID(read_meta, read_data)
-            want(cid).eq(resCID)
+            const res_cid = lib.unpackCID(read_meta, read_data)
+            const helper_cid = await lib.readCID(dmap, 'free:' + index.toString())
+            want(cid).eq(res_cid)
+            want(cid).eq(helper_cid)
         }
     })
 
