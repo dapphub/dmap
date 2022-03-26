@@ -74,6 +74,14 @@ describe('dpath', ()=> {
             await want(
                 lib.walk(dmap, ':Free:testname1')
             ).rejectedWith('Cannot read properties of null')
+
+            await want(
+                lib.walk(dmap, ':free;testname1')
+            ).rejectedWith('Cannot read properties of null')
+
+            await want(
+                lib.walk(dmap, 'free,testname1')
+            ).rejectedWith('Cannot read properties of null')
         })
 
         it('zero register', async()=>{

@@ -3,8 +3,6 @@ const multiformats = require('multiformats')
 const prefLenIndex = 2
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
-const text = 0
-const children = 1
 
 module.exports = lib = {}
 
@@ -19,13 +17,13 @@ lib.parser = new ebnf.Parser(ebnf.Grammars.W3C.getRules(lib.grammar))
 lib.parse =s=> {
     const ast = lib.parser.getAST(s)
     const flat = lib.postparse(ast)
-    return flat[1]
+    return flat[0]
 }
-lib.postparse =ast=> [ast.text, ast.children.map(lib.postparse)]
-lib.locked =meta=> (Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0
+lib.postparse =ast=> [ast.children.map(step => ({locked: step.children.find(({ type }) => type === 'rune').text === ":",
+                                                 name:   step.children.find(({ type }) => type === 'name').text}))]
 
-lib._walk = async (dmap, path, register, reg_meta, trace) => {
-    trace.push({ path, register, reg_meta })
+lib._walk = async (dmap, path, register, reg_meta, ctx, trace) => {
+    trace.push({ path, register, reg_meta, ctx })
     if (path.length == 0) {
         return trace
     }
@@ -34,22 +32,17 @@ lib._walk = async (dmap, path, register, reg_meta, trace) => {
     }
 
     const step = path[0]
-    const rune = step[children][0][text]
-    const name = step[children][1][text]
     rest = path.slice(1)
     const addr = register.slice(0, 21 * 2)
-    const fullname = '0x' + Buffer.from(name).toString('hex') + '00'.repeat(32-name.length)
+    const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length)
     const [meta, data] = await dmap.get(addr, fullname)
-    const islocked = lib.locked(meta)
-    if (rune == ':') {
-        need(islocked, `Entry is not locked`)
-        return await lib._walk(dmap, rest, data, meta, trace)
-    } else if (rune == '.') {
-        return await lib._walk(dmap, rest, data, meta, trace)
+    if (step.locked) {
+        need(ctx.locked, `Encountered ':' in unlocked subpath`)
+        need((Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+        return await lib._walk(dmap, rest, data, meta, {locked:true}, trace)
     } else {
-        fail(`unrecognized rune: ${rune}`)
+        return await lib._walk(dmap, rest, data, meta, {locked:false}, trace)
     }
-    fail(`panic: unreachable`)
 }
 
 lib._slot = async (dmap, key) => {
@@ -61,14 +54,10 @@ lib.walk = async (dmap, path) => {
     if (![':', '.'].includes(path.charAt(0))) {
         path = ':' + path
     }
-    if (path.includes('.')) {
-        need(path.lastIndexOf(":") < path.indexOf("."), `Encountered ':' in unlocked subpath`)
-    }
-
     const root = await lib._slot(dmap, '0x' + '00'.repeat(32))
     const meta = await lib._slot(dmap, '0x' + '00'.repeat(31)) + '01'
-    const ast = lib.parse(path)
-    const trace = await lib._walk(dmap, ast, root, meta, [])
+    const steps = lib.parse(path)
+    const trace = await lib._walk(dmap, steps, root, meta, {locked: path.charAt(0) === ':'}, [])
     return {'meta': trace[trace.length-1].reg_meta, 'data': trace[trace.length-1].register}
 }
 
