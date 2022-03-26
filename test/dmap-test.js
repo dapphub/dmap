@@ -7,8 +7,6 @@ const { expectEvent, check_gas} = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const constants = ethers.constants
 
-const lib = require('../dmap.js')
-
 const debug = require('debug')('dmap:test')
 
 describe('dmap', ()=>{
@@ -46,9 +44,6 @@ describe('dmap', ()=>{
         const dmap_ref = await rootzone.dmap()
         want(dmap_ref).eq(dmap.address)
 
-        const [root_self_meta, root_self] = await dmap.get(rootzone.address, b32('root'))
-        want(root_self.slice(0,42)).eq(rootzone.address.toLowerCase())
-
         await check_entry(ALI, b32('1'), constants.HashZero, constants.HashZero)
         await check_entry(BOB, b32('1'), constants.HashZero, constants.HashZero)
 
@@ -83,18 +78,7 @@ describe('dmap', ()=>{
         await check_entry(ALI, name, meta, data)
     })
 
-    it('walk', async()=>{
-        const res = await lib.walk(dmap, ':root')
-        want(res.slice(0,42)).eq(rootzone.address.toLowerCase())
-        const res2 = await lib.walk(dmap, ':root.free')
-        await want(
-            lib.walk(dmap, ':root.free.free.free')
-        ).rejectedWith('zero register')
-    })
-
     describe('lock', () => {
-
-
         const check_ext_unchanged = async () => {
             const zero = constants.HashZero
             await check_entry(BOB, b32("1"), zero, zero)

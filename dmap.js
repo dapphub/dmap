@@ -1,33 +1,29 @@
 const ebnf = require('ebnf')
+const multiformats = require('multiformats')
+const prefLenIndex = 2
+const fail =s=> { throw new Error(s) }
+const need =(b,s)=> b || fail(s)
 
 module.exports = lib = {}
 
+lib.FLAG_LOCK = 1 << 7
 lib.grammar = `
 dpath ::= (step)* EOF
 step  ::= (rune) (name)
 name  ::= [a-z0-9]+
 rune  ::= ":" | "."
 `
-
 lib.parser = new ebnf.Parser(ebnf.Grammars.W3C.getRules(lib.grammar))
 lib.parse =s=> {
     const ast = lib.parser.getAST(s)
     const flat = lib.postparse(ast)
-    console.log(JSON.stringify(flat, null, 2))
-    return flat[1]
+    return flat[0]
 }
-lib.postparse =ast=> [ast.text, ast.children.map(lib.postparse)]
+lib.postparse =ast=> [ast.children.map(step => ({locked: step.children.find(({ type }) => type === 'rune').text === ":",
+                                                 name:   step.children.find(({ type }) => type === 'name').text}))]
 
-const multiformats = require('multiformats')
-const prefLenIndex = 2
-lib.FLAG_LOCK = 1 << 7
-
-const fail =s=> { throw new Error(s) }
-const need =(b,s)=> b || fail(s)
-
-lib._walk = async (dmap, path, register, ctx, trace) => {
-    console.log(`walk ${path} ${register} ${ctx.locked}`)
-    trace.push({ path, register, ctx })
+lib._walk = async (dmap, path, register, reg_meta, ctx, trace) => {
+    trace.push({ path, register, reg_meta, ctx })
     if (path.length == 0) {
         return trace
     }
@@ -36,32 +32,17 @@ lib._walk = async (dmap, path, register, ctx, trace) => {
     }
 
     const step = path[0]
-    const rune = step[1][0]
-    const name = step[1][1]
     rest = path.slice(1)
-    console.log(`path ${path}`)
-    console.log(`step ${step}`)
-    console.log(`name ${name}`)
-    console.log(`rune ${rune}`)
-    console.log(`rest ${rest}`)
-    //const [rune, name, rest] = lib.chomp(path)
-    console.log(`chomped ${rune} ${name} ${rest}`)
-    const addr = '0x' + register.slice(2, 21 * 2) // 0x 00...
-    const fullname = '0x' + Buffer.from(name).toString('hex') + '00'.repeat(32-name.length)
-    //console.log('get', addr, fullname)
+    const addr = register.slice(0, 21 * 2)
+    const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length)
     const [meta, data] = await dmap.get(addr, fullname)
-    const islocked = (Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) != 0
-    //console.log('got', data, meta)
-    if (rune == ':') {
+    if (step.locked) {
         need(ctx.locked, `Encountered ':' in unlocked subpath`)
-        need(islocked, `Entry is not locked`)
-        return await lib._walk(dmap, rest, data, {locked:true}, trace)
-    } else if (rune == '.') {
-        return await lib._walk(dmap, rest, data, {locked:false}, trace)
+        need((Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+        return await lib._walk(dmap, rest, data, meta, {locked:true}, trace)
     } else {
-        fail(`unrecognized rune: ${rune}`)
+        return await lib._walk(dmap, rest, data, meta, {locked:false}, trace)
     }
-    fail(`panic: unreachable`)
 }
 
 lib._slot = async (dmap, key) => {
@@ -70,10 +51,14 @@ lib._slot = async (dmap, key) => {
 }
 
 lib.walk = async (dmap, path) => {
+    if (![':', '.'].includes(path.charAt(0))) {
+        path = ':' + path
+    }
     const root = await lib._slot(dmap, '0x' + '00'.repeat(32))
-    const ast = lib.parse(path)
-    const trace = await lib._walk(dmap, ast, root, {locked:true}, [])
-    return trace[trace.length-1].register
+    const meta = await lib._slot(dmap, '0x' + '00'.repeat(31)) + '01'
+    const steps = lib.parse(path)
+    const trace = await lib._walk(dmap, steps, root, meta, {locked: path.charAt(0) === ':'}, [])
+    return {'meta': trace[trace.length-1].reg_meta, 'data': trace[trace.length-1].register}
 }
 
 lib.prepareCID = (cidStr, lock) => {
@@ -104,7 +89,7 @@ lib.unpackCID = (metaStr, dataStr) => {
     return cid.toString()
 }
 
-lib.readCID = async (dmap, zone, name) => {
-    const [read_meta, read_data] = await dmap.get(zone, name)
-    return lib.unpackCID(read_meta, read_data)
+lib.readCID = async (dmap, path) => {
+    const packed = await lib.walk(dmap, path)
+    return lib.unpackCID(packed.meta, packed.data)
 }
