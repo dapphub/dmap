@@ -1,6 +1,6 @@
 pragma solidity 0.8.11;
 
-import "../../sol/root.sol";
+import "../root.sol";
 
 contract RecursiveCoinbase {
     bool lock = false;
