@@ -9,5 +9,8 @@
     "@types/mocha": "^9.0.0",
     "hardhat": "^2.8.3",
     "minihat": "^0.0.5"
+  },
+  "dependencies": {
+    "ebnf": "^1.9.0"
   }
 }

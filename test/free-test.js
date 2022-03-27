@@ -3,8 +3,10 @@ const hh = require('hardhat')
 const assert = require('assert');
 
 const ethers = hh.ethers
-const { b32, fail, revert, send, snapshot, want } = require('minihat')
+const { b32, fail, revert, send, snapshot, want, mine } = require('minihat')
 const lib = require('../dmap.js')
+const {expectEvent} = require("./utils/helpers");
+const constants = ethers.constants
 
 describe('freezone', ()=>{
     let dmap
@@ -39,6 +41,12 @@ describe('freezone', ()=>{
 
     beforeEach(async ()=>{
         await revert(hh)
+    })
+
+    it('init', async () => {
+        want(await freezone.dmap()).to.eql(dmap.address)
+        want(await freezone.last()).to.eql(constants.Zero)
+        want(await freezone.controllers(name)).to.eql(constants.AddressZero)
     })
 
     it('set without control', async ()=>{
@@ -97,6 +105,28 @@ describe('freezone', ()=>{
         await fail('ERR_OWNER', freezone.give, name, CAT)
     })
 
+    it('take error priority + limit', async () => {
+        await hh.network.provider.send("evm_setAutomine", [false]);
+        await hh.network.provider.send("evm_setIntervalMining", [0]);
+        // taken, limit
+        await freezone.take(name)
+        await fail('ERR_TAKEN', freezone.take, name)
+        await mine(hh)
+        // limit
+        await freezone.take(b32('name2'))
+        await fail('ERR_LIMIT', freezone.take, b32('name3'))
+
+        await hh.network.provider.send("evm_setAutomine", [true]);
+    })
+
+    it('set error priority', async () => {
+        // freezone errors come before dmap errors
+        await send(freezone.take, name)
+        await send(freezone.set, name, lock, data1)
+        await fail('ERR_OWNER', freezone.connect(bob).set, name, lock, data2)
+        await fail('LOCK()', freezone.set, name, lock, data1)
+    })
+
     it('store CID variants', async ()=>{
         const cids = [cidDefault, cidSHA3, cidV0, cidBlake2b160]
         for (const [index, cid] of cids.entries()) {
@@ -110,12 +140,26 @@ describe('freezone', ()=>{
             await fail('LOCK', freezone.set, name, lock_meta, lock_data)
 
             const [read_meta, read_data] = await dmap.get(freezone.address, name)
-            const resCID = lib.unpackCID(read_meta, read_data)
-            want(cid).eq(resCID)
+            const res_cid = lib.unpackCID(read_meta, read_data)
+            const helper_cid = await lib.readCID(dmap, 'free:' + index.toString())
+            want(cid).eq(res_cid)
+            want(cid).eq(helper_cid)
         }
     })
 
     it('store 512 CID', async ()=>{
         assert.throws(() => { lib.prepareCID(cid512, false) }, /Hash exceeds 256 bits/);
+    })
+
+    describe('Give event', () => {
+        it('take', async () => {
+            const rx = await send(freezone.take, name)
+            expectEvent(rx, "Give", [constants.AddressZero, '0x'+name.toString('hex'), ALI])
+        })
+        it('give', async () => {
+            await send(freezone.take, name)
+            const rx = await send(freezone.give, name, BOB)
+            expectEvent(rx, "Give", [ALI, '0x'+name.toString('hex'), BOB])
+        })
     })
 })
