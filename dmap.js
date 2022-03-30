@@ -1,8 +1,10 @@
 const ebnf = require('ebnf')
 const multiformats = require('multiformats')
 const prefLenIndex = 2
-const fail =s=> { throw new Error(s) }
-const need =(b,s)=> b || fail(s)
+const fail = s => {
+    throw new Error(s)
+}
+const need = (b, s) => b || fail(s)
 
 module.exports = lib = {}
 
@@ -19,6 +21,7 @@ lib.parse =s=> {
     const flat = lib.postparse(ast)
     return flat[0]
 }
+
 lib.postparse =ast=> [ast.children.map(step => ({locked: step.children.find(({ type }) => type === 'rune').text === ":",
                                                  name:   step.children.find(({ type }) => type === 'name').text}))]
 
@@ -54,8 +57,8 @@ lib.walk = async (dmap, path) => {
     if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) {
         path = ':' + path
     }
-    const root = await lib._slot(dmap, '0x' + '00'.repeat(32))
-    const meta = await lib._slot(dmap, '0x' + '00'.repeat(31) + '01')
+    const meta = await lib._slot(dmap, '0x' + '00'.repeat(32))
+    const root = await lib._slot(dmap, '0x' + '00'.repeat(31) + '01')
     const steps = lib.parse(path)
     const trace = await lib._walk(dmap, steps, root, meta, {locked: path.charAt(0) === ':'}, [])
     return {'meta': trace[trace.length-1].reg_meta, 'data': trace[trace.length-1].register}
