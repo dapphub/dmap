@@ -55,7 +55,7 @@ lib.walk = async (dmap, path) => {
         path = ':' + path
     }
     const root = await lib._slot(dmap, '0x' + '00'.repeat(32))
-    const meta = await lib._slot(dmap, '0x' + '00'.repeat(31)) + '01'
+    const meta = await lib._slot(dmap, '0x' + '00'.repeat(31) + '01')
     const steps = lib.parse(path)
     const trace = await lib._walk(dmap, steps, root, meta, {locked: path.charAt(0) === ':'}, [])
     return {'meta': trace[trace.length-1].reg_meta, 'data': trace[trace.length-1].register}
