@@ -8,12 +8,14 @@ describe('dpath', ()=> {
     const LOCK = '0x80'+'00'.repeat(31)
     let dmap
     let freezone
+    let rootzone
 
     before(async ()=>{
         await hh.run('deploy-mock-dmap')
         const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers)
         dmap = dapp.dmap
         freezone = dapp.freezone
+        rootzone = dapp.rootzone
         await snapshot(hh)
     })
 
@@ -36,6 +38,12 @@ describe('dpath', ()=> {
             await send(freezone.set, test_name, LOCK, test_data)
             await send(freezone.take, free_name)
             await send(freezone.set, free_name, OPEN, padRight(freezone.address))
+        })
+
+        it('empty path', async () => {
+            const res = await lib.walk(dmap, '')
+            want(res.data.slice(0, 42)).eq(rootzone.address.toLowerCase())
+            want(res.meta).eq(LOCK)
         })
 
         it('optional leading rune', async()=>{

@@ -51,7 +51,7 @@ lib._slot = async (dmap, key) => {
 }
 
 lib.walk = async (dmap, path) => {
-    if (![':', '.'].includes(path.charAt(0))) {
+    if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) {
         path = ':' + path
     }
     const root = await lib._slot(dmap, '0x' + '00'.repeat(32))
