@@ -1,10 +1,8 @@
 const ebnf = require('ebnf')
 const multiformats = require('multiformats')
 const prefLenIndex = 2
-const fail = s => {
-    throw new Error(s)
-}
-const need = (b, s) => b || fail(s)
+const fail =s=> { throw new Error(s) }
+const need =(b,s)=> b || fail(s)
 
 module.exports = lib = {}
 
@@ -21,7 +19,6 @@ lib.parse =s=> {
     const flat = lib.postparse(ast)
     return flat[0]
 }
-
 lib.postparse =ast=> [ast.children.map(step => ({locked: step.children.find(({ type }) => type === 'rune').text === ":",
                                                  name:   step.children.find(({ type }) => type === 'name').text}))]
 
