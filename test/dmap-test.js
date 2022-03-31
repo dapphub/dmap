@@ -70,11 +70,12 @@ describe('dmap', ()=>{
         const data = '0x'+'22'.repeat(32)
         const rx = await send(dmap.set, name, meta, data)
 
+        const eventdata = meta + data.slice(2)
         expectEvent(
             rx, undefined,
-            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, meta, data],
-            '0x'
+            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name], eventdata
         )
+
         await check_entry(ALI, name, meta, data)
     })
 
