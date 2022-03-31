@@ -12,8 +12,8 @@ contract Dmap {
 
     constructor(address rootzone) {
         assembly {
-            sstore(0, shl(96, rootzone))
-            sstore(1, FLAG_LOCK)
+            sstore(1, shl(96, rootzone))
+            sstore(0, FLAG_LOCK)
         }
     }
 
@@ -23,8 +23,8 @@ contract Dmap {
             mstore(0, zone)
             mstore(32, name)
             let slot := keccak256(0, 64)
-            mstore(0, sload(add(slot, 1)))
-            mstore(32, sload(slot))
+            mstore(32, sload(add(slot, 1)))
+            mstore(0, sload(slot))
             return(0, 64)
         }
     }
@@ -36,9 +36,9 @@ contract Dmap {
             mstore(0, caller())
             let slot0 := keccak256(0, 64)
             let slot1 := add(slot0, 1)
-            if iszero(and(FLAG_LOCK, sload(slot1))) {
-                sstore(slot0, data)
-                sstore(slot1, meta)
+            if iszero(and(FLAG_LOCK, sload(slot0))) {
+                sstore(slot1, data)
+                sstore(slot0, meta)
                 return(0, 0)
             }
             mstore(0, SIG_LOCK)
