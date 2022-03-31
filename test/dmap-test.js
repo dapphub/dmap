@@ -78,6 +78,19 @@ describe('dmap', ()=>{
         await check_entry(ALI, name, meta, data)
     })
 
+    it("zone in hash", async () => {
+        const alival = '0x'+'11'.repeat(32)
+        const bobval = '0x'+'22'.repeat(32)
+        await send(dmap.set, b32("1"), LOCK, alival)
+        await send(dmap.connect(bob).set, b32("1"), LOCK, bobval)
+    })
+
+    it("name in hash", async () => {
+        const val = '0x'+'11'.repeat(32)
+        await send(dmap.set, b32("1"), LOCK, val)
+        await send(dmap.set, b32("2"), LOCK, val)
+    })
+
     describe('lock', () => {
         const check_ext_unchanged = async () => {
             const zero = constants.HashZero
@@ -132,6 +145,8 @@ describe('dmap', ()=>{
             await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
         })
+
+
     })
 
     describe('gas', () => {
