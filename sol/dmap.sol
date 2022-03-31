@@ -35,10 +35,9 @@ contract Dmap {
             mstore(0, caller())
             mstore(32, name)
             let slot0 := keccak256(0, 64)
-            let slot1 := add(slot0, 1)
+            sstore(add(slot0, 1), data)
             if iszero(and(FLAG_LOCK, sload(slot0))) {
                 sstore(slot0, meta)
-                sstore(slot1, data)
                 return(0, 0)
             }
             mstore(0, SIG_LOCK)
