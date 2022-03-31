@@ -33,7 +33,7 @@ contract Dmap {
         assembly {
             mstore(0, caller())
             calldatacopy(32, 4, 96)
-            log1(64, 64, name)
+            log2(64, 64, caller(), name)
             let slot0 := keccak256(0, 64)
             let slot1 := add(slot0, 1)
             if iszero(and(FLAG_LOCK, sload(slot0))) {
