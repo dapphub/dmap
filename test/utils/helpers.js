@@ -33,7 +33,7 @@ function expectEvent (receipt, eventName, eventArgs = {}, data = undefined) {
         }
     })
 
-    expect(found).to.equal(true, `No '${eventName}' events found with args ${args}`);
+    expect(found).to.equal(true, `No '${eventName}' events found with args ${args} and data ${data}`);
 }
 
 function padRight(addrStr) {
