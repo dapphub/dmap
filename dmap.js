@@ -34,11 +34,11 @@ lib._walk = async (dmap, path, register, reg_meta, ctx, trace) => {
     const step = path[0]
     rest = path.slice(1)
     const addr = register.slice(0, 21 * 2)
-    const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length)
+    const fullname = '0x' + lib.strToHex(step.name) + '00'.repeat(32-step.name.length)
     const [meta, data] = await dmap.get(addr, fullname)
     if (step.locked) {
         need(ctx.locked, `Encountered ':' in unlocked subpath`)
-        need((Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+        need((lib.hexToArrayBuffer(meta.slice(2))[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
         return await lib._walk(dmap, rest, data, meta, {locked:true}, trace)
     } else {
         return await lib._walk(dmap, rest, data, meta, {locked:false}, trace)
@@ -48,6 +48,18 @@ lib._walk = async (dmap, path, register, reg_meta, ctx, trace) => {
 lib._slot = async (dmap, key) => {
     need(dmap.provider, `walk: no provider on given dmap object`)
     return await dmap.provider.getStorageAt(dmap.address, key)
+}
+
+lib.strToHex = str => {
+    let codes =  str.split('').map(c => c.charCodeAt(0))
+    return codes.map(c => c.toString(16)).join('')
+}
+
+lib.hexToArrayBuffer = hex => {
+    const bytes = []
+    for (let c = 0; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.slice(c, c + 2), 16))
+    return new Uint8Array(bytes)
 }
 
 lib.walk = async (dmap, path) => {
@@ -76,8 +88,8 @@ lib.prepareCID = (cidStr, lock) => {
 }
 
 lib.unpackCID = (metaStr, dataStr) => {
-    const data = Buffer.from(dataStr.slice(2), 'hex')
-    const meta = Buffer.from(metaStr.slice(2), 'hex')
+    const meta = lib.hexToArrayBuffer(metaStr.slice(2))
+    const data = lib.hexToArrayBuffer(dataStr.slice(2))
     const prefixLen = meta[prefLenIndex]
     const specs = multiformats.CID.inspectBytes(meta.slice(-prefixLen));
     const hashLen = specs.digestSize

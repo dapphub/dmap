@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dmap interface</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+<h1>dmap reader</h1>
+
+<table>
+    <tr>
+        <td>
+            <label for="dpath">dpath:</label>
+        </td>
+        <td>
+            <input type="text" id="dpath" name="dpath" value="free.weth">
+        </td>
+        <td>
+            <input type="button" id="getButton" value="Get">
+        </td>
+    </tr>
+</table>
+
+
+<table>
+    <tr>
+        <td>
+            <p id="waitvalue">...</p>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p id="metavalue"></p>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p id="datavalue"></p>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p id="ipfsvalue"></p>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p id="failvalue"></p>
+        </td>
+    </tr>
+</table>
+
+<script src="main.js"></script>
+<noscript>You need to enable JavaScript to use dmap.</noscript>
+</body>
+</html>

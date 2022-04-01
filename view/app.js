@@ -1,33 +1,56 @@
-'use strict'
+const ethers = require('ethers')
+const lib = require('../dmap.js')
 
-const updater = document.querySelector('#update');
+const getButton = document.querySelector('#getButton')
+const pathInput = document.querySelector("#dpath");
+const wait = document.querySelector("#waitvalue")
+const meta = document.querySelector("#metavalue")
+const data = document.querySelector("#datavalue")
+const ipfs = document.querySelector("#ipfsvalue")
+const fail = document.querySelector("#failvalue")
+const outputs = [wait, meta, data, ipfs, fail]
+outputs.map(out=>out.style.display = 'none')
 
-updater.addEventListener('click', async () =>  {
-    const dmapAddress = '0x2ec54Aa454BbFE0FE93A6DD772cDE882851B40FD'
-    const getSig = 'get(address,bytes32)'
-    const sigHex = '0x' + strToHex(getSig)
-    const sigHash = await window.ethereum.request({ method: 'web3_sha3', params: [sigHex] });
-    const selector = sigHash.slice(0, 10)
+getButton.addEventListener('click', async () =>  {
+    outputs.map(out=>out.style.display = 'none')
+    wait.style.display = 'contents'
 
-    const zoneAddress = document.getElementById("zoneAddress").value;
-    const zoneBytes = '00'.repeat(12) + zoneAddress.slice(2)
-    const name = document.getElementById("name").value;
-    const nameBytes = strToHex(name) + '00'.repeat(32-name.length)
+    const dmapAddress = '0x44a47a976b2a4af781365b27f94e582ffdb71c12'
+    const dpath = pathInput.value;
+    const dmapArtifact = require('../artifacts/sol/dmap.sol/Dmap.json')
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    const dmapContract = new ethers.Contract(
+        dmapAddress,
+        dmapArtifact.abi,
+        provider
+    );
 
-    const getTx = { to: dmapAddress, data: selector + zoneBytes + nameBytes}
-    const getParams = [getTx, 'latest']
-    const getRes = await window.ethereum.request({ method: 'eth_call', params: getParams });
-    document.getElementById("value").textContent = getRes;
+    let walkResult
+    try {
+        walkResult = await lib.walk(dmapContract, dpath)
+        meta.textContent = 'meta: ' + walkResult.meta;
+        meta.style.display = 'contents'
+        data.textContent = 'data: ' + walkResult.data;
+        data.style.display = 'contents'
+    }
+    catch (error) {
+        fail.textContent = error
+        fail.style.display = 'contents'
+        return
+    }
+    finally {
+        wait.style.display = 'none'
+    }
 
-
-    const slotAddress = document.getElementById("slotAddr").value;
-    const slotNum = document.getElementById("slotNum").value;
-    const slotParams = [slotAddress, slotNum, 'latest']
-    const slotRes = await window.ethereum.request({ method: 'eth_getStorageAt', params: slotParams });
-    document.getElementById("slotVal").textContent = slotRes;
+    try {
+        const cidResult = lib.unpackCID(walkResult.meta, walkResult.data)
+        ipfs.textContent = 'ipfs: ' + cidResult;
+        ipfs.style.display = 'contents'
+    }
+    catch (error){}
 });
 
-const strToHex = str => {
-    let codes =  str.split('').map(c => c.charCodeAt(0))
-    return codes.map(c => c.toString(16)).join('')
-}
+pathInput.addEventListener("keyup", event => {
+    if(event.key !== "Enter") return;
+    getButton.click()
+});
