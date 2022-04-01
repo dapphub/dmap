@@ -70,12 +70,26 @@ describe('dmap', ()=>{
         const data = '0x'+'22'.repeat(32)
         const rx = await send(dmap.set, name, meta, data)
 
+        const eventdata = meta + data.slice(2)
         expectEvent(
             rx, undefined,
-            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, meta, data],
-            '0x'
+            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name], eventdata
         )
+
         await check_entry(ALI, name, meta, data)
+    })
+
+    it("zone in hash", async () => {
+        const alival = '0x'+'11'.repeat(32)
+        const bobval = '0x'+'22'.repeat(32)
+        await send(dmap.set, b32("1"), LOCK, alival)
+        await send(dmap.connect(bob).set, b32("1"), LOCK, bobval)
+    })
+
+    it("name in hash", async () => {
+        const val = '0x'+'11'.repeat(32)
+        await send(dmap.set, b32("1"), LOCK, val)
+        await send(dmap.set, b32("2"), LOCK, val)
     })
 
     describe('lock', () => {
