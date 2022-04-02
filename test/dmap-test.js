@@ -82,63 +82,60 @@ describe('dmap', ()=>{
         await check_entry(ALI, name, meta, data)
     })
 
-    it("zone in hash", async () => {
-        const alival = '0x'+'11'.repeat(32)
-        const bobval = '0x'+'ff'.repeat(32)
-        await send(dmap.set, b32("1"), LOCK, alival)
-        await send(dmap.connect(bob).set, b32("1"), LOCK, bobval)
-    })
+    describe('hashing', () => {
+        it("zone in hash", async () => {
+            const alival = '0x' + '11'.repeat(32)
+            const bobval = '0x' + 'ff'.repeat(32)
+            await send(dmap.set, b32("1"), LOCK, alival)
+            await send(dmap.connect(bob).set, b32("1"), LOCK, bobval)
+        })
 
-    it("name in hash", async () => {
-        const val0 = '0x'+'11'.repeat(32)
-        const val1 = '0x'+'ff'.repeat(32)
-        await send(dmap.set, b32("1"), LOCK, val0)
-        await send(dmap.set, b32("2"), LOCK, val1)
-        await check_entry(ALI, b32('1'), LOCK, val0)
-        await check_entry(ALI, b32('2'), LOCK, val1)
-    })
+        it("name in hash", async () => {
+            const val0 = '0x' + '11'.repeat(32)
+            const val1 = '0x' + 'ff'.repeat(32)
+            await send(dmap.set, b32("1"), LOCK, val0)
+            await send(dmap.set, b32("2"), LOCK, val1)
+            await check_entry(ALI, b32('1'), LOCK, val0)
+            await check_entry(ALI, b32('2'), LOCK, val1)
+        })
 
-    it('name all bits in hash', async () => {
-        // make sure first and last bits of name make it into the hash
-        const names = [
-            '0x'+'ff'.repeat(32),
-            '0x'+'ff'.repeat(31)+'fe', // flip lsb
-            '0x7f'+'ff'.repeat(31), // flip msb
-        ]
         const vals = [
-            '0x'+'11'.repeat(32),
-            '0x'+'f0'.repeat(32),
-            '0x'+'0f'.repeat(32),
+            '0x' + '11'.repeat(32),
+            '0x' + 'f0'.repeat(32),
+            '0x' + '0f'.repeat(32),
         ]
-        for( let i = 0; i < names.length; i++ ) {
-            await send(dmap.set, names[i], LOCK, vals[i])
-        }
-        for( let i = 0; i < names.length; i++ ) {
-            await check_entry(ALI, names[i], LOCK, vals[i])
-        }
-    })
+        it('name all bits in hash', async () => {
+            // make sure first and last bits of name make it into the hash
+            const names = [
+                '0x' + 'ff'.repeat(32),
+                '0x' + 'ff'.repeat(31) + 'fe', // flip lsb
+                '0x7f' + 'ff'.repeat(31), // flip msb
+            ]
+            for (let i = 0; i < names.length; i++) {
+                await send(dmap.set, names[i], LOCK, vals[i])
+            }
+            for (let i = 0; i < names.length; i++) {
+                await check_entry(ALI, names[i], LOCK, vals[i])
+            }
+        })
 
-    it('zone all bits in hash', async () => {
-        // make sure first and last bits of zone make it into the hash
-        const addrs = [
-            '0x'+'ff'.repeat(20),
-            '0x'+'ff'.repeat(19)+'fe', // flip lsb
-            '0x7f'+'ff'.repeat(19), // flip msb
-        ]
-        const name = b32('1')
-        const vals = [
-            '0x'+'11'.repeat(32),
-            '0x'+'f0'.repeat(32),
-            '0x'+'0f'.repeat(32),
-        ]
-        for( let i = 0; i < addrs.length; i++ ) {
-            const fake = await smock.fake('Dmap', {address: addrs[i]})
-            await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
-            await send(dmap.connect(fake.wallet).set, name, LOCK, vals[i])
-        }
-        for( let i = 0; i < addrs.length; i++ ) {
-            await check_entry(addrs[i], name, LOCK, vals[i])
-        }
+        it('zone all bits in hash', async () => {
+            // make sure first and last bits of zone make it into the hash
+            const addrs = [
+                '0x' + 'ff'.repeat(20),
+                '0x' + 'ff'.repeat(19) + 'fe', // flip lsb
+                '0x7f' + 'ff'.repeat(19), // flip msb
+            ]
+            const name = b32('1')
+            for (let i = 0; i < addrs.length; i++) {
+                const fake = await smock.fake('Dmap', {address: addrs[i]})
+                await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
+                await send(dmap.connect(fake.wallet).set, name, LOCK, vals[i])
+            }
+            for (let i = 0; i < addrs.length; i++) {
+                await check_entry(addrs[i], name, LOCK, vals[i])
+            }
+        })
     })
 
     describe('lock', () => {
