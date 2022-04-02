@@ -167,29 +167,33 @@ describe('dmap', ()=>{
             await check_entry(ALI, b32('2'), LOCK, val1)
         })
 
-        const vals = [
-            '0x' + '11'.repeat(32),
-            '0x' + 'f0'.repeat(32),
-            '0x' + '0f'.repeat(32),
-        ]
         it('name all bits in hash', async () => {
             // make sure first and last bits of name make it into the hash
+            const fake = await smock.fake('Dmap', {address: constants.AddressZero})
+            await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
+            want(fake.address).to.eql(constants.AddressZero)
             const names = [
+                constants.HashZero,
+                '0x80'+'00'.repeat(31),
+                '0x'+'00'.repeat(31)+'01',
                 '0x' + 'ff'.repeat(32),
                 '0x' + 'ff'.repeat(31) + 'fe', // flip lsb
                 '0x7f' + 'ff'.repeat(31), // flip msb
             ]
             for (let i = 0; i < names.length; i++) {
-                await send(dmap.set, names[i], LOCK, vals[i])
+                await send(dmap.connect(fake.wallet).set, names[i], LOCK, b32(String(i)))
             }
             for (let i = 0; i < names.length; i++) {
-                await check_entry(ALI, names[i], LOCK, vals[i])
+                await check_entry(fake.address, names[i], LOCK, b32(String(i)))
             }
         })
 
         it('zone all bits in hash', async () => {
             // make sure first and last bits of zone make it into the hash
             const addrs = [
+                constants.AddressZero,
+                '0x80'+'00'.repeat(19),
+                '0x'+'00'.repeat(19)+'0f', // TODO hh has a problem with very low fake addresses
                 '0x' + 'ff'.repeat(20),
                 '0x' + 'ff'.repeat(19) + 'fe', // flip lsb
                 '0x7f' + 'ff'.repeat(19), // flip msb
@@ -198,10 +202,10 @@ describe('dmap', ()=>{
             for (let i = 0; i < addrs.length; i++) {
                 const fake = await smock.fake('Dmap', {address: addrs[i]})
                 await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
-                await send(dmap.connect(fake.wallet).set, name, LOCK, vals[i])
+                await send(dmap.connect(fake.wallet).set, name, LOCK, b32(String(i)))
             }
             for (let i = 0; i < addrs.length; i++) {
-                await check_entry(addrs[i], name, LOCK, vals[i])
+                await check_entry(addrs[i], name, LOCK, b32(String(i)))
             }
         })
     })
