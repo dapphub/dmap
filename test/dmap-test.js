@@ -69,7 +69,7 @@ describe('dmap', ()=>{
 
     it('basic set', async () => {
         const name = '0x'+'11'.repeat(32)
-        const meta = '0x'+'8'+'0'.repeat(63)
+        const meta = '0x'+'1'+'0'.repeat(63)
         const data = '0x'+'22'.repeat(32)
         const rx = await send(dmap.set, name, meta, data)
 
@@ -83,7 +83,6 @@ describe('dmap', ()=>{
     })
 
     describe('event data no overlap', () => {
-
         const name = meta = data = constants.HashZero
         describe('unset zone', () => {
             let fake
@@ -133,10 +132,11 @@ describe('dmap', ()=>{
                 await check_entry(fake.address, name, meta, data)
             })
         })
+
         it('set zone', async () => {
-            const fake = await smock.fake('Dmap', {address: '0x'+'ff'.repeat(20)})
+            const fake = await smock.fake('Dmap', {address: '0x' + 'ff'.repeat(20)})
             await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
-            want(fake.address).to.eql('0x'+'ff'.repeat(20))
+            want(fake.address).to.eql('0x' + 'ff'.repeat(20))
             const rx = await send(dmap.connect(fake.wallet).set, name, meta, data)
 
             const eventdata = meta + data.slice(2)
@@ -147,7 +147,6 @@ describe('dmap', ()=>{
 
             await check_entry(ALI, name, meta, data)
         })
-
     })
 
     describe('hashing', () => {
@@ -174,8 +173,8 @@ describe('dmap', ()=>{
             want(fake.address).to.eql(constants.AddressZero)
             const names = [
                 constants.HashZero,
-                '0x80'+'00'.repeat(31),
-                '0x'+'00'.repeat(31)+'01',
+                '0x80' + '00'.repeat(31),
+                '0x' + '00'.repeat(31) + '01',
                 '0x' + 'ff'.repeat(32),
                 '0x' + 'ff'.repeat(31) + 'fe', // flip lsb
                 '0x7f' + 'ff'.repeat(31), // flip msb
@@ -192,8 +191,8 @@ describe('dmap', ()=>{
             // make sure first and last bits of zone make it into the hash
             const addrs = [
                 constants.AddressZero,
-                '0x80'+'00'.repeat(19),
-                '0x'+'00'.repeat(19)+'0f', // TODO hh has a problem with very low fake addresses
+                '0x80' + '00'.repeat(19),
+                '0x' + '00'.repeat(19) + '0f', // TODO hh has a problem with very low fake addresses
                 '0x' + 'ff'.repeat(20),
                 '0x' + 'ff'.repeat(19) + 'fe', // flip lsb
                 '0x7f' + 'ff'.repeat(19), // flip msb
