@@ -6,6 +6,7 @@ const { send, want, snapshot, revert, b32, fail} = require('minihat')
 const { expectEvent, check_gas} = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const constants = ethers.constants
+const { smock } = require('@defi-wonderland/smock')
 
 const debug = require('debug')('dmap:test')
 
@@ -17,8 +18,10 @@ describe('dmap', ()=>{
     let ali, bob, cat
     let ALI, BOB, CAT
     const LOCK = '0x80'+'00'.repeat(31)
+    let signers
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
+        signers = await ethers.getSigners();
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
 
         await hh.run('deploy-mock-dmap')
@@ -90,6 +93,35 @@ describe('dmap', ()=>{
         const val = '0x'+'11'.repeat(32)
         await send(dmap.set, b32("1"), LOCK, val)
         await send(dmap.set, b32("2"), LOCK, val)
+    })
+
+    it('name all bits in hash', async () => {
+        // make sure first and last bits of name make it into the hash
+        const names = [
+            '0x'+'ff'.repeat(32),
+            '0x'+'ff'.repeat(31)+'fe', // flip lsb
+            '0x7f'+'ff'.repeat(31), // flip msb
+        ]
+        const val = '0x'+'11'.repeat(32)
+        for( let i = 0; i < names.length; i++ ) {
+            await send(dmap.set, names[i], LOCK, val)
+        }
+    })
+
+    it('zone all bits in hash', async () => {
+        // make sure first and last bits of zone make it into the hash
+        const addrs = [
+            '0x'+'ff'.repeat(20),
+            '0x'+'ff'.repeat(19)+'fe', // flip lsb
+            '0x7f'+'ff'.repeat(19), // flip msb
+        ]
+        const name = b32('1')
+        const val = '0x'+'11'.repeat(32)
+        for( let i = 0; i < addrs.length; i++ ) {
+            const fake = await smock.fake('Dmap', {address: addrs[i]})
+            await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
+            await send(dmap.connect(fake.wallet).set, name, LOCK, val)
+        }
     })
 
     describe('lock', () => {
