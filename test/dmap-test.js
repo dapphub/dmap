@@ -83,33 +83,71 @@ describe('dmap', ()=>{
     })
 
     describe('event data no overlap', () => {
-        const name = '0x' + '11'.repeat(32)
-        it('set meta, unset data', async () => {
-            const meta = '0x' + 'ff'.repeat(32)
-            const data = '0x' + '00'.repeat(32)
-            const rx = await send(dmap.set, name, meta, data)
+
+        const name = meta = data = constants.HashZero
+        describe('unset zone', () => {
+            let fake
+            beforeEach(async () => {
+                fake = await smock.fake('Dmap', {address: constants.AddressZero})
+                await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
+                want(fake.address).to.eql(constants.AddressZero)
+            })
+
+            it('set meta', async () => {
+                const meta = '0x' + 'ff'.repeat(32)
+                const rx = await send(dmap.connect(fake.wallet).set, name, meta, data)
+
+                const eventdata = meta + data.slice(2)
+                expectEvent(
+                    rx, undefined,
+                    [ethers.utils.hexZeroPad(fake.address, 32).toLowerCase(), name], eventdata
+                )
+
+                await check_entry(fake.address, name, meta, data)
+            })
+
+            it('set data', async () => {
+                const data = '0x' + 'ff'.repeat(32)
+                const rx = await send(dmap.connect(fake.wallet).set, name, meta, data)
+
+                const eventdata = meta + data.slice(2)
+                expectEvent(
+                    rx, undefined,
+                    [ethers.utils.hexZeroPad(fake.address, 32).toLowerCase(), name], eventdata
+                )
+
+                await check_entry(fake.address, name, meta, data)
+            })
+
+            it('set name', async () => {
+                const name = '0x' + 'ff'.repeat(32)
+                debug(name, meta, data)
+                const rx = await send(dmap.connect(fake.wallet).set, name, meta, data)
+
+                const eventdata = meta + data.slice(2)
+                expectEvent(
+                    rx, undefined,
+                    [ethers.utils.hexZeroPad(fake.address, 32).toLowerCase(), name], eventdata
+                )
+
+                await check_entry(fake.address, name, meta, data)
+            })
+        })
+        it('set zone', async () => {
+            const fake = await smock.fake('Dmap', {address: '0x'+'ff'.repeat(20)})
+            await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
+            want(fake.address).to.eql('0x'+'ff'.repeat(20))
+            const rx = await send(dmap.connect(fake.wallet).set, name, meta, data)
 
             const eventdata = meta + data.slice(2)
             expectEvent(
                 rx, undefined,
-                [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name], eventdata
+                [ethers.utils.hexZeroPad(fake.address, 32).toLowerCase(), name], eventdata
             )
 
             await check_entry(ALI, name, meta, data)
         })
-        it('unset meta, set data', async () => {
-            const meta = '0x' + '00'.repeat(32)
-            const data = '0x' + 'ff'.repeat(32)
-            const rx = await send(dmap.set, name, meta, data)
 
-            const eventdata = meta + data.slice(2)
-            expectEvent(
-                rx, undefined,
-                [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name], eventdata
-            )
-
-            await check_entry(ALI, name, meta, data)
-        })
     })
 
     describe('hashing', () => {
