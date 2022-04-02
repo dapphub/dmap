@@ -69,7 +69,7 @@ describe('dmap', ()=>{
 
     it('basic set', async () => {
         const name = '0x'+'11'.repeat(32)
-        const meta = '0x'+'1'+'0'.repeat(63)
+        const meta = '0x'+'8'+'0'.repeat(63)
         const data = '0x'+'22'.repeat(32)
         const rx = await send(dmap.set, name, meta, data)
 
@@ -80,6 +80,36 @@ describe('dmap', ()=>{
         )
 
         await check_entry(ALI, name, meta, data)
+    })
+
+    describe('event data no overlap', () => {
+        const name = '0x' + '11'.repeat(32)
+        it('set meta, unset data', async () => {
+            const meta = '0x' + 'ff'.repeat(32)
+            const data = '0x' + '00'.repeat(32)
+            const rx = await send(dmap.set, name, meta, data)
+
+            const eventdata = meta + data.slice(2)
+            expectEvent(
+                rx, undefined,
+                [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name], eventdata
+            )
+
+            await check_entry(ALI, name, meta, data)
+        })
+        it('unset meta, set data', async () => {
+            const meta = '0x' + '00'.repeat(32)
+            const data = '0x' + 'ff'.repeat(32)
+            const rx = await send(dmap.set, name, meta, data)
+
+            const eventdata = meta + data.slice(2)
+            expectEvent(
+                rx, undefined,
+                [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name], eventdata
+            )
+
+            await check_entry(ALI, name, meta, data)
+        })
     })
 
     describe('hashing', () => {
