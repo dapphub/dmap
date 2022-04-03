@@ -20,8 +20,7 @@ contract Dmap {
     function get(address zone, bytes32 name) external view
       returns (bytes32 meta, bytes32 data) {
         assembly {
-            mstore(0, zone)
-            mstore(32, name)
+            calldatacopy(0, 4, 64)
             let slot := keccak256(0, 64)
             mstore(0, sload(slot))
             mstore(32, sload(add(slot, 1)))
