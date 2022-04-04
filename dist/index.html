@@ -8,6 +8,9 @@
   * {
       font-family: monospace;
   }
+  #result {
+      white-space: pre-line;
+  }
 
 </style>
 </head>
@@ -18,11 +21,7 @@
 <input type="text" id="dpath" name="dpath" value="free.weth">
 <input type="button" id="btnGet" value="Get">
 
-<div id="wait">...</div>
-<div id="meta"></div>
-<div id="data"></div>
-<div id="ipfs"></div>
-<div id="fail"></div>
+<div id="result"></div>
 
 <script src="main.js"></script>
 <noscript>You need to enable JavaScript to use dmap.</noscript>

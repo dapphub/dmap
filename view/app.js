@@ -5,9 +5,10 @@ const dmapArtifact = require('../artifacts/sol/dmap.sol/Dmap.json')
 
 window.onload =()=> {
     const $ = document.querySelector.bind(document);
+    const result = $('#result')
 
-    $('btnGet').addEventListener('click', async () =>  {
-        $('wait').style.display = 'contents'
+    $('#btnGet').addEventListener('click', async () =>  {
+        result.textContent = '\n' + '...'
         const dpath = $('#dpath').value;
         const provider = new ethers.providers.Web3Provider(window.ethereum)
         const dmapContract = new ethers.Contract(
@@ -19,30 +20,23 @@ window.onload =()=> {
         let walkResult
         try {
             walkResult = await dmap.walk(dmapContract, dpath)
-            $('#meta').textContent = 'meta: ' + walkResult.meta;
-            $('#meta').style.display = 'contents'
-            $('#data').textContent = 'data: ' + walkResult.data;
-            $('#data').style.display = 'contents'
+            result.textContent = '\n' + 'meta: ' + walkResult.meta
+            result.textContent += '\n' + 'data: ' + walkResult.data
         }
         catch (error) {
-            $('#fail').textContent = error
-            $('$fail').style.display = 'contents'
+            result.textContent = '\n' + error
             return
-        }
-        finally {
-            $('#wait').style.display = 'none'
         }
 
         try {
             const cidResult = dmap.unpackCID(walkResult.meta, walkResult.data)
-            $('#ipfs').textContent = 'ipfs: ' + cidResult;
-            $('#ipfs').style.display = 'contents'
+            result.textContent += '\n' + 'ipfs: ' + cidResult
         }
         catch (error){}
     });
 
-    pathInput.addEventListener("keyup", event => {
+    $('#dpath').addEventListener("keyup", event => {
         if(event.key !== "Enter") return;
-        btnGet.click()
+        $('#btnGet').click()
     });
 }
