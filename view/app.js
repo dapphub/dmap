@@ -1,4 +1,4 @@
-const ethers = require('ethers')
+import { ethers } from 'ethers'
 const dmap = require('../dmap.js')
 const dmapAddress = '0x44a47a976b2a4af781365b27f94e582ffdb71c12'
 const dmapArtifact = require('../artifacts/sol/dmap.sol/Dmap.json')

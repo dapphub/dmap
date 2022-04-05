@@ -1,12 +1,25 @@
 const path = require('path');
 
 module.exports = {
-    entry: './view/app.js',
+    mode: 'production',
+    entry: {
+        main: './view/app.js',
+    },
     output: {
-        filename: 'main.js',
         path: path.resolve(__dirname, 'dist'),
+        filename: '[name].js',
     },
     optimization: {
-        minimize: false
-    }
+        minimize: false,
+        splitChunks: {
+            cacheGroups: {
+                dependencies: {
+                    name: 'dependencies',
+                    minChunks: 1,
+                    chunks: 'all',
+                    test: /[\\/]node_modules[\\/]/,
+                },
+            },
+        },
+    },
 };
