@@ -31,8 +31,8 @@ contract Dmap {
     function set(bytes32 name, bytes32 meta, bytes32 data) external {
         assembly {
             mstore(0, caller())
-            calldatacopy(32, 4, 96)
-            log2(64, 64, caller(), name)
+            mstore(32, name)
+            log4(0, 0, caller(), name, meta, data)
             let slot0 := keccak256(0, 64)
             sstore(add(slot0, 1), data)
             if iszero(and(FLAG_LOCK, sload(slot0))) {
