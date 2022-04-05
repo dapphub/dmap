@@ -12,11 +12,11 @@ const {hexZeroPad} = require("@ethersproject/bytes");
 
 // matches eventName
 // matches data if defined
-function expectEvent (receipt, eventName, eventArgs = {}, data = undefined) {
+function expectEvent (receipt, eventName, eventArgs = {}, data = '0x') {
     const args = Object.keys(eventArgs).map((key) => {return eventArgs[key]})
     let found = false
     receipt.events.forEach(event => {
-        if( event.event == eventName && (data == undefined || data == event.data) ) {
+        if( event.event == eventName && data == event.data ) {
             let match = true
             Object.keys(eventArgs).forEach(key => {
                 try {

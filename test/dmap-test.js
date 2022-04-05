@@ -76,7 +76,7 @@ describe('dmap', ()=>{
         const eventdata = meta + data.slice(2)
         expectEvent(
             rx, undefined,
-            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name], eventdata
+            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, meta, data]
         )
 
         await check_entry(ALI, name, meta, data)
@@ -99,7 +99,10 @@ describe('dmap', ()=>{
                 const eventdata = words.meta + words.data.slice(2)
                 expectEvent(
                     rx, undefined,
-                    [ethers.utils.hexZeroPad(words.zone, 32).toLowerCase(), words.name], eventdata
+                    [
+                        ethers.utils.hexZeroPad(words.zone, 32).toLowerCase(),
+                        words.name, words.meta, words.data
+                    ]
                 )
 
                 await check_entry(words.zone, words.name, words.meta, words.data)
