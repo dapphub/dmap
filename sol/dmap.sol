@@ -44,15 +44,17 @@ contract Dmap {
         }
     }
 
-    function slot(bytes32 s) external returns (bytes32 r) {
-        assembly { r := sload(s) }
-    }
-
-    function pair(bytes32 s) external returns (bytes32 m, bytes32 d) {
+    function slot(bytes32 s) external returns (bytes32 a) {
         assembly {
-            m := sload(s)
-            d := sload(add(s, 1))
+            a := sload(s)
         }
     }
-    
+
+    function pair(bytes32 s) external returns (bytes32 a, bytes32 b) {
+        assembly {
+            a := sload(s)
+            b := sload(add(s, 1))
+        }
+    }
+
 }
