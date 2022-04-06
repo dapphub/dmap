@@ -44,4 +44,8 @@ contract Dmap {
         }
     }
 
+
+    function slot(bytes32 s) external returns (bytes32 r) {
+        assembly { r := sload(s) }
+    }
 }
