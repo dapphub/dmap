@@ -28,7 +28,7 @@ contract Dmap {
         }
     }
 
-    function set(bytes32 name, bytes32 meta, bytes32 data) external {
+    function set(bytes32 name, bytes32 meta, bytes32 data) external payable {
         assembly {
             mstore(0, caller())
             mstore(32, name)
