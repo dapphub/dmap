@@ -8,6 +8,9 @@ const { bounds } = require('./bounds')
 const constants = ethers.constants
 const { smock } = require('@defi-wonderland/smock')
 
+const coder = ethers.utils.defaultAbiCoder
+const keccak256 = ethers.utils.keccak256
+
 const debug = require('debug')('dmap:test')
 
 describe('dmap', ()=>{
@@ -273,6 +276,21 @@ describe('dmap', ()=>{
             await check_gas(gas, bound[0], bound[1])
         })
 
+        it('slot', async () => {
+            await send(dmap.set, name, one, one)
+            const k = keccak256(coder.encode(["address", "bytes32"], [ALI, name]))
+            const gas = await dmap.estimateGas.slot(k)
+            const bound = bounds.dmap.slot
+            await check_gas(gas, bound[0], bound[1])
+        })
+
+        it('pair', async () => {
+            await send(dmap.set, name, one, one)
+            const k = keccak256(coder.encode(["address", "bytes32"], [ALI, name]))
+            const gas = await dmap.estimateGas.pair(k)
+            const bound = bounds.dmap.pair
+            await check_gas(gas, bound[0], bound[1])
+        })
    })
 
 })
