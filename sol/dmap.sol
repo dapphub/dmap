@@ -17,7 +17,7 @@ contract Dmap {
         }
     }
 
-    function() { assembly {
+    fallback() external { assembly {
         if eq(68, calldatasize()) {
             calldatacopy(0, 4, 64)
             let slot := keccak256(0, 64)
@@ -38,5 +38,5 @@ contract Dmap {
             mstore(0, SIG_LOCK)
             revert(0, 4)
         }
-    }
+    }}
 }
