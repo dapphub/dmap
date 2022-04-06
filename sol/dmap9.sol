@@ -1,5 +1,5 @@
 
-contract Dmap2 { fallback() external { assembly {
+contract Dmap9 { fallback() external { assembly {
     let iu := calldataload(0x00)
     let iv := add(1, iu)
 
