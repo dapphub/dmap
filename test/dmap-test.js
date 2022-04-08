@@ -38,12 +38,26 @@ describe('dmap', ()=>{
         await revert(hh)
     })
 
+    // check that get, pair, and slot all return [meta, data]
     const check_entry = async (usr, key, _meta, _data) => {
         const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
         const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
-        const res = await dmap.get(usr, key)
-        want(res.meta).to.eql(meta)
-        want(res.data).to.eql(data)
+        const resGet = await dmap.get(usr, key)
+        want(resGet.meta).to.eql(meta)
+        want(resGet.data).to.eql(data)
+        want(resGet).to.eql([meta, data])
+
+        const slot = keccak256(coder.encode(["address", "bytes32"], [usr, key]))
+        const resPair = await dmap.pair(slot)
+        want(resPair.a).to.eql(meta)
+        want(resPair.b).to.eql(data)
+        want(resPair).to.eql([meta, data])
+
+        want(await dmap.slot(slot)).to.eql(meta)
+        const nextslot = ethers.utils.hexZeroPad(
+            ethers.BigNumber.from(slot).add(1).toHexString(), 32
+        )
+        want(await dmap.slot(nextslot)).to.eql(data)
     }
 
     it('deploy postconditions', async ()=>{
