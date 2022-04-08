@@ -85,6 +85,24 @@ describe('dmap', ()=>{
         await check_entry(ALI, name, meta, data)
     })
 
+    it('event filter', async () => {
+        const name = '0x'+'81'.repeat(32)
+        const meta = '0x'+'f3'.repeat(32)
+        const data = '0x'+'33'.repeat(32)
+        const rx = await send(dmap.connect(bob).set, name, meta, data)
+
+        // try to filter the Set event
+        const _logs = await dmap.filters.Set(BOB, name, meta, data)
+        const logs = await dmap.queryFilter(_logs, 0)
+        want(logs.length).to.eql(1)
+
+        const log = logs[0]
+        // check that it's anonymous
+        want(log.event).to.eql(undefined)
+        want(log.eventSignature).to.eql(undefined)
+        want(log.args).to.eql(undefined)
+    })
+
     describe('event data no overlap', () => {
         const keys = ['name', 'meta', 'data', 'zone']
         for (let i = 0; i < keys.length; i++) {
