@@ -9,6 +9,10 @@ contract Dmap {
     bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
     bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
     error            LOCK();  // export in ABI
+    event            Set(
+        address indexed caller, bytes32 indexed name,
+        bytes32 indexed meta, bytes32 indexed data
+    ) anonymous;
 
     constructor(address rootzone) {
         assembly {
