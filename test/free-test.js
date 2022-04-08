@@ -4,8 +4,9 @@ const assert = require('assert');
 
 const ethers = hh.ethers
 const { b32, fail, revert, send, snapshot, want, mine } = require('minihat')
+const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
-const {expectEvent} = require("./utils/helpers");
+const {expectEvent, check_gas} = require("./utils/helpers");
 const constants = ethers.constants
 
 describe('freezone', ()=>{
@@ -160,6 +161,29 @@ describe('freezone', ()=>{
             await send(freezone.take, name)
             const rx = await send(freezone.give, name, BOB)
             expectEvent(rx, "Give", [ALI, '0x'+name.toString('hex'), BOB])
+        })
+    })
+
+    describe('gas', () => {
+        it('take', async () => {
+            const rx = await send(freezone.take, name)
+            const bound = bounds.freezone.take
+            await check_gas(rx.gasUsed, bound[0], bound[1])
+        })
+
+        it('give', async () => {
+            await send(freezone.take, name)
+            const rx = await send(freezone.give, name, BOB)
+            const bound = bounds.freezone.give
+            await check_gas(rx.gasUsed, bound[0], bound[1])
+        })
+
+        it('set', async () => {
+            // calls dmap.set, no need to test specific state changes
+            await send(freezone.take, name)
+            const rx = await send(freezone.set, name, b32('meta'), b32('data'))
+            const bound = bounds.freezone.set
+            await check_gas(rx.gasUsed, bound[0], bound[1])
         })
     })
 })
