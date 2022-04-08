@@ -1,9 +1,11 @@
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
-
 const ethers = hh.ethers
+const coder = ethers.utils.defaultAbiCoder
+const keccak256 = ethers.utils.keccak256
 const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
-const { expectEvent } = require('./utils/helpers')
+
+const { expectEvent, padRight } = require('./utils/helpers')
 const debug = require('debug')('dmap:test')
 
 describe('rootzone', ()=>{
@@ -123,6 +125,10 @@ describe('rootzone', ()=>{
 
         await fail('ErrExpired', rootzone.etch, b32('salt'), b32('zone1'), zone1)
         await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
+
+        const root_zone2_slot = keccak256(coder.encode(["address", "bytes32"], [rootzone.address, b32('zone2')]))
+        const [, root_zone2_data] = await dmap.pair(root_zone2_slot)
+        want(root_zone2_data).eq(padRight(zone2))
     })
 
     it('Hark event', async () => {

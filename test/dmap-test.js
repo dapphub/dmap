@@ -1,15 +1,15 @@
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
-
 const ethers = hh.ethers
-const { send, want, snapshot, revert, b32, fail} = require('minihat')
-const { expectEvent, check_gas} = require('./utils/helpers')
-const { bounds } = require('./bounds')
-const constants = ethers.constants
-const { smock } = require('@defi-wonderland/smock')
-
 const coder = ethers.utils.defaultAbiCoder
+const constants = ethers.constants
 const keccak256 = ethers.utils.keccak256
+const { smock } = require('@defi-wonderland/smock')
+const { send, want, snapshot, revert, b32, fail } = require('minihat')
+
+const { expectEvent, check_gas, padRight } = require('./utils/helpers')
+const { bounds } = require('./bounds')
+const lib = require('../dmap.js')
 
 const debug = require('debug')('dmap:test')
 
@@ -170,6 +170,32 @@ describe('dmap', ()=>{
             for (let i = 0; i < addrs.length; i++) {
                 await check_entry(addrs[i], name, LOCK, b32(String(i)))
             }
+        })
+    })
+
+    describe('slot and pair', () => {
+        it('root pair', async () => {
+            const [rootMeta, rootData] = await dmap.pair('0x' + '00'.repeat(32))
+            want(ethers.utils.hexDataSlice(rootData, 0, 20))
+                .to.eql(rootzone.address.toLowerCase())
+            want(rootMeta).to.eql(LOCK)
+        })
+
+        it('root slot', async () => {
+            const rootMeta = await dmap.slot('0x' + '00'.repeat(32))
+            want(rootMeta).to.eql(LOCK)
+
+            const rootData = await dmap.slot('0x' + '00'.repeat(31) + '01')
+            want(ethers.utils.hexDataSlice(rootData, 0, 20))
+                .to.eql(rootzone.address.toLowerCase())
+        })
+
+        it('direct traverse', async ()=>{
+            const root_free_slot = keccak256(coder.encode(["address", "bytes32"], [rootzone.address, b32('free')]))
+            const [root_free_meta, root_free_data] = await dmap.pair(root_free_slot)
+            want(root_free_data).eq(padRight(freezone.address))
+            const flags = Buffer.from(root_free_meta.slice(2), 'hex')[0]
+            want(flags & lib.FLAG_LOCK).to.equal(lib.FLAG_LOCK)
         })
     })
 
