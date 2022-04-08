@@ -7,7 +7,7 @@ const keccak256 = ethers.utils.keccak256
 const { smock } = require('@defi-wonderland/smock')
 const { send, want, snapshot, revert, b32, fail } = require('minihat')
 
-const { expectEvent, check_gas, padRight } = require('./utils/helpers')
+const { expectEvent, check_gas, padRight, check_entry} = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 
@@ -38,34 +38,12 @@ describe('dmap', ()=>{
         await revert(hh)
     })
 
-    // check that get, pair, and slot all return [meta, data]
-    const check_entry = async (usr, key, _meta, _data) => {
-        const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
-        const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
-        const resGet = await dmap.get(usr, key)
-        want(resGet.meta).to.eql(meta)
-        want(resGet.data).to.eql(data)
-        want(resGet).to.eql([meta, data])
-
-        const slot = keccak256(coder.encode(["address", "bytes32"], [usr, key]))
-        const resPair = await dmap.pair(slot)
-        want(resPair.a).to.eql(meta)
-        want(resPair.b).to.eql(data)
-        want(resPair).to.eql([meta, data])
-
-        want(await dmap.slot(slot)).to.eql(meta)
-        const nextslot = ethers.utils.hexZeroPad(
-            ethers.BigNumber.from(slot).add(1).toHexString(), 32
-        )
-        want(await dmap.slot(nextslot)).to.eql(data)
-    }
-
     it('deploy postconditions', async ()=>{
         const dmap_ref = await rootzone.dmap()
         want(dmap_ref).eq(dmap.address)
 
-        await check_entry(ALI, b32('1'), constants.HashZero, constants.HashZero)
-        await check_entry(BOB, b32('1'), constants.HashZero, constants.HashZero)
+        await check_entry(dmap, ALI, b32('1'), constants.HashZero, constants.HashZero)
+        await check_entry(dmap, BOB, b32('1'), constants.HashZero, constants.HashZero)
 
         // dmap.get returns (meta, data), internal storage is (data, meta)
         const rootData = await dmap.provider.getStorageAt(dmap.address, 1)
@@ -96,7 +74,7 @@ describe('dmap', ()=>{
             [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, meta, data]
         )
 
-        await check_entry(ALI, name, meta, data)
+        await check_entry(dmap, ALI, name, meta, data)
     })
 
     it('event filter', async () => {
@@ -140,7 +118,7 @@ describe('dmap', ()=>{
                     ]
                 )
 
-                await check_entry(words.zone, words.name, words.meta, words.data)
+                await check_entry(dmap, words.zone, words.name, words.meta, words.data)
             })
         }
     })
@@ -158,8 +136,8 @@ describe('dmap', ()=>{
             const val1 = '0x' + 'ff'.repeat(32)
             await send(dmap.set, b32("1"), LOCK, val0)
             await send(dmap.set, b32("2"), LOCK, val1)
-            await check_entry(ALI, b32('1'), LOCK, val0)
-            await check_entry(ALI, b32('2'), LOCK, val1)
+            await check_entry(dmap, ALI, b32('1'), LOCK, val0)
+            await check_entry(dmap, ALI, b32('2'), LOCK, val1)
         })
 
         it('name all bits in hash', async () => {
@@ -179,7 +157,7 @@ describe('dmap', ()=>{
                 await send(dmap.connect(fake.wallet).set, names[i], LOCK, b32(String(i)))
             }
             for (let i = 0; i < names.length; i++) {
-                await check_entry(fake.address, names[i], LOCK, b32(String(i)))
+                await check_entry(dmap, fake.address, names[i], LOCK, b32(String(i)))
             }
         })
 
@@ -200,7 +178,7 @@ describe('dmap', ()=>{
                 await send(dmap.connect(fake.wallet).set, name, LOCK, b32(String(i)))
             }
             for (let i = 0; i < addrs.length; i++) {
-                await check_entry(addrs[i], name, LOCK, b32(String(i)))
+                await check_entry(dmap, addrs[i], name, LOCK, b32(String(i)))
             }
         })
     })
@@ -234,14 +212,14 @@ describe('dmap', ()=>{
     describe('lock', () => {
         const check_ext_unchanged = async () => {
             const zero = constants.HashZero
-            await check_entry(BOB, b32("1"), zero, zero)
-            await check_entry(ALI, b32("2"), zero, zero)
+            await check_entry(dmap, BOB, b32("1"), zero, zero)
+            await check_entry(dmap, ALI, b32("2"), zero, zero)
         }
 
         it('set without data', async () => {
             // set just lock bit, nothing else
             await send(dmap.set, b32("1"), LOCK, constants.HashZero)
-            await check_entry(ALI, b32("1"), LOCK, constants.HashZero)
+            await check_entry(dmap, ALI, b32("1"), LOCK, constants.HashZero)
 
             // should fail whether or not ali attempts to change something
             await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
@@ -254,23 +232,23 @@ describe('dmap', ()=>{
         it('set with data', async () => {
             // set lock and data
             await send(dmap.set, b32("1"), LOCK, b32('hello'))
-            await check_entry(ALI, b32("1"), LOCK, b32('hello'))
+            await check_entry(dmap, ALI, b32("1"), LOCK, b32('hello'))
             await fail('LOCK', dmap.set, b32("1"), LOCK, b32('hello'))
             await check_ext_unchanged()
         })
 
         it("set a few times, then lock", async () => {
             await send(dmap.set, b32("1"), constants.HashZero, constants.HashZero)
-            await check_entry(ALI, b32("1"), constants.HashZero, constants.HashZero)
+            await check_entry(dmap, ALI, b32("1"), constants.HashZero, constants.HashZero)
 
             await send(dmap.set, b32("1"), constants.HashZero, b32('hello'))
-            await check_entry(ALI, b32("1"), constants.HashZero, b32('hello'))
+            await check_entry(dmap, ALI, b32("1"), constants.HashZero, b32('hello'))
 
             await send(dmap.set, b32("1"), constants.HashZero, b32('goodbye'))
-            await check_entry(ALI, b32("1"), constants.HashZero, b32('goodbye'))
+            await check_entry(dmap, ALI, b32("1"), constants.HashZero, b32('goodbye'))
 
             await send(dmap.set, b32("1"), LOCK, b32('goodbye'))
-            await check_entry(ALI, b32("1"), LOCK, b32('goodbye'))
+            await check_entry(dmap, ALI, b32("1"), LOCK, b32('goodbye'))
 
             await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
