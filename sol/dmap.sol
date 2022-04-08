@@ -14,7 +14,6 @@ contract Dmap {
         bytes32 indexed meta, bytes32 indexed data
     ) anonymous;
 
-
     constructor(address rootzone) {
         assembly {
             sstore(0, FLAG_LOCK)
