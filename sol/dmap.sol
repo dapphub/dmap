@@ -5,6 +5,9 @@
 
 pragma solidity 0.8.13;
 
+abstract contract DmapI {
+    function get(address zone, bytes32 name) external view virtual;
+}
 contract Dmap {
     bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
     bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
@@ -21,6 +24,7 @@ contract Dmap {
         }
     }
 
+    /*
     function get(address zone, bytes32 name) external view
       returns (bytes32 meta, bytes32 data) {
         assembly {
@@ -31,6 +35,7 @@ contract Dmap {
             return(0, 64)
         }
     }
+    */
 
     function set(bytes32 name, bytes32 meta, bytes32 data) external payable {
         assembly {

@@ -7,7 +7,7 @@ const keccak256 = ethers.utils.keccak256
 const { smock } = require('@defi-wonderland/smock')
 const { send, want, snapshot, revert, b32, fail } = require('minihat')
 
-const { expectEvent, check_gas, padRight, check_entry} = require('./utils/helpers')
+const { expectEvent, check_gas, padRight, check_entry, dget} = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 
@@ -32,6 +32,8 @@ describe('dmap', ()=>{
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
+        want(dmap.get).to.eql(undefined)
+        dmap.get = async (zone, name) => dget(dmap, zone, name)
         await snapshot(hh)
     })
     beforeEach(async ()=>{
