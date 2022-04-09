@@ -62,8 +62,8 @@ const check_entry = async (dmap, usr, key, _meta, _data) => {
 
     const slot = keccak256(coder.encode(["address", "bytes32"], [usr, key]))
     const resPair = await dmap.pair(slot)
-    want(resPair.a).to.eql(meta)
-    want(resPair.b).to.eql(data)
+    want(resPair.meta).to.eql(meta)
+    want(resPair.data).to.eql(data)
     want(resPair).to.eql([meta, data])
 
     want(await dmap.slot(slot)).to.eql(meta)
