@@ -11,6 +11,7 @@ const { want } = require('minihat')
 const {hexZeroPad} = require("@ethersproject/bytes");
 const keccak256 = ethers.utils.keccak256
 const coder = ethers.utils.defaultAbiCoder
+const lib = require('../../dmap.js')
 
 // matches eventName
 // matches data if defined
@@ -55,8 +56,7 @@ async function check_gas (gas, minGas, maxGas) {
 const check_entry = async (dmap, usr, key, _meta, _data) => {
     const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
     const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
-    const resGet = await dmap.get(usr, key)
-    console.log(resGet)
+    const resGet = await lib.get(dmap, usr, key)
     want(resGet.meta).to.eql(meta)
     want(resGet.data).to.eql(data)
     want(resGet).to.eql([meta, data])
@@ -74,14 +74,4 @@ const check_entry = async (dmap, usr, key, _meta, _data) => {
     want(await dmap.slot(nextslot)).to.eql(data)
 }
 
-const dget = async (dmap, zone, name) => {
-    const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
-    const res = await dmap.pair(slot)
-    res[0] = undefined
-    res[1] = undefined
-    console.log(res)
-    return res
-}
-
-
-module.exports = { expectEvent, padRight, check_gas, check_entry, dget }
+module.exports = { expectEvent, padRight, check_gas, check_entry }

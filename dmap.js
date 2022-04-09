@@ -1,5 +1,6 @@
 const ebnf = require('ebnf')
 const multiformats = require('multiformats')
+const {ethers} = require('ethers');
 const prefLenIndex = 2
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
@@ -21,6 +22,13 @@ lib.parse =s=> {
 lib.postparse =ast=> ast.children.map(step => ({locked: step.children.find(({ type }) => type === 'rune').text === ":",
                                                 name:   step.children.find(({ type }) => type === 'name').text}))
 
+lib.get = async (dmap, zone, name) => {
+    const slot = ethers.utils.keccak256(
+        ethers.utils.defaultAbiCoder.encode(["address", "bytes32"], [zone, name])
+    )
+    return dmap.pair(slot)
+}
+
 lib.walk = async (dmap, path) => {
     if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
     let [meta, data] = await dmap.pair('0x' + '00'.repeat(32))
@@ -31,7 +39,7 @@ lib.walk = async (dmap, path) => {
             fail(`zero register`)
         }
         const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
-        [meta, data] = await dmap.get(zone, fullname)
+        [meta, data] = await lib.get(dmap, zone, fullname)
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
             need((lib._hexToArrayBuffer(meta)[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
