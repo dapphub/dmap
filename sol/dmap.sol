@@ -49,7 +49,7 @@ contract Dmap {
     }
 
     function slot(bytes32 s) external view
-      returns (bytes32 a) {
+      returns (bytes32) {
         assembly {
             mstore(0, sload(s))
             return(0, 32)
@@ -57,7 +57,7 @@ contract Dmap {
     }
 
     function pair(bytes32 s) external view
-      returns (bytes32 a, bytes32 b) {
+      returns (bytes32 meta, bytes32 data) {
         assembly {
             mstore(0, sload(s))
             mstore(32, sload(add(s, 1)))
