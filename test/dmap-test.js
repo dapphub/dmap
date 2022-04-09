@@ -54,7 +54,7 @@ describe('dmap', ()=>{
     })
 
     it('address padding', async ()=> {
-        const [root_self_meta, root_self] = await dmap.get(rootzone.address, b32('root'))
+        const [root_self_meta, root_self] = await lib.get(dmap, rootzone.address, b32('root'))
         const padded1 = ethers.utils.hexZeroPad(rootzone.address, 32)
         const padded2 = rootzone.address + '00'.repeat(33-rootzone.address.length/2)
         //console.log(root_self)
@@ -303,13 +303,6 @@ describe('dmap', ()=>{
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
             })
-        })
-
-        it('get', async () => {
-            await send(dmap.set, name, one, one)
-            const gas = await dmap.estimateGas.get(ALI, name)
-            const bound = bounds.dmap.get
-            await check_gas(gas, bound[0], bound[1])
         })
 
         it('slot', async () => {
