@@ -3,6 +3,11 @@ const multiformats = require('multiformats')
 const prefLenIndex = 2
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
+const ethers = require('ethers')
+const {b32} = require("minihat");
+const coder = ethers.utils.defaultAbiCoder
+const keccak256 = ethers.utils.keccak256
+
 
 module.exports = lib = {}
 
@@ -18,12 +23,56 @@ lib.parse =s=> {
     const ast = lib.parser.getAST(s)
     return lib.postparse(ast)
 }
+
+const getabi = ["function get(address, bytes32) returns (bytes32 meta, bytes32 data)"]
+lib.get = async (dmap, zone, name) => {
+    const iface = new ethers.utils.Interface(getabi)
+    const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
+    const meta = await dmap.provider.getStorageAt(dmap.address, slot)
+    const nextslot = ethers.utils.hexZeroPad(
+        ethers.BigNumber.from(slot).add(1).toHexString(), 32
+    )
+    const data = await dmap.provider.getStorageAt(dmap.address, nextslot)
+    const resdata = iface.encodeFunctionResult("get", [meta, data])
+    const res = iface.decodeFunctionResult("get", resdata)
+    return res
+}
+
+
+lib.set = async (dmap, name, meta, data) => {
+    const abi = ["function set(bytes32, bytes32, bytes32)"]
+    const iface = new ethers.utils.Interface(abi)
+    const calldata = iface.encodeFunctionData("set", [name, meta, data])
+    return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
+}
+
+lib.slot = async (dmap, slot) => {
+    const abi = ["function slot(bytes32) returns (bytes32)"]
+    const iface = new ethers.utils.Interface(abi)
+    const val = await dmap.provider.getStorageAt(dmap.address, slot)
+    const resdata = iface.encodeFunctionResult("slot", [val])
+    const res = iface.decodeFunctionResult("slot", resdata)
+    return res[0]
+}
+
+lib.pair = async (dmap, slot) => {
+    const iface = new ethers.utils.Interface(getabi)
+    const meta = await dmap.provider.getStorageAt(dmap.address, slot)
+    const nextslot = ethers.utils.hexZeroPad(
+        ethers.BigNumber.from(slot).add(1).toHexString(), 32
+    )
+    const data = await dmap.provider.getStorageAt(dmap.address, nextslot)
+    const resdata = iface.encodeFunctionResult("get", [meta, data])
+    const res = iface.decodeFunctionResult("get", resdata)
+    return res
+}
+
 lib.postparse =ast=> ast.children.map(step => ({locked: step.children.find(({ type }) => type === 'rune').text === ":",
                                                 name:   step.children.find(({ type }) => type === 'name').text}))
 
 lib.walk = async (dmap, path) => {
     if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
-    let [meta, data] = await dmap.pair('0x' + '00'.repeat(32))
+    let [meta, data] = await lib.pair(dmap, '0x' + '00'.repeat(32))
     let ctx = {locked: path.charAt(0) === ':'}
     for (const step of lib.parse(path)) {
         zone = data.slice(0, 21 * 2)
@@ -31,7 +80,7 @@ lib.walk = async (dmap, path) => {
             fail(`zero register`)
         }
         const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
-        [meta, data] = await dmap.get(zone, fullname)
+        [meta, data] = await lib.get(dmap, zone, fullname)
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
             need((lib._hexToArrayBuffer(meta)[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
