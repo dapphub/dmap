@@ -34,11 +34,16 @@ const iface = new ethers.utils.Interface(abi)
 
 lib.get = async (dmap, zone, name) => {
     const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
-    const meta = await dmap.provider.getStorageAt(dmap.address, slot)
     const nextslot = ethers.utils.hexZeroPad(
         ethers.BigNumber.from(slot).add(1).toHexString(), 32
     )
-    const data = await dmap.provider.getStorageAt(dmap.address, nextslot)
+    let meta, data
+    await Promise.all(
+        [
+            dmap.provider.getStorageAt(dmap.address, slot),
+            dmap.provider.getStorageAt(dmap.address, nextslot)
+        ]
+    ).then(res => [meta, data] = res)
     const resdata = iface.encodeFunctionResult("get", [meta, data])
     const res = iface.decodeFunctionResult("get", resdata)
     return res
@@ -58,11 +63,16 @@ lib.slot = async (dmap, slot) => {
 }
 
 lib.pair = async (dmap, slot) => {
-    const meta = await dmap.provider.getStorageAt(dmap.address, slot)
     const nextslot = ethers.utils.hexZeroPad(
         ethers.BigNumber.from(slot).add(1).toHexString(), 32
     )
-    const data = await dmap.provider.getStorageAt(dmap.address, nextslot)
+    let meta, data
+    await Promise.all(
+        [
+            dmap.provider.getStorageAt(dmap.address, slot),
+            dmap.provider.getStorageAt(dmap.address, nextslot)
+        ]
+    ).then(res => [meta, data] = res)
     const resdata = iface.encodeFunctionResult("get", [meta, data])
     const res = iface.decodeFunctionResult("get", resdata)
     return res
