@@ -1,12 +1,15 @@
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
-
 const ethers = hh.ethers
-const { send, want, snapshot, revert, b32, fail} = require('minihat')
-const { expectEvent, check_gas} = require('./utils/helpers')
-const { bounds } = require('./bounds')
+const coder = ethers.utils.defaultAbiCoder
 const constants = ethers.constants
+const keccak256 = ethers.utils.keccak256
 const { smock } = require('@defi-wonderland/smock')
+const { send, want, snapshot, revert, b32, fail } = require('minihat')
+
+const { expectEvent, check_gas, padRight, check_entry} = require('./utils/helpers')
+const { bounds } = require('./bounds')
+const lib = require('../dmap.js')
 
 const debug = require('debug')('dmap:test')
 
@@ -35,20 +38,12 @@ describe('dmap', ()=>{
         await revert(hh)
     })
 
-    const check_entry = async (usr, key, _meta, _data) => {
-        const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
-        const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
-        const res = await dmap.get(usr, key)
-        want(res.meta).to.eql(meta)
-        want(res.data).to.eql(data)
-    }
-
     it('deploy postconditions', async ()=>{
         const dmap_ref = await rootzone.dmap()
         want(dmap_ref).eq(dmap.address)
 
-        await check_entry(ALI, b32('1'), constants.HashZero, constants.HashZero)
-        await check_entry(BOB, b32('1'), constants.HashZero, constants.HashZero)
+        await check_entry(dmap, ALI, b32('1'), constants.HashZero, constants.HashZero)
+        await check_entry(dmap, BOB, b32('1'), constants.HashZero, constants.HashZero)
 
         // dmap.get returns (meta, data), internal storage is (data, meta)
         const rootData = await dmap.provider.getStorageAt(dmap.address, 1)
@@ -79,7 +74,25 @@ describe('dmap', ()=>{
             [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, meta, data]
         )
 
-        await check_entry(ALI, name, meta, data)
+        await check_entry(dmap, ALI, name, meta, data)
+    })
+
+    it('event filter', async () => {
+        const name = '0x'+'81'.repeat(32)
+        const meta = '0x'+'f3'.repeat(32)
+        const data = '0x'+'33'.repeat(32)
+        const rx = await send(dmap.connect(bob).set, name, meta, data)
+
+        // try to filter the Set event
+        const _logs = await dmap.filters.Set(BOB, name, meta, data)
+        const logs = await dmap.queryFilter(_logs, 0)
+        want(logs.length).to.eql(1)
+
+        const log = logs[0]
+        // check that it's anonymous
+        want(log.event).to.eql(undefined)
+        want(log.eventSignature).to.eql(undefined)
+        want(log.args).to.eql(undefined)
     })
 
     describe('event data no overlap', () => {
@@ -105,7 +118,7 @@ describe('dmap', ()=>{
                     ]
                 )
 
-                await check_entry(words.zone, words.name, words.meta, words.data)
+                await check_entry(dmap, words.zone, words.name, words.meta, words.data)
             })
         }
     })
@@ -123,8 +136,8 @@ describe('dmap', ()=>{
             const val1 = '0x' + 'ff'.repeat(32)
             await send(dmap.set, b32("1"), LOCK, val0)
             await send(dmap.set, b32("2"), LOCK, val1)
-            await check_entry(ALI, b32('1'), LOCK, val0)
-            await check_entry(ALI, b32('2'), LOCK, val1)
+            await check_entry(dmap, ALI, b32('1'), LOCK, val0)
+            await check_entry(dmap, ALI, b32('2'), LOCK, val1)
         })
 
         it('name all bits in hash', async () => {
@@ -144,7 +157,7 @@ describe('dmap', ()=>{
                 await send(dmap.connect(fake.wallet).set, names[i], LOCK, b32(String(i)))
             }
             for (let i = 0; i < names.length; i++) {
-                await check_entry(fake.address, names[i], LOCK, b32(String(i)))
+                await check_entry(dmap, fake.address, names[i], LOCK, b32(String(i)))
             }
         })
 
@@ -165,22 +178,48 @@ describe('dmap', ()=>{
                 await send(dmap.connect(fake.wallet).set, name, LOCK, b32(String(i)))
             }
             for (let i = 0; i < addrs.length; i++) {
-                await check_entry(addrs[i], name, LOCK, b32(String(i)))
+                await check_entry(dmap, addrs[i], name, LOCK, b32(String(i)))
             }
+        })
+    })
+
+    describe('slot and pair', () => {
+        it('root pair', async () => {
+            const [rootMeta, rootData] = await dmap.pair('0x' + '00'.repeat(32))
+            want(ethers.utils.hexDataSlice(rootData, 0, 20))
+                .to.eql(rootzone.address.toLowerCase())
+            want(rootMeta).to.eql(LOCK)
+        })
+
+        it('root slot', async () => {
+            const rootMeta = await dmap.slot('0x' + '00'.repeat(32))
+            want(rootMeta).to.eql(LOCK)
+
+            const rootData = await dmap.slot('0x' + '00'.repeat(31) + '01')
+            want(ethers.utils.hexDataSlice(rootData, 0, 20))
+                .to.eql(rootzone.address.toLowerCase())
+        })
+
+        it('direct traverse', async ()=>{
+            const root_free_slot = keccak256(coder.encode(["address", "bytes32"], [rootzone.address, b32('free')]))
+            const [root_free_meta, root_free_data] = await dmap.pair(root_free_slot)
+            want(root_free_data).eq(padRight(freezone.address))
+            const flags = Buffer.from(root_free_meta.slice(2), 'hex')[0]
+            want(flags & lib.FLAG_LOCK).to.equal(lib.FLAG_LOCK)
         })
     })
 
     describe('lock', () => {
         const check_ext_unchanged = async () => {
             const zero = constants.HashZero
-            await check_entry(BOB, b32("1"), zero, zero)
-            await check_entry(ALI, b32("2"), zero, zero)
+            await check_entry(dmap, BOB, b32("1"), zero, zero)
+            await check_entry(dmap, ALI, b32("2"), zero, zero)
         }
 
         it('set without data', async () => {
             // set just lock bit, nothing else
             await send(dmap.set, b32("1"), LOCK, constants.HashZero)
-            await check_entry(ALI, b32("1"), LOCK, constants.HashZero)
+            await check_entry(dmap, ALI, b32("1"), LOCK, constants.HashZero)
 
             // should fail whether or not ali attempts to change something
             await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
@@ -193,23 +232,23 @@ describe('dmap', ()=>{
         it('set with data', async () => {
             // set lock and data
             await send(dmap.set, b32("1"), LOCK, b32('hello'))
-            await check_entry(ALI, b32("1"), LOCK, b32('hello'))
+            await check_entry(dmap, ALI, b32("1"), LOCK, b32('hello'))
             await fail('LOCK', dmap.set, b32("1"), LOCK, b32('hello'))
             await check_ext_unchanged()
         })
 
         it("set a few times, then lock", async () => {
             await send(dmap.set, b32("1"), constants.HashZero, constants.HashZero)
-            await check_entry(ALI, b32("1"), constants.HashZero, constants.HashZero)
+            await check_entry(dmap, ALI, b32("1"), constants.HashZero, constants.HashZero)
 
             await send(dmap.set, b32("1"), constants.HashZero, b32('hello'))
-            await check_entry(ALI, b32("1"), constants.HashZero, b32('hello'))
+            await check_entry(dmap, ALI, b32("1"), constants.HashZero, b32('hello'))
 
             await send(dmap.set, b32("1"), constants.HashZero, b32('goodbye'))
-            await check_entry(ALI, b32("1"), constants.HashZero, b32('goodbye'))
+            await check_entry(dmap, ALI, b32("1"), constants.HashZero, b32('goodbye'))
 
             await send(dmap.set, b32("1"), LOCK, b32('goodbye'))
-            await check_entry(ALI, b32("1"), LOCK, b32('goodbye'))
+            await check_entry(dmap, ALI, b32("1"), LOCK, b32('goodbye'))
 
             await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
@@ -273,6 +312,21 @@ describe('dmap', ()=>{
             await check_gas(gas, bound[0], bound[1])
         })
 
+        it('slot', async () => {
+            await send(dmap.set, name, one, one)
+            const k = keccak256(coder.encode(["address", "bytes32"], [ALI, name]))
+            const gas = await dmap.estimateGas.slot(k)
+            const bound = bounds.dmap.slot
+            await check_gas(gas, bound[0], bound[1])
+        })
+
+        it('pair', async () => {
+            await send(dmap.set, name, one, one)
+            const k = keccak256(coder.encode(["address", "bytes32"], [ALI, name]))
+            const gas = await dmap.estimateGas.pair(k)
+            const bound = bounds.dmap.pair
+            await check_gas(gas, bound[0], bound[1])
+        })
    })
 
 })
