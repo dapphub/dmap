@@ -3,6 +3,11 @@ const multiformats = require('multiformats')
 const prefLenIndex = 2
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
+const ethers = require('ethers')
+const {b32} = require("minihat");
+const coder = ethers.utils.defaultAbiCoder
+const keccak256 = ethers.utils.keccak256
+
 
 module.exports = lib = {}
 
@@ -16,49 +21,74 @@ rune  ::= ":" | "."
 lib.parser = new ebnf.Parser(ebnf.Grammars.W3C.getRules(lib.grammar))
 lib.parse =s=> {
     const ast = lib.parser.getAST(s)
-    const flat = lib.postparse(ast)
-    return flat[0]
-}
-lib.postparse =ast=> [ast.children.map(step => ({locked: step.children.find(({ type }) => type === 'rune').text === ":",
-                                                 name:   step.children.find(({ type }) => type === 'name').text}))]
-
-lib._walk = async (dmap, path, register, reg_meta, ctx, trace) => {
-    trace.push({ path, register, reg_meta, ctx })
-    if (path.length == 0) {
-        return trace
-    }
-    if (register == '0x' + '00'.repeat(32)) {
-        fail(`zero register`)
-    }
-
-    const step = path[0]
-    rest = path.slice(1)
-    const addr = register.slice(0, 21 * 2)
-    const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length)
-    const [meta, data] = await dmap.get(addr, fullname)
-    if (step.locked) {
-        need(ctx.locked, `Encountered ':' in unlocked subpath`)
-        need((Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
-        return await lib._walk(dmap, rest, data, meta, {locked:true}, trace)
-    } else {
-        return await lib._walk(dmap, rest, data, meta, {locked:false}, trace)
-    }
+    return lib.postparse(ast)
 }
 
-lib._slot = async (dmap, key) => {
-    need(dmap.provider, `walk: no provider on given dmap object`)
-    return await dmap.provider.getStorageAt(dmap.address, key)
+const getabi = ["function get(address, bytes32) returns (bytes32 meta, bytes32 data)"]
+lib.get = async (dmap, zone, name) => {
+    const iface = new ethers.utils.Interface(getabi)
+    const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
+    const meta = await dmap.provider.getStorageAt(dmap.address, slot)
+    const nextslot = ethers.utils.hexZeroPad(
+        ethers.BigNumber.from(slot).add(1).toHexString(), 32
+    )
+    const data = await dmap.provider.getStorageAt(dmap.address, nextslot)
+    const resdata = iface.encodeFunctionResult("get", [meta, data])
+    const res = iface.decodeFunctionResult("get", resdata)
+    return res
 }
+
+
+lib.set = async (dmap, name, meta, data) => {
+    const abi = ["function set(bytes32, bytes32, bytes32)"]
+    const iface = new ethers.utils.Interface(abi)
+    const calldata = iface.encodeFunctionData("set", [name, meta, data])
+    return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
+}
+
+lib.slot = async (dmap, slot) => {
+    const abi = ["function slot(bytes32) returns (bytes32)"]
+    const iface = new ethers.utils.Interface(abi)
+    const val = await dmap.provider.getStorageAt(dmap.address, slot)
+    const resdata = iface.encodeFunctionResult("slot", [val])
+    const res = iface.decodeFunctionResult("slot", resdata)
+    return res[0]
+}
+
+lib.pair = async (dmap, slot) => {
+    const iface = new ethers.utils.Interface(getabi)
+    const meta = await dmap.provider.getStorageAt(dmap.address, slot)
+    const nextslot = ethers.utils.hexZeroPad(
+        ethers.BigNumber.from(slot).add(1).toHexString(), 32
+    )
+    const data = await dmap.provider.getStorageAt(dmap.address, nextslot)
+    const resdata = iface.encodeFunctionResult("get", [meta, data])
+    const res = iface.decodeFunctionResult("get", resdata)
+    return res
+}
+
+lib.postparse =ast=> ast.children.map(step => ({locked: step.children.find(({ type }) => type === 'rune').text === ":",
+                                                name:   step.children.find(({ type }) => type === 'name').text}))
 
 lib.walk = async (dmap, path) => {
-    if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) {
-        path = ':' + path
+    if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
+    let [meta, data] = await lib.pair(dmap, '0x' + '00'.repeat(32))
+    let ctx = {locked: path.charAt(0) === ':'}
+    for (const step of lib.parse(path)) {
+        zone = data.slice(0, 21 * 2)
+        if (zone === '0x' + '00'.repeat(20)) {
+            fail(`zero register`)
+        }
+        const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
+        [meta, data] = await lib.get(dmap, zone, fullname)
+        if (step.locked) {
+            need(ctx.locked, `Encountered ':' in unlocked subpath`)
+            need((lib._hexToArrayBuffer(meta)[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            ctx.locked = true
+        }
+        ctx.locked = step.locked
     }
-    const meta = await lib._slot(dmap, '0x' + '00'.repeat(32))
-    const root = await lib._slot(dmap, '0x' + '00'.repeat(31) + '01')
-    const steps = lib.parse(path)
-    const trace = await lib._walk(dmap, steps, root, meta, {locked: path.charAt(0) === ':'}, [])
-    return {'meta': trace[trace.length-1].reg_meta, 'data': trace[trace.length-1].register}
+    return {meta, data}
 }
 
 lib.prepareCID = (cidStr, lock) => {
@@ -76,10 +106,10 @@ lib.prepareCID = (cidStr, lock) => {
 }
 
 lib.unpackCID = (metaStr, dataStr) => {
-    const data = Buffer.from(dataStr.slice(2), 'hex')
-    const meta = Buffer.from(metaStr.slice(2), 'hex')
+    const meta = lib._hexToArrayBuffer(metaStr)
+    const data = lib._hexToArrayBuffer(dataStr)
     const prefixLen = meta[prefLenIndex]
-    const specs = multiformats.CID.inspectBytes(meta.slice(-prefixLen));
+    const specs = multiformats.CID.inspectBytes(meta.slice(-prefixLen))
     const hashLen = specs.digestSize
     const cidBytes = new Uint8Array(prefixLen + hashLen)
 
@@ -92,4 +122,16 @@ lib.unpackCID = (metaStr, dataStr) => {
 lib.readCID = async (dmap, path) => {
     const packed = await lib.walk(dmap, path)
     return lib.unpackCID(packed.meta, packed.data)
+}
+
+lib._hexToArrayBuffer = hex => {
+    const bytes = []
+    for (let c = 2; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.slice(c, c + 2), 16))
+    return new Uint8Array(bytes)
+}
+
+lib._strToHex = str => {
+    let codes =  str.split('').map(c => c.charCodeAt(0))
+    return codes.map(c => c.toString(16)).join('')
 }

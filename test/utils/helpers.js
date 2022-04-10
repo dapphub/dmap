@@ -9,6 +9,9 @@ const { ethers } = require("hardhat");
 const {expect} = require("chai");
 const { want } = require('minihat')
 const {hexZeroPad} = require("@ethersproject/bytes");
+const keccak256 = ethers.utils.keccak256
+const coder = ethers.utils.defaultAbiCoder
+const lib = require('../../dmap')
 
 // matches eventName
 // matches data if defined
@@ -49,4 +52,26 @@ async function check_gas (gas, minGas, maxGas) {
   }
 }
 
-module.exports = { expectEvent, padRight, check_gas }
+// check that get, pair, and slot all return [meta, data]
+const check_entry = async (dmap, usr, key, _meta, _data) => {
+    const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
+    const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
+    const resGet = await lib.get(dmap, usr, key)
+    want(resGet.meta).to.eql(meta)
+    want(resGet.data).to.eql(data)
+    want(resGet).to.eql([meta, data])
+}
+
+let testlib = {}
+testlib.get = async (dmap, zone, name) => {
+    // like lib.get, but calls dmap instead of direct storage access
+    const getabi = ["function get(address, bytes32) returns (bytes32 meta, bytes32 data)"]
+    const iface = new ethers.utils.Interface(getabi)
+    const calldata = iface.encodeFunctionData("get", [zone, name])
+    const resdata = await dmap.signer.call({to: dmap.address, data: calldata})
+    const res = iface.decodeFunctionResult("get", resdata)
+    want(res).to.eql(await lib.get(dmap, zone, name))
+    return res
+}
+
+module.exports = { expectEvent, padRight, check_gas, check_entry, testlib }

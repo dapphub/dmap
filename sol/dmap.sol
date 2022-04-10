@@ -5,10 +5,20 @@
 
 pragma solidity 0.8.13;
 
+interface DmapI {
+    function get(address zone, address name) external view
+      returns (bytes32 meta, bytes32 data);
+    function set(bytes32 name, bytes32 meta, bytes32 data) external;
+}
+
 contract Dmap {
     bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
     bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
     error            LOCK();  // export in ABI
+    event            Set(
+        address indexed caller, bytes32 indexed name,
+        bytes32 indexed meta, bytes32 indexed data
+    ) anonymous;
 
     constructor(address rootzone) {
         assembly {
@@ -27,6 +37,9 @@ contract Dmap {
         }
         if eq(100, calldatasize()) {
             mstore(0, caller())
+            let name := calldataload(4)
+            let meta := calldataload(36)
+            let data := calldataload(68)
             mstore(32, name)
             log4(0, 0, caller(), name, meta, data)
             let slot0 := keccak256(0, 64)
