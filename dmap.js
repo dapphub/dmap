@@ -66,8 +66,8 @@ lib.pair = async (dmap, slot) => {
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
-    const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
-    const res = dmap_i.decodeFunctionResult("get", resdata)
+    const resdata = dmap_i.encodeFunctionResult("pair", [meta, data])
+    const res = dmap_i.decodeFunctionResult("pair", resdata)
     return res
 }
 
