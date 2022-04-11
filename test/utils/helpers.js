@@ -11,6 +11,7 @@ const { want } = require('minihat')
 const {hexZeroPad} = require("@ethersproject/bytes");
 const keccak256 = ethers.utils.keccak256
 const coder = ethers.utils.defaultAbiCoder
+const lib = require('../../dmap')
 
 // matches eventName
 // matches data if defined
@@ -55,22 +56,22 @@ async function check_gas (gas, minGas, maxGas) {
 const check_entry = async (dmap, usr, key, _meta, _data) => {
     const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
     const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
-    const resGet = await dmap.get(usr, key)
+    const resGet = await lib.get(dmap, usr, key)
     want(resGet.meta).to.eql(meta)
     want(resGet.data).to.eql(data)
     want(resGet).to.eql([meta, data])
-
-    const slot = keccak256(coder.encode(["address", "bytes32"], [usr, key]))
-    const resPair = await dmap.pair(slot)
-    want(resPair.meta).to.eql(meta)
-    want(resPair.data).to.eql(data)
-    want(resPair).to.eql([meta, data])
-
-    want(await dmap.slot(slot)).to.eql(meta)
-    const nextslot = ethers.utils.hexZeroPad(
-        ethers.BigNumber.from(slot).add(1).toHexString(), 32
-    )
-    want(await dmap.slot(nextslot)).to.eql(data)
 }
 
-module.exports = { expectEvent, padRight, check_gas, check_entry }
+let testlib = {}
+testlib.get = async (dmap, zone, name) => {
+    // like lib.get, but calls dmap instead of direct storage access
+    const getabi = ["function get(address, bytes32) returns (bytes32 meta, bytes32 data)"]
+    const iface = new ethers.utils.Interface(getabi)
+    const calldata = iface.encodeFunctionData("get", [zone, name])
+    const resdata = await dmap.signer.call({to: dmap.address, data: calldata})
+    const res = iface.decodeFunctionResult("get", resdata)
+    want(res).to.eql(await lib.get(dmap, zone, name))
+    return res
+}
+
+module.exports = { expectEvent, padRight, check_gas, check_entry, testlib }
