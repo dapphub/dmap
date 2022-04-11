@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.13;
 
-import { Dmap } from './dmap.sol';
+import { Dmap, DmapI } from './dmap.sol';
 
 contract RootZone {
     Dmap    public immutable dmap;
@@ -36,7 +36,7 @@ contract RootZone {
     function etch(bytes32 salt, bytes32 name, address zone) external {
         bytes32 hash = keccak256(abi.encode(salt, name, zone));
         if (hash != mark) revert ErrExpired();
-        dmap.set(name, LOCK, bytes32(bytes20(zone)));
+        DmapI(address(dmap)).set(name, LOCK, bytes32(bytes20(zone)));
         emit Etch(name, zone);
     }
 }

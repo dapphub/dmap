@@ -7,9 +7,12 @@ const keccak256 = ethers.utils.keccak256
 const { smock } = require('@defi-wonderland/smock')
 const { send, want, snapshot, revert, b32, fail } = require('minihat')
 
-const { expectEvent, check_gas, padRight, check_entry} = require('./utils/helpers')
+const { expectEvent, check_gas, padRight, check_entry, testlib } = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
+
+let dmapi_abi = require('../artifacts/sol/dmap.sol/DmapI.json').abi
+let dmap_i = new ethers.utils.Interface(dmapi_abi)
 
 const debug = require('debug')('dmap:test')
 
@@ -21,14 +24,12 @@ describe('dmap', ()=>{
     let ali, bob, cat
     let ALI, BOB, CAT
     const LOCK = '0x80'+'00'.repeat(31)
-    let signers
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
-        signers = await ethers.getSigners();
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
 
         await hh.run('deploy-mock-dmap')
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers)
+        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
@@ -54,7 +55,7 @@ describe('dmap', ()=>{
     })
 
     it('address padding', async ()=> {
-        const [root_self_meta, root_self] = await dmap.get(rootzone.address, b32('root'))
+        const [root_self_meta, root_self] = await testlib.get(dmap, rootzone.address, b32('root'))
         const padded1 = ethers.utils.hexZeroPad(rootzone.address, 32)
         const padded2 = rootzone.address + '00'.repeat(33-rootzone.address.length/2)
         //console.log(root_self)
@@ -62,17 +63,26 @@ describe('dmap', ()=>{
         //console.log(padded2)
     })
 
+    const expectLog = async (dmap, eventname, caller, name, meta, data, isAnon = false) => {
+        const _logs = dmap.filters[eventname](caller, name, meta, data)
+        const logs = await dmap.queryFilter(_logs, 0)
+        want(logs.length).to.eql(1)
+        const log = logs[0]
+
+        if (isAnon) {
+            want(log.event).to.eql(undefined)
+            want(log.eventSignature).to.eql(undefined)
+            want(log.args).to.eql(undefined)
+        }
+    }
+
     it('basic set', async () => {
         const name = '0x'+'11'.repeat(32)
         const meta = '0x'+'1'+'0'.repeat(63)
         const data = '0x'+'22'.repeat(32)
-        const rx = await send(dmap.set, name, meta, data)
+        const rx = await send(lib.set, dmap, name, meta, data)
 
-        const eventdata = meta + data.slice(2)
-        expectEvent(
-            rx, undefined,
-            [ethers.utils.hexZeroPad(ALI, 32).toLowerCase(), name, meta, data]
-        )
+        await expectLog(dmap, "Set", ALI, name, meta, data, true)
 
         await check_entry(dmap, ALI, name, meta, data)
     })
@@ -81,18 +91,10 @@ describe('dmap', ()=>{
         const name = '0x'+'81'.repeat(32)
         const meta = '0x'+'f3'.repeat(32)
         const data = '0x'+'33'.repeat(32)
-        const rx = await send(dmap.connect(bob).set, name, meta, data)
+        await send(lib.set, dmap.connect(bob), name, meta, data)
 
         // try to filter the Set event
-        const _logs = await dmap.filters.Set(BOB, name, meta, data)
-        const logs = await dmap.queryFilter(_logs, 0)
-        want(logs.length).to.eql(1)
-
-        const log = logs[0]
-        // check that it's anonymous
-        want(log.event).to.eql(undefined)
-        want(log.eventSignature).to.eql(undefined)
-        want(log.args).to.eql(undefined)
+        await expectLog(dmap, "Set", BOB, name, meta, data, true)
     })
 
     describe('event data no overlap', () => {
@@ -107,16 +109,10 @@ describe('dmap', ()=>{
                 await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
                 want(fake.address).to.eql(words.zone)
 
-                const rx = await send(dmap.connect(fake.wallet).set, words.name, words.meta, words.data)
+                await send(lib.set, dmap.connect(fake.wallet), words.name, words.meta, words.data)
 
-                const eventdata = words.meta + words.data.slice(2)
-                expectEvent(
-                    rx, undefined,
-                    [
-                        ethers.utils.hexZeroPad(words.zone, 32).toLowerCase(),
-                        words.name, words.meta, words.data
-                    ]
-                )
+                // TODO await oops
+                expectLog(dmap, "Set", words.zone, words.name, words.meta, words.data, true)
 
                 await check_entry(dmap, words.zone, words.name, words.meta, words.data)
             })
@@ -127,15 +123,15 @@ describe('dmap', ()=>{
         it("zone in hash", async () => {
             const alival = '0x' + '11'.repeat(32)
             const bobval = '0x' + 'ff'.repeat(32)
-            await send(dmap.set, b32("1"), LOCK, alival)
-            await send(dmap.connect(bob).set, b32("1"), LOCK, bobval)
+            await send(lib.set, dmap, b32("1"), LOCK, alival)
+            await send(lib.set, dmap.connect(bob), b32("1"), LOCK, bobval)
         })
 
         it("name in hash", async () => {
             const val0 = '0x' + '11'.repeat(32)
             const val1 = '0x' + 'ff'.repeat(32)
-            await send(dmap.set, b32("1"), LOCK, val0)
-            await send(dmap.set, b32("2"), LOCK, val1)
+            await send(lib.set, dmap, b32("1"), LOCK, val0)
+            await send(lib.set, dmap, b32("2"), LOCK, val1)
             await check_entry(dmap, ALI, b32('1'), LOCK, val0)
             await check_entry(dmap, ALI, b32('2'), LOCK, val1)
         })
@@ -154,7 +150,7 @@ describe('dmap', ()=>{
                 '0x7f' + 'ff'.repeat(31), // flip msb
             ]
             for (let i = 0; i < names.length; i++) {
-                await send(dmap.connect(fake.wallet).set, names[i], LOCK, b32(String(i)))
+                await send(lib.set, dmap.connect(fake.wallet), names[i], LOCK, b32(String(i)))
             }
             for (let i = 0; i < names.length; i++) {
                 await check_entry(dmap, fake.address, names[i], LOCK, b32(String(i)))
@@ -175,7 +171,7 @@ describe('dmap', ()=>{
             for (let i = 0; i < addrs.length; i++) {
                 const fake = await smock.fake('Dmap', {address: addrs[i]})
                 await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
-                await send(dmap.connect(fake.wallet).set, name, LOCK, b32(String(i)))
+                await send(lib.set, dmap.connect(fake.wallet), name, LOCK, b32(String(i)))
             }
             for (let i = 0; i < addrs.length; i++) {
                 await check_entry(dmap, addrs[i], name, LOCK, b32(String(i)))
@@ -185,24 +181,24 @@ describe('dmap', ()=>{
 
     describe('slot and pair', () => {
         it('root pair', async () => {
-            const [rootMeta, rootData] = await dmap.pair('0x' + '00'.repeat(32))
+            const [rootMeta, rootData] = await lib.pair(dmap, '0x' + '00'.repeat(32))
             want(ethers.utils.hexDataSlice(rootData, 0, 20))
                 .to.eql(rootzone.address.toLowerCase())
             want(rootMeta).to.eql(LOCK)
         })
 
         it('root slot', async () => {
-            const rootMeta = await dmap.slot('0x' + '00'.repeat(32))
+            const rootMeta = await lib.slot(dmap, '0x' + '00'.repeat(32))
             want(rootMeta).to.eql(LOCK)
 
-            const rootData = await dmap.slot('0x' + '00'.repeat(31) + '01')
+            const rootData = await lib.slot(dmap, '0x' + '00'.repeat(31) + '01')
             want(ethers.utils.hexDataSlice(rootData, 0, 20))
                 .to.eql(rootzone.address.toLowerCase())
         })
 
         it('direct traverse', async ()=>{
             const root_free_slot = keccak256(coder.encode(["address", "bytes32"], [rootzone.address, b32('free')]))
-            const [root_free_meta, root_free_data] = await dmap.pair(root_free_slot)
+            const [root_free_meta, root_free_data] = await lib.pair(dmap, root_free_slot)
             want(root_free_data).eq(padRight(freezone.address))
             const flags = Buffer.from(root_free_meta.slice(2), 'hex')[0]
             want(flags & lib.FLAG_LOCK).to.equal(lib.FLAG_LOCK)
@@ -218,50 +214,113 @@ describe('dmap', ()=>{
 
         it('set without data', async () => {
             // set just lock bit, nothing else
-            await send(dmap.set, b32("1"), LOCK, constants.HashZero)
+            await send(lib.set, dmap, b32("1"), LOCK, constants.HashZero)
             await check_entry(dmap, ALI, b32("1"), LOCK, constants.HashZero)
 
             // should fail whether or not ali attempts to change something
-            await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
-            await fail('LOCK', dmap.set, b32("1"), LOCK, constants.HashZero)
-            await fail('LOCK', dmap.set, b32("1"), constants.HashZero, b32('hello'))
-            await fail('LOCK', dmap.set, b32("1"), LOCK, b32('hello'))
+            await fail('LOCK', lib.set, dmap, b32("1"), constants.HashZero, constants.HashZero)
+            await fail('LOCK', lib.set, dmap, b32("1"), LOCK, constants.HashZero)
+            await fail('LOCK', lib.set, dmap, b32("1"), constants.HashZero, b32('hello'))
+            await fail('LOCK', lib.set, dmap, b32("1"), LOCK, b32('hello'))
             await check_ext_unchanged()
         })
 
         it('set with data', async () => {
             // set lock and data
-            await send(dmap.set, b32("1"), LOCK, b32('hello'))
+            await send(lib.set, dmap, b32("1"), LOCK, b32('hello'))
             await check_entry(dmap, ALI, b32("1"), LOCK, b32('hello'))
-            await fail('LOCK', dmap.set, b32("1"), LOCK, b32('hello'))
+            await fail('LOCK', lib.set, dmap, b32("1"), LOCK, b32('hello'))
             await check_ext_unchanged()
         })
 
         it("set a few times, then lock", async () => {
-            await send(dmap.set, b32("1"), constants.HashZero, constants.HashZero)
+            await send(lib.set, dmap, b32("1"), constants.HashZero, constants.HashZero)
             await check_entry(dmap, ALI, b32("1"), constants.HashZero, constants.HashZero)
 
-            await send(dmap.set, b32("1"), constants.HashZero, b32('hello'))
+            await send(lib.set, dmap, b32("1"), constants.HashZero, b32('hello'))
             await check_entry(dmap, ALI, b32("1"), constants.HashZero, b32('hello'))
 
-            await send(dmap.set, b32("1"), constants.HashZero, b32('goodbye'))
+            await send(lib.set, dmap, b32("1"), constants.HashZero, b32('goodbye'))
             await check_entry(dmap, ALI, b32("1"), constants.HashZero, b32('goodbye'))
 
-            await send(dmap.set, b32("1"), LOCK, b32('goodbye'))
+            await send(lib.set, dmap, b32("1"), LOCK, b32('goodbye'))
             await check_entry(dmap, ALI, b32("1"), LOCK, b32('goodbye'))
 
-            await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
+            await fail('LOCK', lib.set, dmap, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
         })
 
         it("0x7ffff... doesn't lock, 0xffff... locks", async () => {
             const FLIP_LOCK = '0x7'+'f'.repeat(63)
-            await send(dmap.set, b32("1"), FLIP_LOCK, constants.HashZero)
+            await send(lib.set, dmap, b32("1"), FLIP_LOCK, constants.HashZero)
 
             const neg_one = '0x'+'ff'.repeat(32)
-            await send(dmap.set, b32("1"), neg_one, constants.HashZero)
-            await fail('LOCK', dmap.set, b32("1"), constants.HashZero, constants.HashZero)
+            await send(lib.set, dmap, b32("1"), neg_one, constants.HashZero)
+            await fail('LOCK', lib.set, dmap, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
+        })
+    })
+
+    describe('DmapI', () => {
+        it('error LOCK', async () => {
+            // ethers has one error pool for all contracts, so just read it
+            const errfrag = dmap_i.getError("LOCK")
+            want(errfrag.inputs.length).to.eql(0)
+            want(errfrag.name).to.eql("LOCK")
+        })
+
+        it('event Set', async () => {
+            const eventfrag = dmap_i.getEvent("Set")
+            want(eventfrag.inputs.length).to.eql(4)
+            want(eventfrag.name).to.eql("Set")
+
+            const dmap_with_abi = new ethers.Contract(dmap.address, dmapi_abi, ali)
+            const name = '0x'+'88'.repeat(32)
+            const meta = '0x'+'cc'.repeat(32)
+            const data = '0x'+'ee'.repeat(32)
+            await send(dmap_with_abi.set, name, meta, data)
+            await expectLog(dmap_with_abi, "Set", ALI, name, meta, data, true)
+        })
+
+        describe('calldata', () => {
+            const name = b32('MyKey')
+            it('get', async () => {
+                const calldata = dmap_i.encodeFunctionData("get", [ALI, name])
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
+                )).rejectedWith('revert')
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata + '00'}
+                )).rejectedWith('revert')
+                await ali.sendTransaction({to: dmap.address, data: calldata})
+            })
+
+            it('set', async () => {
+                const calldata = dmap_i.encodeFunctionData("set", [name, name, name])
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
+                )).rejectedWith('revert')
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata + '00'}
+                )).rejectedWith('revert')
+                await ali.sendTransaction({to: dmap.address, data: calldata})
+            })
+
+            it('slot', async () => {
+                // slot is implemented in lib, not dmap
+                const calldata = dmap_i.encodeFunctionData("slot", [name])
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata.slice(0, calldata.length)}
+                )).rejectedWith('revert')
+            })
+
+            it('pair', async () => {
+                // pair is implemented in lib, not dmap
+                const calldata = dmap_i.encodeFunctionData("pair", [name])
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata.slice(0, calldata.length)}
+                )).rejectedWith('revert')
+            })
         })
     })
 
@@ -273,32 +332,32 @@ describe('dmap', ()=>{
 
             describe('no change', () => {
                 it('0->0', async () => {
-                    const rx = await send(dmap.set, name, constants.HashZero, constants.HashZero)
+                    const rx = await send(lib.set, dmap, name, constants.HashZero, constants.HashZero)
                     const bound = bounds.dmap.set[0][0]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
                 it('1->1', async () => {
-                    await send(dmap.set, name, one, one)
-                    const rx = await send(dmap.set, name, one, one)
+                    await send(lib.set, dmap, name, one, one)
+                    const rx = await send(lib.set, dmap, name, one, one)
                     const bound = bounds.dmap.set[1][1]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
             })
             describe('change', () => {
                 it('0->1', async () => {
-                    const rx = await send(dmap.set, name, one, one)
+                    const rx = await send(lib.set, dmap, name, one, one)
                     const bound = bounds.dmap.set[0][1]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
                 it('1->0', async () => {
-                    await send(dmap.set, name, one, one)
-                    const rx = await send(dmap.set, name, constants.HashZero, constants.HashZero)
+                    await send(lib.set, dmap, name, one, one)
+                    const rx = await send(lib.set, dmap, name, constants.HashZero, constants.HashZero)
                     const bound = bounds.dmap.set[1][0]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
                 it('1->2', async () => {
-                    await send(dmap.set, name, one, one)
-                    const rx = await send(dmap.set, name, two, two)
+                    await send(lib.set, dmap, name, one, one)
+                    const rx = await send(lib.set, dmap, name, two, two)
                     const bound = bounds.dmap.set[1][2]
                     await check_gas(rx.gasUsed, bound[0], bound[1])
                 })
@@ -306,26 +365,14 @@ describe('dmap', ()=>{
         })
 
         it('get', async () => {
-            await send(dmap.set, name, one, one)
-            const gas = await dmap.estimateGas.get(ALI, name)
+            await send(lib.set, dmap, name, one, one)
+
+            const calldata = dmap_i.encodeFunctionData("get", [ALI, name])
+            const tx = await dmap.signer.sendTransaction({to: dmap.address, data: calldata})
+            const rx = await tx.wait()
+
             const bound = bounds.dmap.get
-            await check_gas(gas, bound[0], bound[1])
-        })
-
-        it('slot', async () => {
-            await send(dmap.set, name, one, one)
-            const k = keccak256(coder.encode(["address", "bytes32"], [ALI, name]))
-            const gas = await dmap.estimateGas.slot(k)
-            const bound = bounds.dmap.slot
-            await check_gas(gas, bound[0], bound[1])
-        })
-
-        it('pair', async () => {
-            await send(dmap.set, name, one, one)
-            const k = keccak256(coder.encode(["address", "bytes32"], [ALI, name]))
-            const gas = await dmap.estimateGas.pair(k)
-            const bound = bounds.dmap.pair
-            await check_gas(gas, bound[0], bound[1])
+            await check_gas(rx.gasUsed, bound[0], bound[1])
         })
    })
 
