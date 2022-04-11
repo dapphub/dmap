@@ -11,7 +11,7 @@ const { expectEvent, check_gas, padRight, check_entry, testlib } = require('./ut
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 
-let dmapi_abi = require('../artifacts/sol/dmap.sol/DmapI.json').abi
+let dmapi_abi = require('../artifacts/sol/dmap.sol/DmapFace.json').abi
 let dmap_i = new ethers.utils.Interface(dmapi_abi)
 
 const debug = require('debug')('dmap:test')
@@ -261,7 +261,7 @@ describe('dmap', ()=>{
         })
     })
 
-    describe('DmapI', () => {
+    describe('DmapFace', () => {
         it('error LOCK', async () => {
             // ethers has one error pool for all contracts, so just read it
             const errfrag = dmap_i.getError("LOCK")
