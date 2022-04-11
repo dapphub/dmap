@@ -5,20 +5,6 @@
 
 pragma solidity 0.8.13;
 
-interface DmapI {
-    function get(address zone, bytes32 name) external view
-      returns (bytes32 meta, bytes32 data);
-    function set(bytes32 name, bytes32 meta, bytes32 data) external;
-    function slot(bytes32 s) external view
-      returns (bytes32);
-    function pair(bytes32 s) external view
-      returns (bytes32 meta, bytes32 data);
-    error LOCK();
-    event Set(
-        address indexed caller, bytes32 indexed name,
-        bytes32 indexed meta, bytes32 indexed data
-    ) anonymous;
-}
 
 contract Dmap {
     bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
@@ -62,4 +48,19 @@ contract Dmap {
         }
         revert(0, 0)
     }}
+}
+
+interface DmapFace {
+    function get(address zone, bytes32 name) external view
+      returns (bytes32 meta, bytes32 data);
+    function set(bytes32 name, bytes32 meta, bytes32 data) external;
+    function slot(bytes32 s) external view
+      returns (bytes32);
+    function pair(bytes32 s) external view
+      returns (bytes32 meta, bytes32 data);
+    error LOCK();
+    event Set(
+        address indexed caller, bytes32 indexed name,
+        bytes32 indexed meta, bytes32 indexed data
+    ) anonymous;
 }

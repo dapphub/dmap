@@ -8,7 +8,7 @@ const {b32} = require("minihat");
 const coder = ethers.utils.defaultAbiCoder
 const keccak256 = ethers.utils.keccak256
 
-const abi    = require('./artifacts/sol/dmap.sol/DmapI.json').abi
+const abi    = require('./artifacts/sol/dmap.sol/DmapFace.json').abi
 const dmap_i = new ethers.utils.Interface(abi)
 
 module.exports = lib = {}
