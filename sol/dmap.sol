@@ -13,6 +13,11 @@ interface DmapI {
       returns (bytes32);
     function pair(bytes32 s) external view
       returns (bytes32 meta, bytes32 data);
+    error LOCK();
+    event Set(
+        address indexed caller, bytes32 indexed name,
+        bytes32 indexed meta, bytes32 indexed data
+    ) anonymous;
 }
 
 contract Dmap {

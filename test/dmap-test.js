@@ -62,7 +62,7 @@ describe('dmap', ()=>{
         //console.log(padded2)
     })
 
-    const expectLog = async (eventname, caller, name, meta, data, isAnon = false) => {
+    const expectLog = async (dmap, eventname, caller, name, meta, data, isAnon = false) => {
         const _logs = dmap.filters[eventname](caller, name, meta, data)
         const logs = await dmap.queryFilter(_logs, 0)
         want(logs.length).to.eql(1)
@@ -82,7 +82,7 @@ describe('dmap', ()=>{
         const rx = await send(lib.set, dmap, name, meta, data)
 
         const eventdata = meta + data.slice(2)
-        await expectLog("Set", ALI, name, meta, data, true)
+        await expectLog(dmap, "Set", ALI, name, meta, data, true)
 
         await check_entry(dmap, ALI, name, meta, data)
     })
@@ -94,7 +94,7 @@ describe('dmap', ()=>{
         const rx = await send(lib.set, dmap.connect(bob), name, meta, data)
 
         // try to filter the Set event
-        await expectLog("Set", BOB, name, meta, data, true)
+        await expectLog(dmap, "Set", BOB, name, meta, data, true)
     })
 
     describe('event data no overlap', () => {
@@ -111,7 +111,8 @@ describe('dmap', ()=>{
 
                 await send(lib.set, dmap.connect(fake.wallet), words.name, words.meta, words.data)
 
-                expectLog("Set", words.zone, words.name, words.meta, words.data, true)
+                // TODO await oops
+                expectLog(dmap, "Set", words.zone, words.name, words.meta, words.data, true)
 
                 await check_entry(dmap, words.zone, words.name, words.meta, words.data)
             })
@@ -257,6 +258,30 @@ describe('dmap', ()=>{
             await send(lib.set, dmap, b32("1"), neg_one, constants.HashZero)
             await fail('LOCK', lib.set, dmap, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
+        })
+    })
+
+    describe('DmapI', () => {
+        let dmapi_abi = require('../artifacts/sol/dmap.sol/DmapI.json').abi
+        let dmap_i = new ethers.utils.Interface(dmapi_abi)
+        it('error LOCK', async () => {
+            // ethers has one error pool for all contracts, so just read it
+            const errfrag = dmap_i.getError("LOCK")
+            want(errfrag.inputs.length).to.eql(0)
+            want(errfrag.name).to.eql("LOCK")
+        })
+
+        it('event Set', async () => {
+            const eventfrag = dmap_i.getEvent("Set")
+            want(eventfrag.inputs.length).to.eql(4)
+            want(eventfrag.name).to.eql("Set")
+
+            const dmap_with_abi = new ethers.Contract(dmap.address, dmapi_abi, ali)
+            const name = '0x'+'88'.repeat(32)
+            const meta = '0x'+'cc'.repeat(32)
+            const data = '0x'+'ee'.repeat(32)
+            await send(dmap_with_abi.set, name, meta, data)
+            await expectLog(dmap_with_abi, "Set", ALI, name, meta, data, true)
         })
     })
 
