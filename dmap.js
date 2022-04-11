@@ -1,15 +1,20 @@
 const ebnf = require('ebnf')
 const multiformats = require('multiformats')
-const prefLenIndex = 2
-const fail =s=> { throw new Error(s) }
-const need =(b,s)=> b || fail(s)
+
 const ethers = require('ethers')
-const {b32} = require("minihat");
-const coder = ethers.utils.defaultAbiCoder
-const keccak256 = ethers.utils.keccak256
+const { b32 } = require("minihat");
 
 const abi    = require('./artifacts/sol/dmap.sol/DmapFace.json').abi
 const dmap_i = new ethers.utils.Interface(abi)
+
+
+const fail =s=> { throw new Error(s) }
+const need =(b,s)=> b || fail(s)
+
+const coder = ethers.utils.defaultAbiCoder
+const keccak256 = ethers.utils.keccak256
+
+const prefLenIndex = 2
 
 module.exports = lib = {}
 
@@ -23,7 +28,14 @@ rune  ::= ":" | "."
 lib.parser = new ebnf.Parser(ebnf.Grammars.W3C.getRules(lib.grammar))
 lib.parse =s=> {
     const ast = lib.parser.getAST(s)
-    return lib.postparse(ast)
+    return ast.children.map(step => {
+        const rune = step.children[0]
+        const name = step.children[1]
+        return {
+            locked: rune.text === ":",
+            name:   name.text
+        }
+    })
 }
 
 lib.get = async (dmap, zone, name) => {
@@ -71,8 +83,6 @@ lib.pair = async (dmap, slot) => {
     return res
 }
 
-lib.postparse =ast=> ast.children.map(step => ({locked: step.children.find(({ type }) => type === 'rune').text === ":",
-                                                name:   step.children.find(({ type }) => type === 'name').text}))
 
 lib.walk = async (dmap, path) => {
     if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
