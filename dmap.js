@@ -2,18 +2,16 @@ const ebnf = require('ebnf')
 const multiformats = require('multiformats')
 
 const ethers = require('ethers')
-const { b32 } = require("minihat");
+const { b32 } = require('minihat');
 
 const abi    = require('./artifacts/sol/dmap.sol/DmapFace.json').abi
 const dmap_i = new ethers.utils.Interface(abi)
-
 
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
 
 const coder = ethers.utils.defaultAbiCoder
 const keccak256 = ethers.utils.keccak256
-
 const prefLenIndex = 2
 
 module.exports = lib = {}
@@ -25,6 +23,7 @@ step  ::= (rune) (name)
 name  ::= [a-z0-9]+
 rune  ::= ":" | "."
 `
+
 lib.parser = new ebnf.Parser(ebnf.Grammars.W3C.getRules(lib.grammar))
 lib.parse =s=> {
     const ast = lib.parser.getAST(s)
@@ -82,7 +81,6 @@ lib.pair = async (dmap, slot) => {
     const res = dmap_i.decodeFunctionResult("pair", resdata)
     return res
 }
-
 
 lib.walk = async (dmap, path) => {
     if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
