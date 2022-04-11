@@ -4,7 +4,7 @@
 
 pragma solidity 0.8.13;
 
-import { Dmap } from './dmap.sol';
+import { Dmap, DmapI } from './dmap.sol';
 
 contract FreeZone {
     Dmap                      public immutable dmap;
@@ -33,6 +33,6 @@ contract FreeZone {
 
     function set(bytes32 key, bytes32 meta, bytes32 data) external {
         require(controllers[key] == msg.sender, "ERR_OWNER");
-        dmap.set(key, meta, data);
+        DmapI(address(dmap)).set(key, meta, data);
     }
 }
