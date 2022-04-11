@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: AGPL-3.0
 
-pragma solidity 0.8.11;
+pragma solidity 0.8.13;
 
 import { Dmap } from './dmap.sol';
 
@@ -11,7 +11,7 @@ contract RootZone {
     uint256        immutable FREQ = 31 hours;
     bytes32        immutable LOCK = bytes32(uint256(1 << 255));
 
-    event Hark(bytes32 indexed hash);
+    event Hark(bytes32 indexed mark);
     event Etch(bytes32 indexed name, address indexed zone);
 
     error ErrPending();
@@ -30,7 +30,7 @@ contract RootZone {
         if (!ok) revert ErrReceipt();
         last = block.timestamp;
         mark = hash;
-        emit Hark(hash);
+        emit Hark(mark);
     }
 
     function etch(bytes32 salt, bytes32 name, address zone) external {
