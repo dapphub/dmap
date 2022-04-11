@@ -6,7 +6,7 @@
 pragma solidity 0.8.13;
 
 interface DmapI {
-    function get(address zone, address name) external view
+    function get(address zone, bytes32 name) external view
       returns (bytes32 meta, bytes32 data);
     function set(bytes32 name, bytes32 meta, bytes32 data) external;
     function slot(bytes32 s) external view
@@ -60,5 +60,6 @@ contract Dmap {
             mstore(0, SIG_LOCK)
             revert(0, 4)
         }
+        revert(0, 0)
     }}
 }

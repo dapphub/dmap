@@ -11,6 +11,9 @@ const { expectEvent, check_gas, padRight, check_entry, testlib } = require('./ut
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 
+let dmapi_abi = require('../artifacts/sol/dmap.sol/DmapI.json').abi
+let dmap_i = new ethers.utils.Interface(dmapi_abi)
+
 const debug = require('debug')('dmap:test')
 
 describe('dmap', ()=>{
@@ -262,8 +265,6 @@ describe('dmap', ()=>{
     })
 
     describe('DmapI', () => {
-        let dmapi_abi = require('../artifacts/sol/dmap.sol/DmapI.json').abi
-        let dmap_i = new ethers.utils.Interface(dmapi_abi)
         it('error LOCK', async () => {
             // ethers has one error pool for all contracts, so just read it
             const errfrag = dmap_i.getError("LOCK")
@@ -283,6 +284,49 @@ describe('dmap', ()=>{
             await send(dmap_with_abi.set, name, meta, data)
             await expectLog(dmap_with_abi, "Set", ALI, name, meta, data, true)
         })
+
+        describe('calldata', () => {
+            const name = b32('MyKey')
+            it('get', async () => {
+                const calldata = dmap_i.encodeFunctionData("get", [ALI, name])
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
+                )).rejectedWith('revert')
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata + '00'}
+                )).rejectedWith('revert')
+                await ali.sendTransaction({to: dmap.address, data: calldata})
+            })
+
+            it('set', async () => {
+
+                const calldata = dmap_i.encodeFunctionData("set", [name, name, name])
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
+                )).rejectedWith('revert')
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata + '00'}
+                )).rejectedWith('revert')
+                await ali.sendTransaction({to: dmap.address, data: calldata})
+            })
+
+            it('slot', async () => {
+                // slot is implemented in lib, not dmap
+                const calldata = dmap_i.encodeFunctionData("slot", [name])
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata.slice(0, calldata.length)}
+                )).rejectedWith('revert')
+            })
+
+            it('pair', async () => {
+                // pair is implemented in lib, not dmap
+                const calldata = dmap_i.encodeFunctionData("pair", [name])
+                await want(ali.sendTransaction(
+                    {to: dmap.address, data: calldata.slice(0, calldata.length)}
+                )).rejectedWith('revert')
+            })
+        })
+
     })
 
     describe('gas', () => {
@@ -328,9 +372,7 @@ describe('dmap', ()=>{
         it('get', async () => {
             await send(lib.set, dmap, name, one, one)
 
-            const abi = ["function get(address, bytes32) returns (bytes32, bytes32)"]
-            const iface = new ethers.utils.Interface(abi)
-            const calldata = iface.encodeFunctionData("get", [ALI, name])
+            const calldata = dmap_i.encodeFunctionData("get", [ALI, name])
             const tx = await dmap.signer.sendTransaction({to: dmap.address, data: calldata})
             const rx = await tx.wait()
 
