@@ -24,14 +24,12 @@ describe('dmap', ()=>{
     let ali, bob, cat
     let ALI, BOB, CAT
     const LOCK = '0x80'+'00'.repeat(31)
-    let signers
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
-        signers = await ethers.getSigners();
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
 
         await hh.run('deploy-mock-dmap')
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers)
+        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
@@ -84,7 +82,6 @@ describe('dmap', ()=>{
         const data = '0x'+'22'.repeat(32)
         const rx = await send(lib.set, dmap, name, meta, data)
 
-        const eventdata = meta + data.slice(2)
         await expectLog(dmap, "Set", ALI, name, meta, data, true)
 
         await check_entry(dmap, ALI, name, meta, data)
@@ -94,7 +91,7 @@ describe('dmap', ()=>{
         const name = '0x'+'81'.repeat(32)
         const meta = '0x'+'f3'.repeat(32)
         const data = '0x'+'33'.repeat(32)
-        const rx = await send(lib.set, dmap.connect(bob), name, meta, data)
+        await send(lib.set, dmap.connect(bob), name, meta, data)
 
         // try to filter the Set event
         await expectLog(dmap, "Set", BOB, name, meta, data, true)

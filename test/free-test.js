@@ -33,7 +33,7 @@ describe('freezone', ()=>{
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
 
         await hh.run('deploy-mock-dmap')
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers)
+        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone

@@ -1,8 +1,6 @@
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
 const ethers = hh.ethers
-const coder = ethers.utils.defaultAbiCoder
-const keccak256 = ethers.utils.keccak256
 const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
 
 const {expectEvent, padRight, check_gas, check_entry} = require('./utils/helpers')
@@ -35,7 +33,7 @@ describe('rootzone', ()=>{
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
 
         await hh.run('deploy-mock-dmap')
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers)
+        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
