@@ -8,6 +8,8 @@ const {b32} = require("minihat");
 const coder = ethers.utils.defaultAbiCoder
 const keccak256 = ethers.utils.keccak256
 
+const abi    = require('./artifacts/sol/dmap.sol/DmapI.json').abi
+const dmap_i = new ethers.utils.Interface(abi)
 
 module.exports = lib = {}
 
@@ -24,14 +26,6 @@ lib.parse =s=> {
     return lib.postparse(ast)
 }
 
-// doesn't match DmapI, just for parsing arguments and results
-const abi = [
-    "function get(address, bytes32) returns (bytes32 meta, bytes32 data)",
-    "function set(bytes32, bytes32, bytes32)",
-    "function slot(bytes32) returns (bytes32)",
-]
-const iface = new ethers.utils.Interface(abi)
-
 lib.get = async (dmap, zone, name) => {
     const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
     const nextslot = ethers.utils.hexZeroPad(
@@ -44,21 +38,20 @@ lib.get = async (dmap, zone, name) => {
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
-    const resdata = iface.encodeFunctionResult("get", [meta, data])
-    const res = iface.decodeFunctionResult("get", resdata)
+    const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
+    const res = dmap_i.decodeFunctionResult("get", resdata)
     return res
 }
 
-
 lib.set = async (dmap, name, meta, data) => {
-    const calldata = iface.encodeFunctionData("set", [name, meta, data])
+    const calldata = dmap_i.encodeFunctionData("set", [name, meta, data])
     return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
 }
 
 lib.slot = async (dmap, slot) => {
     const val = await dmap.provider.getStorageAt(dmap.address, slot)
-    const resdata = iface.encodeFunctionResult("slot", [val])
-    const res = iface.decodeFunctionResult("slot", resdata)
+    const resdata = dmap_i.encodeFunctionResult("slot", [val])
+    const res = dmap_i.decodeFunctionResult("slot", resdata)
     return res[0]
 }
 
@@ -73,8 +66,8 @@ lib.pair = async (dmap, slot) => {
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
-    const resdata = iface.encodeFunctionResult("get", [meta, data])
-    const res = iface.decodeFunctionResult("get", resdata)
+    const resdata = dmap_i.encodeFunctionResult("pair", [meta, data])
+    const res = dmap_i.decodeFunctionResult("pair", resdata)
     return res
 }
 
