@@ -21,14 +21,12 @@ describe('dmap', ()=>{
     let ali, bob, cat
     let ALI, BOB, CAT
     const LOCK = '0x80'+'00'.repeat(31)
-    let signers
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
-        signers = await ethers.getSigners();
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
 
         await hh.run('deploy-mock-dmap')
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers)
+        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
@@ -81,7 +79,7 @@ describe('dmap', ()=>{
         const name = '0x'+'81'.repeat(32)
         const meta = '0x'+'f3'.repeat(32)
         const data = '0x'+'33'.repeat(32)
-        const rx = await send(dmap.connect(bob).set, name, meta, data)
+        await send(dmap.connect(bob).set, name, meta, data)
 
         // try to filter the Set event
         const _logs = await dmap.filters.Set(BOB, name, meta, data)
@@ -109,7 +107,6 @@ describe('dmap', ()=>{
 
                 const rx = await send(dmap.connect(fake.wallet).set, words.name, words.meta, words.data)
 
-                const eventdata = words.meta + words.data.slice(2)
                 expectEvent(
                     rx, undefined,
                     [

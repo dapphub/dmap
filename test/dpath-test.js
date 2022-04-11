@@ -1,5 +1,6 @@
 const dpack = require("@etherpacks/dpack");
 const hh = require("hardhat");
+const ethers = hh.ethers
 const {b32, revert, send, snapshot, want} = require("minihat");
 const lib = require('../dmap.js')
 const {padRight} = require("./utils/helpers");
@@ -12,7 +13,8 @@ describe('dpath', ()=> {
 
     before(async ()=>{
         await hh.run('deploy-mock-dmap')
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers)
+        const [signer] = await ethers.getSigners()
+        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, signer)
         dmap = dapp.dmap
         freezone = dapp.freezone
         rootzone = dapp.rootzone
