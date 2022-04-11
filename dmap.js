@@ -43,7 +43,6 @@ lib.get = async (dmap, zone, name) => {
     return res
 }
 
-
 lib.set = async (dmap, name, meta, data) => {
     const calldata = dmap_i.encodeFunctionData("set", [name, meta, data])
     return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
