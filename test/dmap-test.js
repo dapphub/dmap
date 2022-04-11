@@ -299,7 +299,6 @@ describe('dmap', ()=>{
             })
 
             it('set', async () => {
-
                 const calldata = dmap_i.encodeFunctionData("set", [name, name, name])
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
@@ -326,7 +325,6 @@ describe('dmap', ()=>{
                 )).rejectedWith('revert')
             })
         })
-
     })
 
     describe('gas', () => {
