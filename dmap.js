@@ -24,15 +24,26 @@ lib.parse =s=> {
     return lib.postparse(ast)
 }
 
-const getabi = ["function get(address, bytes32) returns (bytes32 meta, bytes32 data)"]
+// doesn't match DmapI, just for parsing arguments and results
+const abi = [
+    "function get(address, bytes32) returns (bytes32 meta, bytes32 data)",
+    "function set(bytes32, bytes32, bytes32)",
+    "function slot(bytes32) returns (bytes32)",
+]
+const iface = new ethers.utils.Interface(abi)
+
 lib.get = async (dmap, zone, name) => {
-    const iface = new ethers.utils.Interface(getabi)
     const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
-    const meta = await dmap.provider.getStorageAt(dmap.address, slot)
     const nextslot = ethers.utils.hexZeroPad(
         ethers.BigNumber.from(slot).add(1).toHexString(), 32
     )
-    const data = await dmap.provider.getStorageAt(dmap.address, nextslot)
+    let meta, data
+    await Promise.all(
+        [
+            dmap.provider.getStorageAt(dmap.address, slot),
+            dmap.provider.getStorageAt(dmap.address, nextslot)
+        ]
+    ).then(res => [meta, data] = res)
     const resdata = iface.encodeFunctionResult("get", [meta, data])
     const res = iface.decodeFunctionResult("get", resdata)
     return res
@@ -40,15 +51,11 @@ lib.get = async (dmap, zone, name) => {
 
 
 lib.set = async (dmap, name, meta, data) => {
-    const abi = ["function set(bytes32, bytes32, bytes32)"]
-    const iface = new ethers.utils.Interface(abi)
     const calldata = iface.encodeFunctionData("set", [name, meta, data])
     return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
 }
 
 lib.slot = async (dmap, slot) => {
-    const abi = ["function slot(bytes32) returns (bytes32)"]
-    const iface = new ethers.utils.Interface(abi)
     const val = await dmap.provider.getStorageAt(dmap.address, slot)
     const resdata = iface.encodeFunctionResult("slot", [val])
     const res = iface.decodeFunctionResult("slot", resdata)
@@ -56,12 +63,16 @@ lib.slot = async (dmap, slot) => {
 }
 
 lib.pair = async (dmap, slot) => {
-    const iface = new ethers.utils.Interface(getabi)
-    const meta = await dmap.provider.getStorageAt(dmap.address, slot)
     const nextslot = ethers.utils.hexZeroPad(
         ethers.BigNumber.from(slot).add(1).toHexString(), 32
     )
-    const data = await dmap.provider.getStorageAt(dmap.address, nextslot)
+    let meta, data
+    await Promise.all(
+        [
+            dmap.provider.getStorageAt(dmap.address, slot),
+            dmap.provider.getStorageAt(dmap.address, nextslot)
+        ]
+    ).then(res => [meta, data] = res)
     const resdata = iface.encodeFunctionResult("get", [meta, data])
     const res = iface.decodeFunctionResult("get", resdata)
     return res
