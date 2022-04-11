@@ -11,7 +11,7 @@ contract Dmap {
 
     error LOCK();  // export in ABI
     event Set(
-        address indexed caller,
+        address indexed zone,
         bytes32 indexed name,
         bytes32 indexed meta,
         bytes32 indexed data
@@ -54,7 +54,7 @@ contract Dmap {
 interface DmapFace {
     error LOCK();
     event Set(
-        address indexed caller,
+        address indexed zone,
         bytes32 indexed name,
         bytes32 indexed meta,
         bytes32 indexed data
