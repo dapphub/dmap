@@ -7,11 +7,11 @@ const keccak256 = ethers.utils.keccak256
 const { smock } = require('@defi-wonderland/smock')
 const { send, want, snapshot, revert, b32, fail } = require('minihat')
 
-const { expectEvent, check_gas, padRight, check_entry, testlib } = require('./utils/helpers')
+const { check_gas, padRight, check_entry } = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 
-let dmapi_abi = require('../artifacts/sol/dmap.sol/DmapFace.json').abi
+let dmapi_abi = require('../artifacts/sol/dmap.sol/Dmap.json').abi
 let dmap_i = new ethers.utils.Interface(dmapi_abi)
 
 const debug = require('debug')('dmap:test')
@@ -55,7 +55,7 @@ describe('dmap', ()=>{
     })
 
     it('address padding', async ()=> {
-        const [root_self_meta, root_self] = await testlib.get(dmap, rootzone.address, b32('root'))
+        const [root_self_meta, root_self] = await lib.get(dmap, rootzone.address, b32('root'))
         const padded1 = ethers.utils.hexZeroPad(rootzone.address, 32)
         const padded2 = rootzone.address + '00'.repeat(33-rootzone.address.length/2)
         //console.log(root_self)
@@ -80,7 +80,7 @@ describe('dmap', ()=>{
         const name = '0x'+'11'.repeat(32)
         const meta = '0x'+'1'+'0'.repeat(63)
         const data = '0x'+'22'.repeat(32)
-        const rx = await send(lib.set, dmap, name, meta, data)
+        await send(lib.set, dmap, name, meta, data)
 
         await expectLog(dmap, "Set", ALI, name, meta, data, true)
 
@@ -284,15 +284,16 @@ describe('dmap', ()=>{
 
         describe('calldata', () => {
             const name = b32('MyKey')
+            // pair is implemented in lib, not dmap
             it('get', async () => {
                 const calldata = dmap_i.encodeFunctionData("get", [ALI, name])
                 await want(ali.sendTransaction(
-                    {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
+                    {to: dmap.address, data: calldata.slice(0, calldata.length)}
                 )).rejectedWith('revert')
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata + '00'}
                 )).rejectedWith('revert')
-                await ali.sendTransaction({to: dmap.address, data: calldata})
+                await want(ali.sendTransaction({to: dmap.address, data: calldata})).rejectedWith('revert')
             })
 
             it('set', async () => {
@@ -307,19 +308,17 @@ describe('dmap', ()=>{
             })
 
             it('slot', async () => {
-                // slot is implemented in lib, not dmap
+                // slot aliases pair
                 const calldata = dmap_i.encodeFunctionData("slot", [name])
-                await want(ali.sendTransaction(
-                    {to: dmap.address, data: calldata.slice(0, calldata.length)}
-                )).rejectedWith('revert')
+                await ali.sendTransaction({to: dmap.address, data: calldata.slice(0, calldata.length)})
             })
 
             it('pair', async () => {
-                // pair is implemented in lib, not dmap
                 const calldata = dmap_i.encodeFunctionData("pair", [name])
                 await want(ali.sendTransaction(
-                    {to: dmap.address, data: calldata.slice(0, calldata.length)}
+                    {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
                 )).rejectedWith('revert')
+                await ali.sendTransaction({to: dmap.address, data: calldata.slice(0, calldata.length)})
             })
         })
     })
@@ -364,14 +363,14 @@ describe('dmap', ()=>{
             })
         })
 
-        it('get', async () => {
+        it('pair', async () => {
             await send(lib.set, dmap, name, one, one)
-
-            const calldata = dmap_i.encodeFunctionData("get", [ALI, name])
+            const slot = keccak256(coder.encode(["address", "bytes32"], [ALI, name]))
+            const calldata = dmap_i.encodeFunctionData("pair", [slot])
             const tx = await dmap.signer.sendTransaction({to: dmap.address, data: calldata})
             const rx = await tx.wait()
 
-            const bound = bounds.dmap.get
+            const bound = bounds.dmap.pair
             await check_gas(rx.gasUsed, bound[0], bound[1])
         })
    })

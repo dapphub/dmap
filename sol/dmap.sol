@@ -5,11 +5,8 @@
 
 pragma solidity 0.8.13;
 
-contract Dmap {
-    bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
-    bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
-
-    error LOCK();  // export in ABI
+interface Dmap {
+    error LOCK();
     event Set(
         address indexed zone,
         bytes32 indexed name,
@@ -17,15 +14,27 @@ contract Dmap {
         bytes32 indexed data
     ) anonymous;
 
+    function get(address zone, bytes32 name) external view
+        returns (bytes32 meta, bytes32 data);
+    function set(bytes32 name, bytes32 meta, bytes32 data) external;
+    function slot(bytes32 s) external view returns (bytes32);
+    function pair(bytes32 s) external view returns (bytes32 meta, bytes32 data);
+}
+
+contract _dmap_ {
+    bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
+    bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
+
+    error LOCK();  // export in ABI
+
     constructor(address rootzone) { assembly {
         sstore(0, FLAG_LOCK)
         sstore(1, shl(96, rootzone))
     }}
 
     fallback() external payable { assembly {
-        if eq(68, calldatasize()) {
-            calldatacopy(0, 4, 64)
-            let slot := keccak256(0, 64)
+        if eq(36, calldatasize()) {
+            let slot := calldataload(4)
             mstore(0, sload(slot))
             mstore(32, sload(add(slot, 1)))
             return(0, 64)
@@ -49,20 +58,4 @@ contract Dmap {
         revert(0, 0)
     }}
 
-}
-
-interface DmapFace {
-    error LOCK();
-    event Set(
-        address indexed zone,
-        bytes32 indexed name,
-        bytes32 indexed meta,
-        bytes32 indexed data
-    ) anonymous;
-
-    function get(address zone, bytes32 name) external view
-        returns (bytes32 meta, bytes32 data);
-    function set(bytes32 name, bytes32 meta, bytes32 data) external;
-    function slot(bytes32 s) external view returns (bytes32);
-    function pair(bytes32 s) external view returns (bytes32 meta, bytes32 data);
 }
