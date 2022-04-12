@@ -46,7 +46,7 @@ contract _dmap_ {
             mstore(32, name)
             let slot := keccak256(0, 64)
             mstore(0, sload(slot))
-            mstore(32, sload(slot))
+            mstore(32, sload(add(slot, 1)))
             return(0, 64)
         }
         if eq(100, calldatasize()) {
