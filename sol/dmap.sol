@@ -25,8 +25,6 @@ contract _dmap_ {
     bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
     bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
 
-    error LOCK();  // export in ABI
-
     constructor(address rootzone) { assembly {
         sstore(0, FLAG_LOCK)
         sstore(1, shl(96, rootzone))
