@@ -39,6 +39,16 @@ contract _dmap_ {
             mstore(32, sload(add(slot, 1)))
             return(0, 64)
         }
+        if eq(68, calldatasize()) {
+            let zone := calldataload(4)
+            let name := calldataload(36)
+            mstore(0, zone)
+            mstore(32, name)
+            let slot := keccak256(0, 64)
+            mstore(0, sload(slot))
+            mstore(32, sload(slot))
+            return(0, 64)
+        }
         if eq(100, calldatasize()) {
             let name := calldataload(4)
             let meta := calldataload(36)
