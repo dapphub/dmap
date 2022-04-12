@@ -9,8 +9,6 @@ const { ethers } = require("hardhat");
 const {expect} = require("chai");
 const { want } = require('minihat')
 const {hexZeroPad} = require("@ethersproject/bytes");
-const keccak256 = ethers.utils.keccak256
-const coder = ethers.utils.defaultAbiCoder
 const lib = require('../../dmap')
 
 // matches eventName
@@ -63,14 +61,14 @@ const check_entry = async (dmap, usr, key, _meta, _data) => {
 }
 
 let testlib = {}
-testlib.get = async (dmap, zone, name) => {
-    // like lib.get, but calls dmap instead of direct storage access
-    const getabi = ["function get(address, bytes32) returns (bytes32 meta, bytes32 data)"]
-    const iface = new ethers.utils.Interface(getabi)
-    const calldata = iface.encodeFunctionData("get", [zone, name])
+testlib.pair = async (dmap, slot) => {
+    // like lib.pair, but calls dmap instead of direct storage access
+    const pairabi = ["function pair(bytes32) returns (bytes32 meta, bytes32 data)"]
+    const iface = new ethers.utils.Interface(pairabi)
+    const calldata = iface.encodeFunctionData("pair", [slot])
     const resdata = await dmap.signer.call({to: dmap.address, data: calldata})
-    const res = iface.decodeFunctionResult("get", resdata)
-    want(res).to.eql(await lib.get(dmap, zone, name))
+    const res = iface.decodeFunctionResult("pair", resdata)
+    want(res).to.eql(await lib.pair(dmap, slot))
     return res
 }
 
