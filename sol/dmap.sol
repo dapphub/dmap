@@ -26,12 +26,6 @@ contract _dmap_ {
     bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
 
     error LOCK();  // export in ABI
-    event Set(
-        address indexed zone,
-        bytes32 indexed name,
-        bytes32 indexed meta,
-        bytes32 indexed data
-    ) anonymous;
 
     constructor(address rootzone) { assembly {
         sstore(0, FLAG_LOCK)
