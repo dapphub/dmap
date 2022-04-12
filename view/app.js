@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
+const dpack = require('@etherpacks/dpack')
 const dmap = require('../dmap.js')
-const dmapAddress = '0x44a47a976b2a4af781365b27f94e582ffdb71c12'
+const dmapAddress = '0x7fA88e1014B0640833a03ACfEC71F242b5fBDC85'
 const dmapArtifact = require('../artifacts/sol/dmap.sol/Dmap.json')
 
 window.onload =()=> {
@@ -29,10 +30,24 @@ window.onload =()=> {
         }
 
         try {
+            // display json content from a CID if we can
             const cidResult = dmap.unpackCID(walkResult.meta, walkResult.data)
             result.textContent += '\n' + 'ipfs: ' + cidResult
+            const ipfsResult = await dpack.getIpfsJson(cidResult)
+            result.textContent += '\n\n' + JSON.stringify(ipfsResult, null, 4)
         }
-        catch (error){}
+        catch(e){
+            // otherwise show text
+            let utf8decoder = new TextDecoder()
+            const bytes = dmap._hexToArrayBuffer(walkResult.data)
+            let i
+            for (i = 0; i < bytes.length; i++) {
+                if (bytes[bytes.length -1 - i] !== 0) {
+                    break
+                }
+            }
+            result.textContent += '\n' + 'text: ' + utf8decoder.decode(bytes.slice(0, -i))
+        }
     });
 
     $('#dpath').addEventListener("keyup", event => {
