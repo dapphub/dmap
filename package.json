@@ -1,5 +1,7 @@
 {
+  "private": true,
   "scripts": {
+    "build": "webpack",
     "pretest": "npx hardhat compile",
     "test": "npx mocha test"
   },
@@ -10,7 +12,10 @@
     "@types/mocha": "^9.0.0",
     "hardhat": "^2.8.3",
     "minihat": "^0.0.5",
-    "web3-utils": "^1.7.1"
+    "v8": "^0.1.0",
+    "web3-utils": "^1.7.1",
+    "webpack": "^5.70.0",
+    "webpack-cli": "^4.9.2"
   },
   "dependencies": {
     "ebnf": "^1.9.0"

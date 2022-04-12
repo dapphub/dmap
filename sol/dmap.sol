@@ -33,9 +33,8 @@ contract _dmap_ {
     }}
 
     fallback() external payable { assembly {
-        if eq(68, calldatasize()) {
-            calldatacopy(0, 4, 64)
-            let slot := keccak256(0, 64)
+        if eq(36, calldatasize()) {
+            let slot := calldataload(4)
             mstore(0, sload(slot))
             mstore(32, sload(add(slot, 1)))
             return(0, 64)
