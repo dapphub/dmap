@@ -8,9 +8,11 @@ window.onload =()=> {
     const $ = document.querySelector.bind(document);
     const result = $('#result')
 
+    const line =s=> { $('#result').textContent += s + '\n' }
+
     $('#btnGet').addEventListener('click', async () =>  {
-        result.textContent = '\n' + '...'
         const dpath = $('#dpath').value;
+        line(`WALK ${dpath}`)
         const provider = new ethers.providers.Web3Provider(window.ethereum)
         const dmapContract = new ethers.Contract(
             dmapAddress,
@@ -21,20 +23,20 @@ window.onload =()=> {
         let walkResult
         try {
             walkResult = await dmap.walk(dmapContract, dpath)
-            result.textContent = '\n' + 'meta: ' + walkResult.meta
-            result.textContent += '\n' + 'data: ' + walkResult.data
+            line(`meta: ${walkResult.meta}`)
+            line(`data: ${walkResult.data}`)
         }
         catch (error) {
-            result.textContent = '\n' + error
+            line(`FAIL: ${error}`)
             return
         }
 
         try {
             // display json content from a CID if we can
             const cidResult = dmap.unpackCID(walkResult.meta, walkResult.data)
-            result.textContent += '\n' + 'ipfs: ' + cidResult
+            line(`ipfs: ${cidResult}`)
             const ipfsResult = await dpack.getIpfsJson(cidResult)
-            result.textContent += '\n\n' + JSON.stringify(ipfsResult, null, 4)
+            line(JSON.stringify(ipfsResult, null, 4))
         }
         catch(e){
             // otherwise show text
@@ -46,7 +48,7 @@ window.onload =()=> {
                     break
                 }
             }
-            result.textContent += '\n' + 'text: ' + utf8decoder.decode(bytes.slice(0, -i))
+            line(`text: ${utf8decoder.decode(bytes.slice(0, -i))}`)
         }
     });
 
