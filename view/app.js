@@ -2,7 +2,7 @@ import { ethers } from 'ethers'
 const dpack = require('@etherpacks/dpack')
 const dmap = require('../dmap.js')
 const dmapAddress = '0x7fA88e1014B0640833a03ACfEC71F242b5fBDC85'
-const dmapArtifact = require('../artifacts/sol/dmap.sol/Dmap.json')
+const dmapArtifact = require('../artifacts/core/dmap.sol/Dmap.json')
 
 window.onload =()=> {
     const $ = document.querySelector.bind(document);
