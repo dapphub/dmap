@@ -17,8 +17,6 @@ interface Dmap {
     function get(address zone, bytes32 name) external view
         returns (bytes32 meta, bytes32 data);
     function set(bytes32 name, bytes32 meta, bytes32 data) external;
-    function slot(bytes32 s) external view returns (bytes32);
-    function pair(bytes32 s) external view returns (bytes32 meta, bytes32 data);
 }
 
 contract _dmap_ {

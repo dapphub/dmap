@@ -306,17 +306,21 @@ describe('dmap', ()=>{
                 await ali.sendTransaction({to: dmap.address, data: calldata})
             })
 
+            const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
+            const slot_i  = new ethers.utils.Interface(slotabi)
             it('slot', async () => {
                 // slot is implemented in lib, not dmap
-                const calldata = dmap_i.encodeFunctionData("slot", [name])
+                const calldata = slot_i.encodeFunctionData("slot", [name])
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata.slice(0, calldata.length)}
                 )).rejectedWith('revert')
             })
 
+            const pairabi = ["function pair(bytes32 s) external view returns (bytes32 meta, bytes32 data)"]
+            const pair_i  = new ethers.utils.Interface(pairabi)
             it('pair', async () => {
                 // pair is implemented in lib, not dmap
-                const calldata = dmap_i.encodeFunctionData("pair", [name])
+                const calldata = pair_i.encodeFunctionData("pair", [name])
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata.slice(0, calldata.length)}
                 )).rejectedWith('revert')

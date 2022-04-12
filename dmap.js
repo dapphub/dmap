@@ -59,13 +59,17 @@ lib.set = async (dmap, name, meta, data) => {
     return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
 }
 
+const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
+const slot_i  = new ethers.utils.Interface(slotabi)
 lib.slot = async (dmap, slot) => {
     const val = await dmap.provider.getStorageAt(dmap.address, slot)
-    const resdata = dmap_i.encodeFunctionResult("slot", [val])
-    const res = dmap_i.decodeFunctionResult("slot", resdata)
+    const resdata = slot_i.encodeFunctionResult("slot", [val])
+    const res = slot_i.decodeFunctionResult("slot", resdata)
     return res[0]
 }
 
+const pairabi = ["function pair(bytes32 s) external view returns (bytes32 meta, bytes32 data)"]
+const pair_i  = new ethers.utils.Interface(pairabi)
 lib.pair = async (dmap, slot) => {
     const nextslot = ethers.utils.hexZeroPad(
         ethers.BigNumber.from(slot).add(1).toHexString(), 32
@@ -77,8 +81,8 @@ lib.pair = async (dmap, slot) => {
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
-    const resdata = dmap_i.encodeFunctionResult("pair", [meta, data])
-    const res = dmap_i.decodeFunctionResult("pair", resdata)
+    const resdata = pair_i.encodeFunctionResult("pair", [meta, data])
+    const res = pair_i.decodeFunctionResult("pair", resdata)
     return res
 }
 
