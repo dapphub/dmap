@@ -4,7 +4,7 @@ const multiformats = require('multiformats')
 const ethers = require('ethers')
 const { b32 } = require('minihat');
 
-const abi    = require('./artifacts/sol/dmap.sol/Dmap.json').abi
+const abi    = require('./artifacts/core/dmap.sol/Dmap.json').abi
 const dmap_i = new ethers.utils.Interface(abi)
 
 const fail =s=> { throw new Error(s) }

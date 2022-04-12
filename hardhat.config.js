@@ -7,7 +7,7 @@ require('./task/deploy-mock-dmap.js')
  */
 module.exports = {
     paths: {
-        sources: "sol"
+        sources: "core"
     },
     solidity: {
         version: '0.8.13',

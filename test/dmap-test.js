@@ -11,7 +11,7 @@ const { check_gas, padRight, check_entry } = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 
-let dmapi_abi = require('../artifacts/sol/dmap.sol/Dmap.json').abi
+let dmapi_abi = require('../artifacts/core/dmap.sol/Dmap.json').abi
 let dmap_i = new ethers.utils.Interface(dmapi_abi)
 
 const debug = require('debug')('dmap:test')
