@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "build": "webpack",
+    "ganache": "npx ganache-cli -m \"`echo ${TEST_MNEMONIC}`\"",
     "pretest": "solc core/*.sol core/test/*.sol --combined-json abi,bin -o out --overwrite",
     "test": "npx mocha test"
   },

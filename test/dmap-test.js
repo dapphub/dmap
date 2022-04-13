@@ -1,13 +1,14 @@
 const dpack = require('@etherpacks/dpack')
-const hh = require('hardhat')
+//const hh = require('hardhat')
 const ethers = require('ethers')
 const coder = ethers.utils.defaultAbiCoder
 const constants = ethers.constants
 const keccak256 = ethers.utils.keccak256
 const { smock } = require('@defi-wonderland/smock')
-const { send, want, snapshot, revert, b32, fail } = require('minihat')
+const { send, want, b32, fail } = require('minihat')
+const { snapshot, revert } = require('./utils/helpers')
 
-const { check_gas, padRight, check_entry } = require('./utils/helpers')
+const { check_gas, padRight, check_entry, get_signers} = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 
@@ -18,7 +19,7 @@ let dmap_i = new ethers.utils.Interface(dmapi_abi)
 
 const debug = require('debug')('dmap:test')
 
-const provider = ethers.getDefaultProvider('http://127.0.0.1:8545')
+const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
 
 describe('dmap', ()=>{
     let dmap
@@ -26,25 +27,23 @@ describe('dmap', ()=>{
     let freezone
 
     console.log(provider)
-    const ali = ethers.Wallet.createRandom()
-    const bob = ethers.Wallet.createRandom()
-    const cat = ethers.Wallet.createRandom()
-    let ALI, BOB, CAT
-    [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
+    let [ali, bob, cat] = get_signers(process.env.TEST_MNEMONIC).map(
+        s => s.connect(provider)
+    );
+    let [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address);
+
     const LOCK = '0x80'+'00'.repeat(31)
     before(async ()=>{
-        console.log("LISTING")
-        console.log(await provider.listAccounts())
-        console.log("LISTING")
-        await deploy_mock_dmap({name: 'nombre'}, provider)
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, ali)
+        await deploy_mock_dmap({name: 'nombre'}, provider, ali)
+        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
-        await snapshot(hh)
+        await snapshot(provider)
+        console.log("DONE!")
     })
     beforeEach(async ()=>{
-        await revert(hh)
+        await revert(provider)
     })
 
     it('deploy postconditions', async ()=>{

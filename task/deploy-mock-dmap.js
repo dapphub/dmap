@@ -10,6 +10,8 @@ const Dmap_solc_output = solc_output.contracts["core/dmap.sol:Dmap"]
 //const Dmap_i = new ethers.utils.Interface(Dmap_solc_output.abi)
 const _dmap__solc_output = solc_output.contracts["core/dmap.sol:_dmap_"]
 //const _dmap__i = new ethers.utils.Interface(_dmap__solc_output.abi)
+const RootZone_solc_output = solc_output.contracts["core/root.sol:RootZone"]
+const FreeZone_solc_output = solc_output.contracts["core/free.sol:FreeZone"]
 
 const debug = require('debug')('dmap:deploy')
 
@@ -22,23 +24,32 @@ async function getContractFactory(iface, name) {
 
 }
 
-async function deploy_mock_dmap(args, provider) {
+async function deploy_mock_dmap(args, provider, signer) {
     const packdir = args.packdir ?? './pack/'
 
+    const dmap_type = Dmap_solc_output
     const dmap_deployer = new ethers.ContractFactory(
-        new ethers.utils.Interface(Dmap_solc_output.abi),
-        Dmap_solc_output.bin
+        new ethers.utils.Interface(_dmap__solc_output.abi),
+        _dmap__solc_output.bin,
+        signer
     )
 
-    const root_type = await readArtifact('RootZone')
-    const root_deployer = await getContractFactory('RootZone')
+    const root_type = RootZone_solc_output
+    const root_deployer = new ethers.ContractFactory(
+        new ethers.utils.Interface(RootZone_solc_output.abi),
+        RootZone_solc_output.bin,
+        signer
+    )
 
-    const free_type = await readArtifact('FreeZone')
-    const free_deployer = await getContractFactory('FreeZone')
+    const free_type = FreeZone_solc_output
+    const free_deployer = new ethers.ContractFactory(
+        new ethers.utils.Interface(FreeZone_solc_output.abi),
+        FreeZone_solc_output.bin,
+        signer
+    )
 
-    const [ali] = await ethers.getSigners()
-    const tx_count = await ali.getTransactionCount()
-    const root_address = getContractAddress({ from: ali.address, nonce: tx_count + 1 })
+    const tx_count = await provider.getTransactionCount(signer.address)
+    const root_address = getContractAddress({ from: signer.address, nonce: tx_count + 1 })
     const tx_dmap = await dmap_deployer.deploy(root_address)
     await tx_dmap.deployed()
     const tx_root = await root_deployer.deploy(tx_dmap.address)
@@ -60,7 +71,7 @@ async function deploy_mock_dmap(args, provider) {
         objectname: 'dmap',
         typename: 'Dmap',
         address: tx_dmap.address,
-        artifact: Dmap_solc_output
+        artifact: dmap_type
     }, alsoPackType=true)
 
     // save only dmap in the core pack
@@ -71,14 +82,14 @@ async function deploy_mock_dmap(args, provider) {
         objectname: 'rootzone',
         typename: 'RootZone',
         address: tx_root.address,
-        artifact: RootZone_solc_output
+        artifact: root_type
     }, alsoPackType=true)
 
     await pb.packObject({
         objectname: 'freezone',
         typename: 'FreeZone',
         address: tx_free.address,
-        artifact: FreeZone_solc_output
+        artifact: free_type
     }, alsoPackType=true)
 
     const fullpack = await pb.build()
@@ -91,7 +102,6 @@ async function deploy_mock_dmap(args, provider) {
 
     fs.writeFileSync(packdir + `dmap_core_${args.name}.dpack.json`, show(corepack))
     fs.writeFileSync(packdir + `dmap_full_${args.name}.dpack.json`, show(fullpack))
-
 }
 
 module.exports = {deploy_mock_dmap}

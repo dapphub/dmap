@@ -72,4 +72,27 @@ testlib.pair = async (dmap, slot) => {
     return res
 }
 
-module.exports = { expectEvent, padRight, check_gas, check_entry, testlib }
+const get_signers = (mnemonic) => {
+    const path =  `m/44'/60'/0'/0/`;
+    return Array.from(Array(10).keys())
+        .map(i => ethers.Wallet.fromMnemonic(
+            process.env.TEST_MNEMONIC,
+            path + i
+    ));
+}
+
+let _snap
+
+async function snapshot (provider) {
+    _snap = await provider.send('evm_snapshot')
+}
+
+async function revert (provider) {
+    await provider.send('evm_revert', [_snap])
+    await snapshot(provider)
+}
+
+
+
+
+module.exports = { expectEvent, padRight, check_gas, check_entry, testlib, get_signers, snapshot, revert }
