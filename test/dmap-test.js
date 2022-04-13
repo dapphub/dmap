@@ -1,6 +1,6 @@
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
-const ethers = hh.ethers
+const ethers = require('ethers')
 const coder = ethers.utils.defaultAbiCoder
 const constants = ethers.constants
 const keccak256 = ethers.utils.keccak256
@@ -11,24 +11,32 @@ const { check_gas, padRight, check_entry } = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 
+const { deploy_mock_dmap } = require('../task/deploy-mock-dmap')
+
 let dmapi_abi = require('../artifacts/core/dmap.sol/Dmap.json').abi
 let dmap_i = new ethers.utils.Interface(dmapi_abi)
 
 const debug = require('debug')('dmap:test')
+
+const provider = ethers.getDefaultProvider('http://127.0.0.1:8545')
 
 describe('dmap', ()=>{
     let dmap
     let rootzone
     let freezone
 
-    let ali, bob, cat
+    console.log(provider)
+    const ali = ethers.Wallet.createRandom()
+    const bob = ethers.Wallet.createRandom()
+    const cat = ethers.Wallet.createRandom()
     let ALI, BOB, CAT
+    [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
     const LOCK = '0x80'+'00'.repeat(31)
     before(async ()=>{
-        [ali, bob, cat] = await ethers.getSigners();
-        [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
-
-        await hh.run('deploy-mock-dmap')
+        console.log("LISTING")
+        console.log(await provider.listAccounts())
+        console.log("LISTING")
+        await deploy_mock_dmap({name: 'nombre'}, provider)
         const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone

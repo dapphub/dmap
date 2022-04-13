@@ -2,20 +2,41 @@ const fs = require('fs')
 const { getContractAddress } = require('@ethersproject/address')
 const dpack = require('@etherpacks/dpack')
 const { b32, send } = require("minihat");
+const ethers = require('ethers')
 
-task('deploy-mock-dmap', async (args, hh)=> {
+
+const solc_output = require('../out/combined.json')
+const Dmap_solc_output = solc_output.contracts["core/dmap.sol:Dmap"]
+//const Dmap_i = new ethers.utils.Interface(Dmap_solc_output.abi)
+const _dmap__solc_output = solc_output.contracts["core/dmap.sol:_dmap_"]
+//const _dmap__i = new ethers.utils.Interface(_dmap__solc_output.abi)
+
+const debug = require('debug')('dmap:deploy')
+
+async function readArtifact(contractName) {
+    debug("unimplemented: readArtifact")
+    return undefined
+}
+
+async function getContractFactory(iface, name) {
+
+}
+
+async function deploy_mock_dmap(args, provider) {
     const packdir = args.packdir ?? './pack/'
 
-    const dmap_type = await hh.artifacts.readArtifact('Dmap')
-    const dmap_deployer = await hh.ethers.getContractFactory('_dmap_')
+    const dmap_deployer = new ethers.ContractFactory(
+        new ethers.utils.Interface(Dmap_solc_output.abi),
+        Dmap_solc_output.bin
+    )
 
-    const root_type = await hh.artifacts.readArtifact('RootZone')
-    const root_deployer = await hh.ethers.getContractFactory('RootZone')
+    const root_type = await readArtifact('RootZone')
+    const root_deployer = await getContractFactory('RootZone')
 
-    const free_type = await hh.artifacts.readArtifact('FreeZone')
-    const free_deployer = await hh.ethers.getContractFactory('FreeZone')
+    const free_type = await readArtifact('FreeZone')
+    const free_deployer = await getContractFactory('FreeZone')
 
-    const [ali] = await hh.ethers.getSigners()
+    const [ali] = await ethers.getSigners()
     const tx_count = await ali.getTransactionCount()
     const root_address = getContractAddress({ from: ali.address, nonce: tx_count + 1 })
     const tx_dmap = await dmap_deployer.deploy(root_address)
@@ -30,16 +51,16 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const zone = tx_free.address
     const types = [ "bytes32", "bytes32", "address" ]
     const encoded = ethers.utils.defaultAbiCoder.encode(types, [ salt, name, zone ])
-    const commitment = hh.ethers.utils.keccak256(encoded)
+    const commitment = ethers.utils.keccak256(encoded)
     await send(tx_root.hark, commitment, { value: ethers.utils.parseEther('1') })
     await send(tx_root.etch, salt, name, zone)
 
-    const pb = await dpack.builder(hh.network.name)
+    const pb = await dpack.builder(args.name)
     await pb.packObject({
         objectname: 'dmap',
         typename: 'Dmap',
         address: tx_dmap.address,
-        artifact: dmap_type
+        artifact: Dmap_solc_output
     }, alsoPackType=true)
 
     // save only dmap in the core pack
@@ -50,14 +71,14 @@ task('deploy-mock-dmap', async (args, hh)=> {
         objectname: 'rootzone',
         typename: 'RootZone',
         address: tx_root.address,
-        artifact: root_type
+        artifact: RootZone_solc_output
     }, alsoPackType=true)
 
     await pb.packObject({
         objectname: 'freezone',
         typename: 'FreeZone',
         address: tx_free.address,
-        artifact: free_type
+        artifact: FreeZone_solc_output
     }, alsoPackType=true)
 
     const fullpack = await pb.build()
@@ -68,7 +89,9 @@ task('deploy-mock-dmap', async (args, hh)=> {
     fs.writeFileSync(packdir + `RootZone.json`, show(root_type))
     fs.writeFileSync(packdir + `FreeZone.json`, show(free_type))
 
-    fs.writeFileSync(packdir + `dmap_core_${hh.network.name}.dpack.json`, show(corepack))
-    fs.writeFileSync(packdir + `dmap_full_${hh.network.name}.dpack.json`, show(fullpack))
+    fs.writeFileSync(packdir + `dmap_core_${args.name}.dpack.json`, show(corepack))
+    fs.writeFileSync(packdir + `dmap_full_${args.name}.dpack.json`, show(fullpack))
 
-})
+}
+
+module.exports = {deploy_mock_dmap}
