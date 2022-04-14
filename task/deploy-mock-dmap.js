@@ -4,47 +4,48 @@ const dpack = require('@etherpacks/dpack')
 const { b32, send } = require("minihat");
 const ethers = require('ethers')
 
+const assert = require('assert')
 
-const solc_output = require('../out/combined.json')
-const Dmap_solc_output = solc_output.contracts["core/dmap.sol:Dmap"]
+const solc_output = require('../output.json')
+const Dmap_solc_output = solc_output.contracts["dmap.sol"]["Dmap"]
 //const Dmap_i = new ethers.utils.Interface(Dmap_solc_output.abi)
-const _dmap__solc_output = solc_output.contracts["core/dmap.sol:_dmap_"]
+const _dmap__solc_output = solc_output.contracts["dmap.sol"]["_dmap_"]
 //const _dmap__i = new ethers.utils.Interface(_dmap__solc_output.abi)
-const RootZone_solc_output = solc_output.contracts["core/root.sol:RootZone"]
-const FreeZone_solc_output = solc_output.contracts["core/free.sol:FreeZone"]
+const RootZone_solc_output = solc_output.contracts["root.sol"]["RootZone"]
+const FreeZone_solc_output = solc_output.contracts["free.sol"]["FreeZone"]
 
 const debug = require('debug')('dmap:deploy')
-
-async function readArtifact(contractName) {
-    debug("unimplemented: readArtifact")
-    return undefined
-}
-
-async function getContractFactory(iface, name) {
-
-}
 
 async function deploy_mock_dmap(args, provider, signer) {
     const packdir = args.packdir ?? './pack/'
 
-    const dmap_type = Dmap_solc_output
+    // TODO there has to be a more beautiful way to do this...
+    const dmap_type = _dmap__solc_output
+    Object.keys(Dmap_solc_output.abi).forEach((k) => {
+       if( dmap_type.abi[k] == undefined )
+           dmap_type.abi[k] = Dmap_solc_output.abi[k]
+    })
+    // TODO maybe dpack should work on solc output, not hh?
+    dmap_type.bytecode = dmap_type.evm.bytecode.object
     const dmap_deployer = new ethers.ContractFactory(
-        new ethers.utils.Interface(_dmap__solc_output.abi),
-        _dmap__solc_output.bin,
+        new ethers.utils.Interface(dmap_type.abi),
+        dmap_type.bytecode,
         signer
     )
 
     const root_type = RootZone_solc_output
+    root_type.bytecode = root_type.evm.bytecode.object
     const root_deployer = new ethers.ContractFactory(
         new ethers.utils.Interface(RootZone_solc_output.abi),
-        RootZone_solc_output.bin,
+        root_type.bytecode,
         signer
     )
 
     const free_type = FreeZone_solc_output
+    free_type.bytecode = free_type.evm.bytecode.object
     const free_deployer = new ethers.ContractFactory(
         new ethers.utils.Interface(FreeZone_solc_output.abi),
-        FreeZone_solc_output.bin,
+        free_type.bytecode,
         signer
     )
 

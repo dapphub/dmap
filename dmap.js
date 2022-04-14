@@ -48,7 +48,7 @@ lib.get = async (dmap, zone, name) => {
             dmap.provider.getStorageAt(dmap.address, slot),
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
-    ).then(res => [meta, data] = res)
+    ).then(res => [meta, data] = res.map(x => x == '0x' ? ethers.constants.HashZero : x))
     const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
     const res = dmap_i.decodeFunctionResult("get", resdata)
     return res

@@ -26,7 +26,6 @@ describe('dmap', ()=>{
     let rootzone
     let freezone
 
-    console.log(provider)
     let [ali, bob, cat] = get_signers(process.env.TEST_MNEMONIC).map(
         s => s.connect(provider)
     );
@@ -35,12 +34,11 @@ describe('dmap', ()=>{
     const LOCK = '0x80'+'00'.repeat(31)
     before(async ()=>{
         await deploy_mock_dmap({name: 'nombre'}, provider, ali)
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), ethers, ali)
+        const dapp = await dpack.load(require('../pack/dmap_full_nombre.dpack.json'), ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
         await snapshot(provider)
-        console.log("DONE!")
     })
     beforeEach(async ()=>{
         await revert(provider)
