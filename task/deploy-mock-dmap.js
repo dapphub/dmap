@@ -8,9 +8,7 @@ const assert = require('assert')
 
 const solc_output = require('../output.json')
 const Dmap_solc_output = solc_output.contracts["dmap.sol"]["Dmap"]
-//const Dmap_i = new ethers.utils.Interface(Dmap_solc_output.abi)
 const _dmap__solc_output = solc_output.contracts["dmap.sol"]["_dmap_"]
-//const _dmap__i = new ethers.utils.Interface(_dmap__solc_output.abi)
 const RootZone_solc_output = solc_output.contracts["root.sol"]["RootZone"]
 const FreeZone_solc_output = solc_output.contracts["free.sol"]["FreeZone"]
 
@@ -21,9 +19,10 @@ async function deploy_mock_dmap(args, provider, signer) {
 
     // TODO there has to be a more beautiful way to do this...
     const dmap_type = _dmap__solc_output
-    Object.keys(Dmap_solc_output.abi).forEach((k) => {
-       if( dmap_type.abi[k] == undefined )
-           dmap_type.abi[k] = Dmap_solc_output.abi[k]
+    const dmap_type_names = dmap_type.abi.map(o => o.name)
+    Dmap_solc_output.abi.forEach((x) => {
+       if( !dmap_type_names.includes(x.name) )
+           dmap_type.abi = dmap_type.abi.concat([x])
     })
     // TODO maybe dpack should work on solc output, not hh?
     dmap_type.bytecode = dmap_type.evm.bytecode.object

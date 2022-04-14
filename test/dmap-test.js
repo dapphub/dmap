@@ -5,7 +5,9 @@ const coder = ethers.utils.defaultAbiCoder
 const constants = ethers.constants
 const keccak256 = ethers.utils.keccak256
 const { smock } = require('@defi-wonderland/smock')
-const { send, want, b32, fail } = require('minihat')
+const { send, want, b32 } = require('minihat')
+const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
+
 const { snapshot, revert } = require('./utils/helpers')
 
 const { check_gas, padRight, check_entry, get_signers} = require('./utils/helpers')
@@ -19,12 +21,15 @@ let dmap_i = new ethers.utils.Interface(dmapi_abi)
 
 const debug = require('debug')('dmap:test')
 
-const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
+
+const solc_output = require('../output.json')
+const ErrorWrapper_solc_output = solc_output.contracts["ErrorWrapper.sol"]["ErrorWrapper"]
 
 describe('dmap', ()=>{
     let dmap
     let rootzone
     let freezone
+    let errwrap
 
     let [ali, bob, cat] = get_signers(process.env.TEST_MNEMONIC).map(
         s => s.connect(provider)
@@ -32,12 +37,37 @@ describe('dmap', ()=>{
     let [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address);
 
     const LOCK = '0x80'+'00'.repeat(31)
+
+    const wrap_fail = async (...args) => {
+        const expected = args[0]
+        const wrapper = args[2]
+        await send(...args.slice(1))
+        want(await provider.getStorageAt(wrapper.address, 1)).to.eql('0x')
+        const hash = keccak256(ethers.utils.toUtf8Bytes(expected)).slice(0, 10)
+        want((await provider.getStorageAt(wrapper.address, 2)).slice(0, 10)).to.eql(hash)
+        //want(false).to.eql(true)
+
+    }
+
     before(async ()=>{
         await deploy_mock_dmap({name: 'nombre'}, provider, ali)
         const dapp = await dpack.load(require('../pack/dmap_full_nombre.dpack.json'), ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
+
+        const errwrap_type = ErrorWrapper_solc_output
+        errwrap_type.bytecode = errwrap_type.evm.bytecode
+        const errwrap_deployer = new ethers.ContractFactory(
+            //new ethers.utils.Interface(errwrap_type.abi),
+
+            dmap.interface,
+            errwrap_type.bytecode,
+            ali
+        )
+        errwrap = await errwrap_deployer.deploy(dmap.address)
+        await errwrap.deployed()
+
         await snapshot(provider)
     })
     beforeEach(async ()=>{
@@ -107,14 +137,13 @@ describe('dmap', ()=>{
         for (let i = 0; i < keys.length; i++) {
             let words = {}
             words.name = words.meta = words.data = constants.HashZero
-            words.zone = constants.AddressZero
-            words[keys[i]] = '0x' + 'ff'.repeat(keys[i] == 'zone' ? 20 : 32)
+            words[keys[i]] = '0x' + 'ff'.repeat(32)
+            words.zone = bob.address
             it('set ' + keys[i], async () => {
-                const fake = await smock.fake('Dmap', {address: words.zone})
-                await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
-                want(fake.address).to.eql(words.zone)
+                await ali.sendTransaction({to: bob.address, value: ethers.utils.parseEther('1')})
+                want(bob.address).to.eql(words.zone)
 
-                await send(lib.set, dmap.connect(fake.wallet), words.name, words.meta, words.data)
+                await send(lib.set, dmap.connect(bob), words.name, words.meta, words.data)
 
                 // TODO await oops
                 expectLog(dmap, "Set", words.zone, words.name, words.meta, words.data, true)
@@ -143,9 +172,9 @@ describe('dmap', ()=>{
 
         it('name all bits in hash', async () => {
             // make sure first and last bits of name make it into the hash
-            const fake = await smock.fake('Dmap', {address: constants.AddressZero})
+            // we don't have smock anymore...random will have to do
+            const fake = ethers.Wallet.createRandom().connect(provider)
             await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
-            want(fake.address).to.eql(constants.AddressZero)
             const names = [
                 constants.HashZero,
                 '0x80' + '00'.repeat(31),
@@ -155,7 +184,7 @@ describe('dmap', ()=>{
                 '0x7f' + 'ff'.repeat(31), // flip msb
             ]
             for (let i = 0; i < names.length; i++) {
-                await send(lib.set, dmap.connect(fake.wallet), names[i], LOCK, b32(String(i)))
+                await send(lib.set, dmap.connect(fake), names[i], LOCK, b32(String(i)))
             }
             for (let i = 0; i < names.length; i++) {
                 await check_entry(dmap, fake.address, names[i], LOCK, b32(String(i)))
@@ -163,23 +192,18 @@ describe('dmap', ()=>{
         })
 
         it('zone all bits in hash', async () => {
-            // make sure first and last bits of zone make it into the hash
-            const addrs = [
-                constants.AddressZero,
-                '0x80' + '00'.repeat(19),
-                '0x' + '00'.repeat(19) + '0f', // TODO hh has a problem with very low fake addresses
-                '0x' + 'ff'.repeat(20),
-                '0x' + 'ff'.repeat(19) + 'fe', // flip lsb
-                '0x7f' + 'ff'.repeat(19), // flip msb
-            ]
-            const name = b32('1')
-            for (let i = 0; i < addrs.length; i++) {
-                const fake = await smock.fake('Dmap', {address: addrs[i]})
+            const name = ethers.constants.HashZero
+            const tries = 6
+            let fakes = []
+            for (let i = 0; i < tries; i++) {
+                // no more smock
+                const fake = ethers.Wallet.createRandom().connect(provider)
+                fakes = fakes.concat([fake])
                 await ali.sendTransaction({to: fake.address, value: ethers.utils.parseEther('1')})
-                await send(lib.set, dmap.connect(fake.wallet), name, LOCK, b32(String(i)))
+                await send(lib.set, dmap.connect(fake), name, LOCK, b32(String(i)))
             }
-            for (let i = 0; i < addrs.length; i++) {
-                await check_entry(dmap, addrs[i], name, LOCK, b32(String(i)))
+            for (let i = 0; i < tries; i++) {
+                await check_entry(dmap, fakes[i].address, name, LOCK, b32(String(i)))
             }
         })
     })
@@ -219,49 +243,53 @@ describe('dmap', ()=>{
 
         it('set without data', async () => {
             // set just lock bit, nothing else
-            await send(lib.set, dmap, b32("1"), LOCK, constants.HashZero)
-            await check_entry(dmap, ALI, b32("1"), LOCK, constants.HashZero)
+            await send(errwrap.set, b32("1"), LOCK, constants.HashZero, {gasLimit: 100000})
+            want(await provider.getStorageAt(errwrap.address, 1)).to.eql('0x01')
+            await check_entry(dmap, errwrap.address, b32("1"), LOCK, constants.HashZero)
+
 
             // should fail whether or not ali attempts to change something
-            await fail('LOCK', lib.set, dmap, b32("1"), constants.HashZero, constants.HashZero)
-            await fail('LOCK', lib.set, dmap, b32("1"), LOCK, constants.HashZero)
-            await fail('LOCK', lib.set, dmap, b32("1"), constants.HashZero, b32('hello'))
-            await fail('LOCK', lib.set, dmap, b32("1"), LOCK, b32('hello'))
+            await wrap_fail('LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
+
+
+            await wrap_fail('LOCK()', lib.set, errwrap, b32("1"), LOCK, constants.HashZero)
+            await wrap_fail('LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, b32('hello'))
+            await wrap_fail('LOCK()', lib.set, errwrap, b32("1"), LOCK, b32('hello'))
             await check_ext_unchanged()
         })
 
         it('set with data', async () => {
             // set lock and data
-            await send(lib.set, dmap, b32("1"), LOCK, b32('hello'))
-            await check_entry(dmap, ALI, b32("1"), LOCK, b32('hello'))
-            await fail('LOCK', lib.set, dmap, b32("1"), LOCK, b32('hello'))
+            await send(lib.set, errwrap, b32("1"), LOCK, b32('hello'))
+            await check_entry(dmap, errwrap.address, b32("1"), LOCK, b32('hello'))
+            await wrap_fail('LOCK()', lib.set, errwrap, b32("1"), LOCK, b32('hello'))
             await check_ext_unchanged()
         })
 
         it("set a few times, then lock", async () => {
-            await send(lib.set, dmap, b32("1"), constants.HashZero, constants.HashZero)
-            await check_entry(dmap, ALI, b32("1"), constants.HashZero, constants.HashZero)
+            await send(lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
+            await check_entry(dmap, errwrap.address, b32("1"), constants.HashZero, constants.HashZero)
 
-            await send(lib.set, dmap, b32("1"), constants.HashZero, b32('hello'))
-            await check_entry(dmap, ALI, b32("1"), constants.HashZero, b32('hello'))
+            await send(lib.set, errwrap, b32("1"), constants.HashZero, b32('hello'))
+            await check_entry(dmap, errwrap.address, b32("1"), constants.HashZero, b32('hello'))
 
-            await send(lib.set, dmap, b32("1"), constants.HashZero, b32('goodbye'))
-            await check_entry(dmap, ALI, b32("1"), constants.HashZero, b32('goodbye'))
+            await send(lib.set, errwrap, b32("1"), constants.HashZero, b32('goodbye'))
+            await check_entry(dmap, errwrap.address, b32("1"), constants.HashZero, b32('goodbye'))
 
-            await send(lib.set, dmap, b32("1"), LOCK, b32('goodbye'))
-            await check_entry(dmap, ALI, b32("1"), LOCK, b32('goodbye'))
+            await send(lib.set, errwrap, b32("1"), LOCK, b32('goodbye'))
+            await check_entry(dmap, errwrap.address, b32("1"), LOCK, b32('goodbye'))
 
-            await fail('LOCK', lib.set, dmap, b32("1"), constants.HashZero, constants.HashZero)
+            await wrap_fail('LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
         })
 
         it("0x7ffff... doesn't lock, 0xffff... locks", async () => {
             const FLIP_LOCK = '0x7'+'f'.repeat(63)
-            await send(lib.set, dmap, b32("1"), FLIP_LOCK, constants.HashZero)
+            await send(lib.set, errwrap, b32("1"), FLIP_LOCK, constants.HashZero)
 
             const neg_one = '0x'+'ff'.repeat(32)
-            await send(lib.set, dmap, b32("1"), neg_one, constants.HashZero)
-            await fail('LOCK', lib.set, dmap, b32("1"), constants.HashZero, constants.HashZero)
+            await send(lib.set, errwrap, b32("1"), neg_one, constants.HashZero)
+            await wrap_fail('LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
         })
     })

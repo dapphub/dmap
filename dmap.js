@@ -55,8 +55,9 @@ lib.get = async (dmap, zone, name) => {
 }
 
 lib.set = async (dmap, name, meta, data) => {
+    const gasLimit = 100000
     const calldata = dmap_i.encodeFunctionData("set", [name, meta, data])
-    return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
+    return dmap.signer.sendTransaction({to: dmap.address, data: calldata, gasLimit: gasLimit})
 }
 
 lib.slot = async (dmap, slot) => {
