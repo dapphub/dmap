@@ -1,23 +1,55 @@
 const fs = require('fs')
 const { getContractAddress } = require('@ethersproject/address')
 const dpack = require('@etherpacks/dpack')
-const { b32, send } = require("minihat");
+const { b32, send } = require('../utils/helpers');
+const ethers = require('ethers')
 
-task('deploy-mock-dmap', async (args, hh)=> {
+const assert = require('assert')
+
+const solc_output = require('../output.json')
+const Dmap_solc_output = solc_output.contracts["dmap.sol"]["Dmap"]
+const _dmap__solc_output = solc_output.contracts["dmap.sol"]["_dmap_"]
+const RootZone_solc_output = solc_output.contracts["root.sol"]["RootZone"]
+const FreeZone_solc_output = solc_output.contracts["free.sol"]["FreeZone"]
+
+const debug = require('debug')('dmap:deploy')
+
+async function deploy_mock_dmap(args, provider, signer) {
     const packdir = args.packdir ?? './pack/'
 
-    const dmap_type = await hh.artifacts.readArtifact('Dmap')
-    const dmap_deployer = await hh.ethers.getContractFactory('_dmap_')
+    // TODO there has to be a more beautiful way to do this...
+    const dmap_type = _dmap__solc_output
+    const dmap_type_names = dmap_type.abi.map(o => o.name)
+    Dmap_solc_output.abi.forEach((x) => {
+       if( !dmap_type_names.includes(x.name) )
+           dmap_type.abi = dmap_type.abi.concat([x])
+    })
+    // TODO maybe dpack should work on solc output, not hh?
+    dmap_type.bytecode = dmap_type.evm.bytecode.object
+    const dmap_deployer = new ethers.ContractFactory(
+        new ethers.utils.Interface(dmap_type.abi),
+        dmap_type.bytecode,
+        signer
+    )
 
-    const root_type = await hh.artifacts.readArtifact('RootZone')
-    const root_deployer = await hh.ethers.getContractFactory('RootZone')
+    const root_type = RootZone_solc_output
+    root_type.bytecode = root_type.evm.bytecode.object
+    const root_deployer = new ethers.ContractFactory(
+        new ethers.utils.Interface(RootZone_solc_output.abi),
+        root_type.bytecode,
+        signer
+    )
 
-    const free_type = await hh.artifacts.readArtifact('FreeZone')
-    const free_deployer = await hh.ethers.getContractFactory('FreeZone')
+    const free_type = FreeZone_solc_output
+    free_type.bytecode = free_type.evm.bytecode.object
+    const free_deployer = new ethers.ContractFactory(
+        new ethers.utils.Interface(FreeZone_solc_output.abi),
+        free_type.bytecode,
+        signer
+    )
 
-    const [ali] = await hh.ethers.getSigners()
-    const tx_count = await ali.getTransactionCount()
-    const root_address = getContractAddress({ from: ali.address, nonce: tx_count + 1 })
+    const tx_count = await provider.getTransactionCount(signer.address)
+    const root_address = getContractAddress({ from: signer.address, nonce: tx_count + 1 })
     const tx_dmap = await dmap_deployer.deploy(root_address)
     await tx_dmap.deployed()
     const tx_root = await root_deployer.deploy(tx_dmap.address)
@@ -30,11 +62,11 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const zone = tx_free.address
     const types = [ "bytes32", "bytes32", "address" ]
     const encoded = ethers.utils.defaultAbiCoder.encode(types, [ salt, name, zone ])
-    const commitment = hh.ethers.utils.keccak256(encoded)
+    const commitment = ethers.utils.keccak256(encoded)
     await send(tx_root.hark, commitment, { value: ethers.utils.parseEther('1') })
     await send(tx_root.etch, salt, name, zone)
 
-    const pb = await dpack.builder(hh.network.name)
+    const pb = await dpack.builder(args.name)
     await pb.packObject({
         objectname: 'dmap',
         typename: 'Dmap',
@@ -68,7 +100,8 @@ task('deploy-mock-dmap', async (args, hh)=> {
     fs.writeFileSync(packdir + `RootZone.json`, show(root_type))
     fs.writeFileSync(packdir + `FreeZone.json`, show(free_type))
 
-    fs.writeFileSync(packdir + `dmap_core_${hh.network.name}.dpack.json`, show(corepack))
-    fs.writeFileSync(packdir + `dmap_full_${hh.network.name}.dpack.json`, show(fullpack))
+    fs.writeFileSync(packdir + `dmap_core_${args.name}.dpack.json`, show(corepack))
+    fs.writeFileSync(packdir + `dmap_full_${args.name}.dpack.json`, show(fullpack))
+}
 
-})
+module.exports = {deploy_mock_dmap}

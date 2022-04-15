@@ -2,16 +2,15 @@
   "private": true,
   "scripts": {
     "build": "webpack",
-    "pretest": "npx hardhat compile",
+    "ganache": "npx ganache -m \"`echo ${TEST_MNEMONIC}`\"",
+    "pretest": "solc --standard-json < input.json > output.json",
     "test": "npx mocha test"
   },
   "devDependencies": {
-    "@defi-wonderland/smock": "^2.0.7",
     "@etherpacks/dpack": "^0.0.29",
-    "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@types/mocha": "^9.0.0",
-    "hardhat": "^2.8.3",
-    "minihat": "^0.0.5",
+    "chai": "^4.3.6",
+    "chai-as-promised": "^7.1.1",
     "v8": "^0.1.0",
     "web3-utils": "^1.7.1",
     "webpack": "^5.70.0",

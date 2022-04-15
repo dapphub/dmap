@@ -1,32 +1,58 @@
 const dpack = require("@etherpacks/dpack");
-const hh = require("hardhat");
-const ethers = hh.ethers
-const {b32, revert, send, snapshot, want} = require("minihat");
+const ethers = require('ethers')
+const {b32, send, want} = require("./utils/helpers");
 const lib = require('../dmap.js')
-const {padRight} = require("./utils/helpers");
+const {
+    padRight,
+    snapshot,
+    revert,
+    wait,
+    get_signers
+} = require("./utils/helpers");
+
+const { deploy_mock_dmap } = require('../task/deploy-mock-dmap')
+const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
+const solc_output = require('../output.json')
+const ErrorWrapper_solc_output = solc_output.contracts["ErrorWrapper.sol"]["ErrorWrapper"]
 
 describe('dpath', ()=> {
     const LOCK = '0x80'+'00'.repeat(31)
     let dmap
     let freezone
     let rootzone
+    let [ali, bob, cat] = get_signers(process.env.TEST_MNEMONIC).map(
+        s => s.connect(provider)
+    );
+    let [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address);
+    const GLIMIT = 1000000
+
 
     before(async ()=>{
-        await hh.run('deploy-mock-dmap')
-        const [signer] = await ethers.getSigners()
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, signer)
+        await deploy_mock_dmap({name: 'nombre'}, provider, ali)
+        const dapp = await dpack.load(require('../pack/dmap_full_nombre.dpack.json'), ethers, ali)
         dmap = dapp.dmap
-        freezone = dapp.freezone
         rootzone = dapp.rootzone
-        await snapshot(hh)
+        freezone = dapp.freezone
+
+        const freewrap_type = ErrorWrapper_solc_output
+        freewrap_type.bytecode = freewrap_type.evm.bytecode
+        const freewrap_deployer = new ethers.ContractFactory(
+            freezone.interface,
+            freewrap_type.bytecode,
+            ali
+        )
+        freewrap = await freewrap_deployer.deploy(freezone.address)
+        await freewrap.deployed()
+
+        await snapshot(provider)
     })
 
     after(async ()=>{
-        await hh.network.provider.send("hardhat_reset")
+        await revert(provider)
     })
 
     beforeEach(async ()=>{
-        await revert(hh)
+        await revert(provider)
     })
 
     describe('walk', () => {
@@ -36,15 +62,17 @@ describe('dpath', ()=> {
         const OPEN = '0x' + '00'.repeat(32)
 
         beforeEach(async ()=>{
-            await send(freezone.take, test_name)
-            await send(freezone.set, test_name, LOCK, test_data)
-            await send(freezone.take, free_name)
-            await send(freezone.set, free_name, OPEN, padRight(freezone.address))
+            await wait(provider, 60)
+            await send(freezone.take, test_name, {gasLimit: GLIMIT})
+            await send(freezone.set, test_name, LOCK, test_data, {gasLimit: GLIMIT})
+            await wait(provider, 60)
+            await send(freezone.take, free_name, {gasLimit: GLIMIT})
+            await send(freezone.set, free_name, OPEN, padRight(freezone.address), {gasLimit: GLIMIT})
         })
 
         it('empty path', async () => {
             const res = await lib.walk(dmap, '')
-            want(res.data.slice(0, 42)).eq(rootzone.address.toLowerCase())
+            want(res.data.slice(0, 42)).eq(rootzone.address.toLowerCase(), {gasLimit: GLIMIT})
             want(res.meta).eq(LOCK)
         })
 

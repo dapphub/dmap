@@ -2,7 +2,6 @@ const ebnf = require('ebnf')
 const multiformats = require('multiformats')
 
 const ethers = require('ethers')
-const { b32 } = require('minihat');
 
 const abi    = require('./artifacts/core/dmap.sol/Dmap.json').abi
 const dmap_i = new ethers.utils.Interface(abi)
@@ -48,13 +47,14 @@ lib.get = async (dmap, zone, name) => {
             dmap.provider.getStorageAt(dmap.address, slot),
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
-    ).then(res => [meta, data] = res)
+    ).then(res => [meta, data] = res.map(x => ethers.utils.hexZeroPad(x, 32)))
     const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
     const res = dmap_i.decodeFunctionResult("get", resdata)
     return res
 }
 
 lib.set = async (dmap, name, meta, data) => {
+    const gasLimit = 100000
     const calldata = dmap_i.encodeFunctionData("set", [name, meta, data])
     return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
 }
@@ -76,7 +76,7 @@ lib.pair = async (dmap, slot) => {
             dmap.provider.getStorageAt(dmap.address, slot),
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
-    ).then(res => [meta, data] = res)
+    ).then(res => [meta, data] = res.map(x => ethers.utils.hexZeroPad(x, 32)))
     const resdata = dmap_i.encodeFunctionResult("pair", [meta, data])
     const res = dmap_i.decodeFunctionResult("pair", resdata)
     return res
