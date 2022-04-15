@@ -46,11 +46,10 @@ describe('dmap', ()=>{
         rootzone = dapp.rootzone
         freezone = dapp.freezone
 
+        // ErrorWrapper with dmap (Dmap + _dmap) abi
         const errwrap_type = ErrorWrapper_solc_output
         errwrap_type.bytecode = errwrap_type.evm.bytecode
         const errwrap_deployer = new ethers.ContractFactory(
-            //new ethers.utils.Interface(errwrap_type.abi),
-
             dmap.interface,
             errwrap_type.bytecode,
             ali

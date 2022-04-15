@@ -1,7 +1,13 @@
 pragma solidity 0.8.13;
 
-import "../dmap.sol";
+/*
+    reading revert data is a hardhat feature, it's not actually part of
+    tx receipt
 
+    use ErrorWrapper with the reverting contract's ABI
+    ErrorWrapper will forward the calldata and store the calldata without
+    reverting the tx
+*/
 contract ErrorWrapper {
 
     constructor(address _c) {

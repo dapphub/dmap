@@ -57,6 +57,7 @@ describe('freezone', ()=>{
         rootzone = dapp.rootzone
         freezone = dapp.freezone
 
+        // ErrorWrapper with FreeZone abi
         const freewrap_type = ErrorWrapper_solc_output
         freewrap_type.bytecode = freewrap_type.evm.bytecode
         const freewrap_deployer = new ethers.ContractFactory(
