@@ -7,7 +7,7 @@
 
 const { ethers } = require("hardhat");
 const {expect} = require("chai");
-const { want } = require('minihat')
+const { want, send} = require('minihat')
 const {hexZeroPad} = require("@ethersproject/bytes");
 const lib = require('../../dmap')
 
@@ -92,7 +92,35 @@ async function revert (provider) {
     await snapshot(provider)
 }
 
+async function wait (provider, t) {
+    await provider.send("evm_increaseTime", [t])
+}
+
+const wrap_fail = async (provider, wrap, ...args) => {
+    const expected = args[0]
+    await send(...args.slice(1))
+    want(await provider.getStorageAt(wrap.address, 1)).to.eql('0x')
+    const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(expected)).slice(0, 10)
+    want((await provider.getStorageAt(wrap.address, 2)).slice(0, 10)).to.eql(hash)
+}
+
+const wrap_send = async (provider, wrap, ...args) => {
+    await send(...args)
+    want(await provider.getStorageAt(wrap.address, 1)).to.eql('0x01')
+    want((await provider.getStorageAt(wrap.address, 2)).slice(0, 10)).to.eql('0x')
+}
 
 
-
-module.exports = { expectEvent, padRight, check_gas, check_entry, testlib, get_signers, snapshot, revert }
+module.exports = {
+    expectEvent,
+    padRight,
+    check_gas,
+    check_entry,
+    testlib,
+    get_signers,
+    snapshot,
+    revert,
+    wait,
+    wrap_fail,
+    wrap_send
+}

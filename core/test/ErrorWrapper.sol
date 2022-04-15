@@ -20,8 +20,10 @@ contract ErrorWrapper {
         assembly {
             c := sload(0)
         }
-        (bool ok, bytes memory _outdata) = c.call(msg.data);
+        (bool ok, bytes memory _outdata) = c.call{value: msg.value}(msg.data);
         bytes32 outdata = bytes32(_outdata);
+
+        if (ok == false) payable(msg.sender).transfer(msg.value);
 
         assembly {
             sstore(1, ok)

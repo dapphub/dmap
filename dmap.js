@@ -48,7 +48,7 @@ lib.get = async (dmap, zone, name) => {
             dmap.provider.getStorageAt(dmap.address, slot),
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
-    ).then(res => [meta, data] = res.map(x => x == '0x' ? ethers.constants.HashZero : x))
+    ).then(res => [meta, data] = res.map(x => ethers.utils.hexZeroPad(x, 32)))
     const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
     const res = dmap_i.decodeFunctionResult("get", resdata)
     return res
@@ -57,7 +57,7 @@ lib.get = async (dmap, zone, name) => {
 lib.set = async (dmap, name, meta, data) => {
     const gasLimit = 100000
     const calldata = dmap_i.encodeFunctionData("set", [name, meta, data])
-    return dmap.signer.sendTransaction({to: dmap.address, data: calldata, gasLimit: gasLimit})
+    return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
 }
 
 lib.slot = async (dmap, slot) => {
