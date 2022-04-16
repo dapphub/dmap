@@ -1,14 +1,26 @@
 import { ethers } from 'ethers'
-const dpack = require('@etherpacks/dpack')
+const { getIpfs, providers } = require('ipfs-provider')
+const { httpClient, jsIpfs } = providers
 const dmap = require('../dmap.js')
 const dmapAddress = '0x7fA88e1014B0640833a03ACfEC71F242b5fBDC85'
 const dmapArtifact = require('../artifacts/core/dmap.sol/Dmap.json')
 
-window.onload =()=> {
+window.onload = async() => {
     const $ = document.querySelector.bind(document);
-    const result = $('#result')
-
     const line =s=> { $('#result').textContent += s + '\n' }
+    const node = await getIpfs({
+        providers: [
+            // attempt to use local node, if unsuccessful fallback to running embedded core js-ipfs in-page
+            httpClient({
+                loadHttpClientModule: () => require('ipfs-http-client'),
+                apiAddress: '/ip4/127.0.0.1/tcp/5001'
+            }),
+            jsIpfs({
+                loadJsIpfsModule: () => require('ipfs-core'),
+                options: { }
+            })
+        ]
+    })
 
     $('#btnGet').addEventListener('click', async () =>  {
         const dpath = $('#dpath').value;
@@ -32,16 +44,20 @@ window.onload =()=> {
         }
 
         try {
-            // display json content from a CID if we can
+            // display ipfs content from a CID if we can, otherwise display as text
             const cidResult = dmap.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cidResult}`)
-            const ipfsResult = await dpack.getIpfsJson(cidResult)
-            line(JSON.stringify(ipfsResult, null, 4))
+            const ipfsResult = await node.ipfs.cat(cidResult)
+            let s = ''
+            let utf8decoder = new TextDecoder()
+            for await (const chunk of ipfsResult) {
+                s += utf8decoder.decode(chunk)
+            }
+            line(s)
         }
         catch(e){
-            // otherwise show text
             let utf8decoder = new TextDecoder()
-            const bytes = dmap._hexToArrayBuffer(walkResult.data)
+            const bytes = Buffer.from(walkResult.data.slice(2), 'hex')
             let i
             for (i = 0; i < bytes.length; i++) {
                 if (bytes[bytes.length -1 - i] !== 0) {

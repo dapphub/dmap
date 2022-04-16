@@ -1,9 +1,6 @@
 const ebnf = require('ebnf')
-const multiformats = require('multiformats')
-
 const ethers = require('ethers')
-const { b32 } = require('minihat');
-
+const multiformats = require('multiformats')
 const abi    = require('./artifacts/core/dmap.sol/Dmap.json').abi
 const dmap_i = new ethers.utils.Interface(abi)
 
@@ -91,11 +88,11 @@ lib.walk = async (dmap, path) => {
         if (zone === '0x' + '00'.repeat(20)) {
             fail(`zero register`)
         }
-        const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
+        const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length);
         [meta, data] = await lib.get(dmap, zone, fullname)
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
-            need((lib._hexToArrayBuffer(meta)[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            need((Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
             ctx.locked = true
         }
         ctx.locked = step.locked
@@ -118,8 +115,8 @@ lib.prepareCID = (cidStr, lock) => {
 }
 
 lib.unpackCID = (metaStr, dataStr) => {
-    const meta = lib._hexToArrayBuffer(metaStr)
-    const data = lib._hexToArrayBuffer(dataStr)
+    const meta = Buffer.from(metaStr.slice(2), 'hex')
+    const data = Buffer.from(dataStr.slice(2), 'hex')
     const prefixLen = meta[prefLenIndex]
     const specs = multiformats.CID.inspectBytes(meta.slice(-prefixLen))
     const hashLen = specs.digestSize
@@ -134,16 +131,4 @@ lib.unpackCID = (metaStr, dataStr) => {
 lib.readCID = async (dmap, path) => {
     const packed = await lib.walk(dmap, path)
     return lib.unpackCID(packed.meta, packed.data)
-}
-
-lib._hexToArrayBuffer = hex => {
-    const bytes = []
-    for (let c = 2; c < hex.length; c += 2)
-        bytes.push(parseInt(hex.slice(c, c + 2), 16))
-    return new Uint8Array(bytes)
-}
-
-lib._strToHex = str => {
-    let codes =  str.split('').map(c => c.charCodeAt(0))
-    return codes.map(c => c.toString(16)).join('')
 }
