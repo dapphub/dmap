@@ -50,15 +50,6 @@ async function check_gas (gas, minGas, maxGas) {
   }
 }
 
-// check that get, pair, and slot all return [meta, data]
-const check_entry = async (dmap, usr, key, _meta, _data) => {
-    const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
-    const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
-    const resGet = await lib.get(dmap, usr, key)
-    want(resGet.meta).to.eql(meta)
-    want(resGet.data).to.eql(data)
-    want(resGet).to.eql([meta, data])
-}
 
 let testlib = {}
 testlib.pair = async (dmap, slot) => {
@@ -71,6 +62,30 @@ testlib.pair = async (dmap, slot) => {
     want(res).to.eql(await lib.pair(dmap, slot))
     return res
 }
+// check that get, pair, and slot all return [meta, data]
+const check_entry = async (dmap, usr, key, _meta, _data) => {
+    const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
+    const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
+    const resGet = await lib.get(dmap, usr, key)
+    want(resGet.meta).to.eql(meta)
+    want(resGet.data).to.eql(data)
+    want(resGet).to.eql([meta, data])
+
+    const coder = ethers.utils.defaultAbiCoder
+    const keccak256 = ethers.utils.keccak256
+    const slot = keccak256(coder.encode(["address", "bytes32"], [usr, key]))
+    const resPair = await testlib.pair(dmap, slot)
+    want(resPair.meta).to.eql(meta)
+    want(resPair.data).to.eql(data)
+    want(resPair).to.eql([meta, data])
+
+    const nextslot = ethers.utils.hexZeroPad(
+        ethers.BigNumber.from(slot).add(1).toHexString(), 32
+    )
+    want(await lib.slot(dmap, slot)).to.eql(meta)
+    want(await lib.slot(dmap, nextslot)).to.eql(data)
+}
+
 
 const wrap_fail = async (provider, wrap, ...args) => {
     const expected = args[0]
