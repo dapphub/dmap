@@ -5,9 +5,7 @@ const { b32, send } = require('minihat');
 
 const assert = require('assert')
 
-const solc_output = require('../output.json')
 const yul_output = require('../output_yul.json')
-const Dmap_solc_output = solc_output.contracts["dmap.sol"]["Dmap"]
 const _dmap__yul_output = yul_output.contracts["dmap.yul"]["_dmap_"]
 
 const debug = require('debug')('dmap:deploy')
@@ -20,7 +18,7 @@ task('deploy-mock-dmap', async (args, hh) => {
     const _dmap__type = await hh.artifacts.readArtifact('_dmap_')
     const Dmap_type = await hh.artifacts.readArtifact('Dmap')
     const _dmap__type_names = _dmap__type.abi.map(o => o.name)
-    Dmap_solc_output.abi.forEach((x) => {
+    Dmap_type.abi.forEach((x) => {
         if (!_dmap__type_names.includes(x.name))
             _dmap__type.abi = _dmap__type.abi.concat([x])
     })

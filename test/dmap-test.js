@@ -21,8 +21,8 @@ let dmap_i = new ethers.utils.Interface(dmapi_abi)
 const debug = require('debug')('dmap:test')
 
 
-const solc_output = require('../output.json')
-const ErrorWrapper_solc_output = solc_output.contracts["ErrorWrapper.sol"]["ErrorWrapper"]
+//const solc_output = require('../output.json')
+//const ErrorWrapper_solc_output = solc_output.contracts["ErrorWrapper.sol"]["ErrorWrapper"]
 
 describe('dmap', ()=>{
     let dmap
@@ -47,8 +47,7 @@ describe('dmap', ()=>{
         freezone = dapp.freezone
 
         // ErrorWrapper with dmap (Dmap + _dmap) abi
-        const errwrap_type = ErrorWrapper_solc_output
-        errwrap_type.bytecode = errwrap_type.evm.bytecode
+        const errwrap_type = await hh.artifacts.readArtifact('ErrorWrapper')
         const errwrap_deployer = new ethers.ContractFactory(
             dmap.interface,
             errwrap_type.bytecode,
