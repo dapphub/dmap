@@ -7,7 +7,7 @@
 
 const { ethers } = require("hardhat");
 const {expect} = require("chai");
-const {send, b32, want, chai} = require('minihat')
+const {send, fail, b32, want, chai} = require('minihat')
 const {hexZeroPad} = require("@ethersproject/bytes");
 const lib = require('../../dmap')
 
@@ -72,40 +72,6 @@ testlib.pair = async (dmap, slot) => {
     return res
 }
 
-const get_signers = (mnemonic) => {
-    const path =  `m/44'/60'/0'/0/`;
-    return Array.from(Array(10).keys())
-        .map(i => ethers.Wallet.fromMnemonic(
-            process.env.TEST_MNEMONIC,
-            path + i
-    ));
-}
-
-let _snap
-
-async function snapshot (provider) {
-    _snap = await provider.send('evm_snapshot')
-}
-
-async function revert (provider) {
-    await provider.send('evm_revert', [_snap])
-    await snapshot(provider)
-}
-
-async function wait (provider, t) {
-    await provider.send("evm_increaseTime", [t])
-}
-
-async function mine (provider, t = undefined) {
-    if (t !== undefined) {
-        await wait(hre, t)
-    }
-    await provider.request({
-        method: 'evm_mine'
-    })
-}
-
-
 const wrap_fail = async (provider, wrap, ...args) => {
     const expected = args[0]
     await send(...args.slice(1))
@@ -133,23 +99,12 @@ const wrap_send = async (provider, wrap, ...args) => {
     want(ethers.utils.hexZeroPad(data, 32)).to.eql('0x'+'0'.repeat(64))
 }
 
-async function fail (...args) {
-    const err = args[0]
-    const sargs = args.slice(1)
-    await want(send(...sargs)).rejectedWith(err)
-}
-
 module.exports = {
     expectEvent,
     padRight,
     check_gas,
     check_entry,
     testlib,
-    get_signers,
-    snapshot,
-    revert,
-    wait,
-    mine,
     wrap_fail,
     wrap_send,
     wrap_fail_str,
