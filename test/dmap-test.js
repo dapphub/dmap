@@ -7,7 +7,7 @@ const keccak256 = ethers.utils.keccak256
 const { smock } = require('@defi-wonderland/smock')
 const { send, want, snapshot, revert, b32, fail } = require('minihat')
 
-const { check_gas, padRight, check_entry } = require('./utils/helpers')
+const { check_gas, padRight, check_entry, testlib } = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 
@@ -181,7 +181,7 @@ describe('dmap', ()=>{
 
     describe('slot and pair', () => {
         it('root pair', async () => {
-            const [rootMeta, rootData] = await lib.pair(dmap, '0x' + '00'.repeat(32))
+            const [rootMeta, rootData] = await testlib.pair(dmap, '0x' + '00'.repeat(32))
             want(ethers.utils.hexDataSlice(rootData, 0, 20))
                 .to.eql(rootzone.address.toLowerCase())
             want(rootMeta).to.eql(LOCK)
@@ -198,7 +198,7 @@ describe('dmap', ()=>{
 
         it('direct traverse', async ()=>{
             const root_free_slot = keccak256(coder.encode(["address", "bytes32"], [rootzone.address, b32('free')]))
-            const [root_free_meta, root_free_data] = await lib.pair(dmap, root_free_slot)
+            const [root_free_meta, root_free_data] = await testlib.pair(dmap, root_free_slot)
             want(root_free_data).eq(padRight(freezone.address))
             const flags = Buffer.from(root_free_meta.slice(2), 'hex')[0]
             want(flags & lib.FLAG_LOCK).to.equal(lib.FLAG_LOCK)
