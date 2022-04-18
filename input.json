@@ -1,0 +1,20 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "dmap.sol": { "urls": ["./core/dmap.sol"] },
+    "root.sol": { "urls": ["./core/root.sol"] },
+    "free.sol": { "urls": ["./core/free.sol"] },
+    "ErrorWrapper.sol": { "urls": ["./core/test/ErrorWrapper.sol"] }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200000
+    },
+    "outputSelection": {
+      "*": {
+        "*": ["abi", "evm.bytecode", "evm.deployedBytecode", "ir"]
+      }
+    }
+  }
+}

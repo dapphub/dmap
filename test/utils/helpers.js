@@ -7,7 +7,7 @@
 
 const { ethers } = require("hardhat");
 const {expect} = require("chai");
-const { want } = require('minihat')
+const {send, b32, want, chai} = require('minihat')
 const {hexZeroPad} = require("@ethersproject/bytes");
 const lib = require('../../dmap')
 
@@ -72,4 +72,90 @@ testlib.pair = async (dmap, slot) => {
     return res
 }
 
-module.exports = { expectEvent, padRight, check_gas, check_entry, testlib }
+const get_signers = (mnemonic) => {
+    const path =  `m/44'/60'/0'/0/`;
+    return Array.from(Array(10).keys())
+        .map(i => ethers.Wallet.fromMnemonic(
+            process.env.TEST_MNEMONIC,
+            path + i
+    ));
+}
+
+let _snap
+
+async function snapshot (provider) {
+    _snap = await provider.send('evm_snapshot')
+}
+
+async function revert (provider) {
+    await provider.send('evm_revert', [_snap])
+    await snapshot(provider)
+}
+
+async function wait (provider, t) {
+    await provider.send("evm_increaseTime", [t])
+}
+
+async function mine (provider, t = undefined) {
+    if (t !== undefined) {
+        await wait(hre, t)
+    }
+    await provider.request({
+        method: 'evm_mine'
+    })
+}
+
+
+const wrap_fail = async (provider, wrap, ...args) => {
+    const expected = args[0]
+    await send(...args.slice(1))
+    const ok = await provider.getStorageAt(wrap.address, 1)
+    const data = await provider.getStorageAt(wrap.address, 2)
+    want(ethers.utils.hexZeroPad(ok, 32)).to.eql('0x'+'0'.repeat(64))
+    const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(expected)).slice(0, 10)
+    want(data.slice(0, 10)).to.eql(hash)
+}
+
+const wrap_fail_str = async (provider, wrap, ...args) => {
+    const expected = args[0]
+    await send(...args.slice(1))
+    want(await provider.getStorageAt(wrap.address, 1)).to.eql('0x')
+    // TODO where is the string?
+    const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("Error(string)")).slice(0, 10)
+    want((await provider.getStorageAt(wrap.address, 2)).slice(0, 10)).to.eql(hash)
+}
+
+const wrap_send = async (provider, wrap, ...args) => {
+    await send(...args)
+    const ok = await provider.getStorageAt(wrap.address, 1)
+    const data = await provider.getStorageAt(wrap.address, 2)
+    want(ethers.utils.hexZeroPad(ok, 32)).to.eql('0x'+'0'.repeat(63)+'1')
+    want(ethers.utils.hexZeroPad(data, 32)).to.eql('0x'+'0'.repeat(64))
+}
+
+async function fail (...args) {
+    const err = args[0]
+    const sargs = args.slice(1)
+    await want(send(...sargs)).rejectedWith(err)
+}
+
+module.exports = {
+    expectEvent,
+    padRight,
+    check_gas,
+    check_entry,
+    testlib,
+    get_signers,
+    snapshot,
+    revert,
+    wait,
+    mine,
+    wrap_fail,
+    wrap_send,
+    wrap_fail_str,
+    send,
+    fail,
+    b32,
+    chai,
+    want
+}

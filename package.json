@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "build": "webpack",
-    "pretest": "npx hardhat compile",
+    "pretest": "solc --pretty-json --standard-json <yul.json >output_yul.json && npx hardhat compile",
     "test": "npx mocha test"
   },
   "devDependencies": {

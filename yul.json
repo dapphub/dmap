@@ -1,0 +1,17 @@
+{
+  "language": "Yul",
+  "sources": {
+    "dmap.yul": { "urls": ["./core/dmap.yul"] }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200000
+    },
+    "outputSelection": {
+      "*": {
+        "*": ["abi", "evm.bytecode", "evm.deployedBytecode"]
+      }
+    }
+  }
+}

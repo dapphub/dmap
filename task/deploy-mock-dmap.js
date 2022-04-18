@@ -1,13 +1,33 @@
 const fs = require('fs')
 const { getContractAddress } = require('@ethersproject/address')
 const dpack = require('@etherpacks/dpack')
-const { b32, send } = require("minihat");
+const { b32, send } = require('minihat');
 
-task('deploy-mock-dmap', async (args, hh)=> {
+const assert = require('assert')
+
+const solc_output = require('../output.json')
+const yul_output = require('../output_yul.json')
+const Dmap_solc_output = solc_output.contracts["dmap.sol"]["Dmap"]
+const _dmap__yul_output = yul_output.contracts["dmap.yul"]["_dmap_"]
+
+const debug = require('debug')('dmap:deploy')
+
+task('deploy-mock-dmap', async (args, hh) => {
+    const [ali] = await hh.ethers.getSigners()
     const packdir = args.packdir ?? './pack/'
 
-    const dmap_type = await hh.artifacts.readArtifact('Dmap')
-    const dmap_deployer = await hh.ethers.getContractFactory('_dmap_')
+    // TODO there has to be a more beautiful way to do this...
+    const _dmap__type = await hh.artifacts.readArtifact('_dmap_')
+    const Dmap_type = await hh.artifacts.readArtifact('Dmap')
+    const _dmap__type_names = _dmap__type.abi.map(o => o.name)
+    Dmap_solc_output.abi.forEach((x) => {
+        if (!_dmap__type_names.includes(x.name))
+            _dmap__type.abi = _dmap__type.abi.concat([x])
+    })
+    // TODO maybe dpack should work on solc output, not hh?
+    _dmap__type.bytecode = _dmap__yul_output.evm.bytecode.object
+    _dmap__type.deployedBytecode = _dmap__yul_output.evm.deployedBytecode.object
+    const _dmap__deployer = await hh.ethers.getContractFactoryFromArtifact(_dmap__type, ali)
 
     const root_type = await hh.artifacts.readArtifact('RootZone')
     const root_deployer = await hh.ethers.getContractFactory('RootZone')
@@ -15,10 +35,9 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const free_type = await hh.artifacts.readArtifact('FreeZone')
     const free_deployer = await hh.ethers.getContractFactory('FreeZone')
 
-    const [ali] = await hh.ethers.getSigners()
     const tx_count = await ali.getTransactionCount()
     const root_address = getContractAddress({ from: ali.address, nonce: tx_count + 1 })
-    const tx_dmap = await dmap_deployer.deploy(root_address)
+    const tx_dmap = await _dmap__deployer.deploy(root_address)
     await tx_dmap.deployed()
     const tx_root = await root_deployer.deploy(tx_dmap.address)
     const tx_free = await free_deployer.deploy(tx_dmap.address)
@@ -29,9 +48,9 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const name = b32('free')
     const zone = tx_free.address
     const types = [ "bytes32", "bytes32", "address" ]
-    const encoded = ethers.utils.defaultAbiCoder.encode(types, [ salt, name, zone ])
+    const encoded = hh.ethers.utils.defaultAbiCoder.encode(types, [ salt, name, zone ])
     const commitment = hh.ethers.utils.keccak256(encoded)
-    await send(tx_root.hark, commitment, { value: ethers.utils.parseEther('1') })
+    await send(tx_root.hark, commitment, { value: hh.ethers.utils.parseEther('1') })
     await send(tx_root.etch, salt, name, zone)
 
     const pb = await dpack.builder(hh.network.name)
@@ -39,7 +58,7 @@ task('deploy-mock-dmap', async (args, hh)=> {
         objectname: 'dmap',
         typename: 'Dmap',
         address: tx_dmap.address,
-        artifact: dmap_type
+        artifact: _dmap__type
     }, alsoPackType=true)
 
     // save only dmap in the core pack
@@ -64,11 +83,10 @@ task('deploy-mock-dmap', async (args, hh)=> {
 
     const show =(o)=> JSON.stringify(o, null, 2)
 
-    fs.writeFileSync(packdir + `Dmap.json`, show(dmap_type))
+    fs.writeFileSync(packdir + `Dmap.json`, show(_dmap__type))
     fs.writeFileSync(packdir + `RootZone.json`, show(root_type))
     fs.writeFileSync(packdir + `FreeZone.json`, show(free_type))
 
     fs.writeFileSync(packdir + `dmap_core_${hh.network.name}.dpack.json`, show(corepack))
     fs.writeFileSync(packdir + `dmap_full_${hh.network.name}.dpack.json`, show(fullpack))
-
 })
