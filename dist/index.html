@@ -12,20 +12,26 @@
   #result {
       white-space: pre;
   }
-
+  #localNode {
+      width: 210px;
+  }
 </style>
 </head>
 <body>
 <h1>dmap</h1>
 
-<label for="dpath">dmap://</label>
-<input type="text" id="dpath" name="dpath" value="free.weth">
-<input type="button" id="btnGet" value="Get">
+<div>
+    <label for="localNode">ipfs node</label>
+    <input type="text" id="localNode" name="localNode" value="/ip4/127.0.0.1/tcp/5001" title="optional">
+</div>
+
+<div>
+    <label for="dpath">dmap://</label>
+    <input type="text" id="dpath" name="dpath" value="free.weth">
+    <input type="button" id="btnGet" value="Get">
+</div>
 
 <div id="result"></div>
-
-<!--<script defer src="dependencies.js" crossorigin="no-cors"></script>-->
-<!--<script defer src="main.js"></script>-->
 
 <script defer src="dependencies.js"></script>
 <script defer src="main.js"></script>
