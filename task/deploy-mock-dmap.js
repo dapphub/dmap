@@ -10,6 +10,8 @@ const _dmap__yul_output = yul_output.contracts["dmap.yul"]["_dmap_"]
 
 const debug = require('debug')('dmap:deploy')
 
+const {parseasm} = require('../parse-asm')
+
 task('deploy-mock-dmap', async (args, hh) => {
     const [ali] = await hh.ethers.getSigners()
     const packdir = args.packdir ?? './pack/'
@@ -23,8 +25,11 @@ task('deploy-mock-dmap', async (args, hh) => {
             _dmap__type.abi = _dmap__type.abi.concat([x])
     })
     // TODO maybe dpack should work on solc output, not hh?
-    _dmap__type.bytecode = _dmap__yul_output.evm.bytecode.object
-    _dmap__type.deployedBytecode = _dmap__yul_output.evm.deployedBytecode.object
+    _dmap__type.bytecode = undefined
+    _dmap__type.deployedBytecode = undefined
+    let [asm_bytecode, asm_deployedBytecode] = parseasm('./core/dmap.asm')
+    _dmap__type.bytecode = asm_bytecode
+    _dmap__type.deployedBytecode = asm_deployedBytecode
     const _dmap__deployer = await hh.ethers.getContractFactoryFromArtifact(_dmap__type, ali)
 
     const root_type = await hh.artifacts.readArtifact('RootZone')
