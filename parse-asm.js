@@ -183,14 +183,11 @@ function parseasm(path) {
                 addCode(padded)
             } else {
                 const word = table[s]
-                if (word == undefined) {
-                    addCode('00')
-                } else {
-                    let expanded = Number(word).toString(16)
-                    if (expanded.length % 2 == 1) expanded = '0' + expanded
-                    assert(expanded.length % 2 == 0)
-                    addCode(expanded)
-                }
+                assert(word != undefined)
+                let expanded = Number(word).toString(16)
+                if (expanded.length % 2 == 1) expanded = '0' + expanded
+                assert(expanded.length % 2 == 0)
+                addCode(expanded)
             }
         }
     })
