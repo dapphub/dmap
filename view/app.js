@@ -1,26 +1,51 @@
 import { ethers } from 'ethers'
-const { getIpfs, providers } = require('ipfs-provider')
-const { httpClient, jsIpfs } = providers
+import { CID } from 'multiformats/cid'
+import { sha256 } from 'multiformats/hashes/sha2'
 const dmap = require('../dmap.js')
 const dmapAddress = '0x7fA88e1014B0640833a03ACfEC71F242b5fBDC85'
 const dmapArtifact = require('../artifacts/core/dmap.sol/Dmap.json')
+const IPFS = require('ipfs-http-client')
+
+const gateways = ['https://ipfs.fleek.co/ipfs/',
+                  'https://gateway.pinata.cloud/ipfs/',
+                  'https://cloudflare-ipfs.com/ipfs/',
+                  'https://storry.tv/ipfs/',
+                  'https://ipfs.io/ipfs/',
+                  'https://hub.textile.io/ipfs/']
+
+const resolveCID = async (cid, targetDigest, nodeAddress) => {
+    const verify = async bytes => {
+        const hash = await sha256.digest(bytes)
+        const resultDigest = JSON.stringify(hash.digest)
+        return targetDigest === resultDigest
+    }
+    const node = IPFS.create(nodeAddress)
+    const catResponse = await node.cat(cid)
+    // initially handle only single chunk verification and sha256
+    try {
+        const chunk = await catResponse.next()
+        if(await verify(chunk.value)) {
+            return chunk.value
+        }
+    } catch(e) {}
+
+    for (const gateway of gateways) {
+        const url = gateway + cid
+        try {
+            const response = await fetch(url);
+            const reader = response.body.getReader();
+            let readRes = await reader.read();
+            if (await verify(readRes.value)) {
+                return readRes.value
+            }
+        } catch (e) {}
+    }
+    throw 'unable to resolve cid'
+}
 
 window.onload = async() => {
     const $ = document.querySelector.bind(document);
     const line =s=> { $('#result').textContent += s + '\n' }
-    const node = await getIpfs({
-        providers: [
-            // attempt to use local node, if unsuccessful fallback to running embedded core js-ipfs in-page
-            httpClient({
-                loadHttpClientModule: () => require('ipfs-http-client'),
-                apiAddress: '/ip4/127.0.0.1/tcp/5001'
-            }),
-            jsIpfs({
-                loadJsIpfsModule: () => require('ipfs-core'),
-                options: { }
-            })
-        ]
-    })
 
     $('#btnGet').addEventListener('click', async () =>  {
         const dpath = $('#dpath').value;
@@ -45,21 +70,17 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cidResult = dmap.unpackCID(walkResult.meta, walkResult.data)
-            line(`ipfs: ${cidResult}`)
-            const ipfsResult = await node.ipfs.cat(cidResult)
-            let s = ''
+            const cid = dmap.unpackCID(walkResult.meta, walkResult.data)
+            line(`ipfs: ${cid}`)
+            const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
+            const resolved = await resolveCID(cid, targetDigest, $('#localNode').value)
             let utf8decoder = new TextDecoder()
-            for await (const chunk of ipfsResult) {
-                s += utf8decoder.decode(chunk)
-            }
-            line(s)
+            line(utf8decoder.decode(resolved))
         }
         catch(e){
             let utf8decoder = new TextDecoder()
             const bytes = Buffer.from(walkResult.data.slice(2), 'hex')
-            let i
-            for (i = 0; i < bytes.length; i++) {
+            for (var i = 0; i < bytes.length; i++) {
                 if (bytes[bytes.length -1 - i] !== 0) {
                     break
                 }
