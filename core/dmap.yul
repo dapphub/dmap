@@ -10,9 +10,10 @@ object "_dmap_" {
         constructor__dmap_(_1)
 
         let _2 := allocate_unbounded()
-        codecopy(_2, dataoffset("_dmap__deployed"), datasize("_dmap__deployed"))
+        let deployed_size := sub(codesize(), dataoffset("_dmap__deployed"))
+        codecopy(_2, dataoffset("_dmap__deployed"), deployed_size)
 
-        return(_2, datasize("_dmap__deployed"))
+        return(_2, deployed_size)
 
         function allocate_unbounded() -> memPtr {
             memPtr := mload(64)
@@ -82,8 +83,8 @@ object "_dmap_" {
         }
 
         function copy_arguments_for_constructor_118_object__dmap_() -> ret_param_0 {
-            let programSize := datasize("_dmap_")
-            let argSize := sub(codesize(), programSize)
+            let argSize := 32
+            let programSize := sub(codesize(), argSize)
 
             let memoryDataOffset := allocate_memory(argSize)
             codecopy(memoryDataOffset, programSize, argSize)

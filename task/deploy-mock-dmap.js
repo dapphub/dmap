@@ -25,8 +25,10 @@ task('deploy-mock-dmap', async (args, hh) => {
             _dmap__type.abi = _dmap__type.abi.concat([x])
     })
     // TODO maybe dpack should work on solc output, not hh?
-    _dmap__type.bytecode = undefined
-    _dmap__type.deployedBytecode = undefined
+    //_dmap__type.bytecode = _dmap__yul_output.evm.bytecode.object
+    //_dmap__type.deployedBytecode = _dmap__yul_output.evm.deployedBytecode.object
+    console.log(_dmap__type.bytecode)
+    console.log(_dmap__type.deployedBytecode)
     let [asm_bytecode, asm_deployedBytecode] = parseasm('./core/dmap.asm')
     _dmap__type.bytecode = asm_bytecode
     _dmap__type.deployedBytecode = asm_deployedBytecode

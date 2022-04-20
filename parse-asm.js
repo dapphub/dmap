@@ -157,6 +157,7 @@ function check_jumps(code) {
     assert(code.length % 2 == 0)
     let imm = -1
     const nibble = n => n * 2
+    let numjumps = 0
     for (let i = 0; i < code.length / 2; i++) {
         const opc = Number('0x' + code.slice(nibble(i), nibble(i + 1)))
         assert(!isNaN(opc))
@@ -170,8 +171,9 @@ function check_jumps(code) {
             const jumpdest = Number('0x' + code.slice(nibble(imm), nibble(imm + 1)))
             assert(
                 jumpdest == table.JUMPDEST,
-                `bad jumpdest ${i} ${imm} ${code.slice(i, i+8)} \n\n${code}`
+                `bad jumpdest ${i} ${imm} jump#${numjumps} ${code.slice(i, i+8)} \n\n${code}`
             )
+            numjumps++
         }
     }
 }
@@ -186,7 +188,7 @@ function parseasm(path) {
         if (deploying) deployedbytecode += s
     }
     lines.filter(x => x != '' && String(x).slice(0, 2) != '//').forEach(l => {
-        const splits = l.split(' ')
+        const splits = l.split(' ').filter(x => x != '')
         for (let i = 0; i < splits.length; i++) {
             const s = splits[i]
             if (!deploying && s == 'DEPLOY') {
