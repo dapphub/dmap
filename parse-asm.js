@@ -152,6 +152,30 @@ const fmt = (n, size) => {
     }
 }
 
+
+function check_jumps(code) {
+    assert(code.length % 2 == 0)
+    let imm = -1
+    const nibble = n => n * 2
+    for (let i = 0; i < code.length / 2; i++) {
+        const opc = Number('0x' + code.slice(nibble(i), nibble(i + 1)))
+        assert(!isNaN(opc))
+        if (opc >= table.PUSH1 && opc <= table.PUSH32) {
+            const immsize = opc - table.PUSH1 + 1
+            imm = Number('0x' + code.slice(nibble(i + 1), nibble(i + 1 + immsize)))
+            assert(!isNaN(imm), `bad push imm ${code.slice(i+2, immsize)}`)
+            i += immsize
+            continue
+        } else if (opc == table.JUMPI) {
+            const jumpdest = Number('0x' + code.slice(nibble(imm), nibble(imm + 1)))
+            assert(
+                jumpdest == table.JUMPDEST,
+                `bad jumpdest ${i} ${imm} ${code.slice(i, i+8)} \n\n${code}`
+            )
+        }
+    }
+}
+
 function parseasm(path) {
     let deploying = false
     const lines = fs.readFileSync(path).toString().split('\n')
@@ -191,6 +215,8 @@ function parseasm(path) {
             }
         }
     })
+
+    check_jumps(deployedbytecode)
     return [String(bytecode).toLowerCase(), String(deployedbytecode).toLowerCase()]
 }
 
