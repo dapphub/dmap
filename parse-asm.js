@@ -161,7 +161,7 @@ function parseasm(path) {
         bytecode += s
         if (deploying) deployedbytecode += s
     }
-    lines.filter(x => x != '').forEach(l => {
+    lines.filter(x => x != '' && String(x).slice(0, 2) != '//').forEach(l => {
         const splits = l.split(' ')
         for (let i = 0; i < splits.length; i++) {
             const s = splits[i]
