@@ -82,71 +82,116 @@ DEPLOY
 CALLDATASIZE
 PUSH1 0x24
 EQ
-PUSH1 0x8F
+PUSH1 0x9D
 // jump to pair block
 JUMPI
 // set block start
 PUSH1 0x0
-PUSH1 0x24
-CALLDATALOAD
-PUSH1 0x4
-CALLDATALOAD
 PUSH1 0x44
 CALLDATALOAD
+// (data 0x0)
+PUSH1 0x24
+CALLDATALOAD
+// (meta data 0x0)
+PUSH1 0x4
+CALLDATALOAD
+// (name meta data 0x0)
 CALLER
-DUP5
+// (caller name meta data 0x0)
+PUSH1 0x00
+// (0x0 caller name meta data 0x0)
 MSTORE
-DUP2
+// (name meta data 0x0)
+DUP1
+// (name name meta data 0x0)
 PUSH1 0x20
+// (0x20 name name meta data 0x0)
 MSTORE
-DUP1
-DUP4
+// (name meta data 0x0)
+DUP2
+// (meta name meta data 0x0)
 PUSH1 0x40
-DUP7
+PUSH1 0x00
 KECCAK256
-SWAP4
-CALLER
-DUP8
-DUP1
-LOG4
-PUSH1 0x1
-DUP3
+// (slot meta name meta data 0x0)
+DUP5
+// (data slot meta name meta data 0x0)
+DUP2
+// (slot data slot meta name meta data 0x0)
+PUSH1 0x01
 ADD
+// (nextslot data slot meta name meta data 0x0)
 SSTORE
+// (slot meta name meta data 0x0)
 DUP1
+// (slot slot meta name meta data 0x0)
 SLOAD
+// (prevmeta slot meta name meta data 0x0)
 PUSH32 0x8000000000000000000000000000000000000000000000000000000000000000
+// (LOCK prevmeta slot meta name meta data 0x0)
 AND
+// (locked slot meta name meta data 0x0)
 ISZERO
+// (!locked slot meta name meta data 0x0)
 CALLDATASIZE
 PUSH1 0x64
 EQ
+// (cdsize_set !locked slot meta name meta data 0x0)
 AND
-PUSH1 0x8B
+PUSH1 0x92
 // jump to set return
 JUMPI
+// (slot meta name meta data 0x0)
 CALLDATASIZE
+// (cdsize slot meta name meta data 0x0)
 PUSH1 0x64
 EQ
-PUSH1 0x61
+// (cdsize_set slot meta name meta data 0x0)
+PUSH1 0x62
 // jump to lock fail block
 JUMPI
+// (slot meta name meta data 0x0)
+POP
+POP
+POP
+POP
+POP
+//(0x0)
 PUSH1 0x0
-DUP1
+//(0x0 0x0)
 // bad calldata
 REVERT
 JUMPDEST
 //lock fail block start
+// (slot meta name meta data 0x0)
 PUSH32 0xA4F0D7D000000000000000000000000000000000000000000000000000000000
+// (keccak(LOCK) slot meta name meta data 0x0)
 PUSH1 0x00
 MSTORE
+// (slot meta name meta data 0x0)
+POP
+POP
+POP
+POP
+POP
+POP
 PUSH1 0x04
 PUSH1 0x00
 REVERT
 JUMPDEST
 // set return
+// (slot meta name meta data 0x0)
 SSTORE
-DUP1
+// (name meta data 0x0)
+CALLER
+// (caller name meta data 0x0)
+PUSH1 0x00
+PUSH1 0x00
+// (0x0 0x0 caller name meta data 0x0)
+LOG4
+// (0x0)
+PUSH1 0x00
+// (0x0 0x0)
 RETURN
 JUMPDEST
 // pair block start

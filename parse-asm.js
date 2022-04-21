@@ -209,7 +209,7 @@ function parseasm(path) {
                 addCode(padded)
             } else {
                 const word = table[s]
-                assert(word != undefined)
+                assert(word != undefined, `${s}`)
                 let expanded = Number(word).toString(16)
                 if (expanded.length % 2 == 1) expanded = '0' + expanded
                 assert(expanded.length % 2 == 0)
