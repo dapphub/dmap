@@ -218,8 +218,9 @@ function parseasm(path) {
         }
     })
 
-    check_jumps(deployedbytecode)
     console.log(bytecode)
+    console.log(deployedbytecode)
+    check_jumps(deployedbytecode)
     return [String(bytecode).toLowerCase(), String(deployedbytecode).toLowerCase()]
 }
 
