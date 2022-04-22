@@ -10,11 +10,13 @@ const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
 const {expectEvent, check_gas, testlib} = require("./utils/helpers");
 const constants = ethers.constants
+const { wrap_fail, wrap_send } = require('./utils/helpers')
 
 describe('freezone', ()=>{
     let dmap
     let rootzone
     let freezone
+    let errwrap
 
     let ali, bob, cat
     let ALI, BOB, CAT
@@ -39,6 +41,17 @@ describe('freezone', ()=>{
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
+
+        // ErrorWrapper with dmap (Dmap + _dmap) abi
+        const errwrap_type = await hh.artifacts.readArtifact('ErrorWrapper')
+        const errwrap_deployer = new ethers.ContractFactory(
+            freezone.interface,
+            errwrap_type.bytecode,
+            ali
+        )
+        errwrap = await errwrap_deployer.deploy(freezone.address)
+        await errwrap.deployed()
+
         await snapshot(hh)
     })
 
@@ -57,22 +70,22 @@ describe('freezone', ()=>{
     })
 
     it('set after take', async ()=>{
-        await send(freezone.take, name)
-        await send(freezone.set, name, open, data1)
+        await wrap_send(errwrap.provider, errwrap, errwrap.take, name)
+        await wrap_send(errwrap.provider, errwrap, errwrap.set, name, open, data1)
         const slot = keccak256(coder.encode(["address", "bytes32"], [freezone.address, name]))
         const [res_meta, res_data] = await testlib.pair(dmap, slot)
 
         want(ethers.utils.hexlify(data1)).eq(res_data)
         want(ethers.utils.hexlify(open)).eq(res_meta)
 
-        await send(freezone.set, name, lock, data2)
+        await wrap_send(errwrap.provider, errwrap, errwrap.set, name, lock, data2)
         const [res_meta_2, res_data_2] = await testlib.pair(dmap, slot)
 
         want(ethers.utils.hexlify(data2)).eq(res_data_2)
         want(ethers.utils.hexlify(lock)).eq(res_meta_2)
 
-        await fail('LOCK', freezone.set, name, lock, data1)
-        await fail('LOCK', freezone.set, name, open, data1)
+        await wrap_fail(errwrap.provider, errwrap, 'LOCK()', errwrap.set, name, lock, data1)
+        await wrap_fail(errwrap.provider, errwrap, 'LOCK()', errwrap.set, name, open, data1)
     })
 
     it('sets after give', async ()=>{
@@ -126,23 +139,23 @@ describe('freezone', ()=>{
 
     it('set error priority', async () => {
         // freezone errors come before dmap errors
-        await send(freezone.take, name)
-        await send(freezone.set, name, lock, data1)
+        await wrap_send(errwrap.provider, errwrap, errwrap.take, name)
+        await wrap_send(errwrap.provider, errwrap, errwrap.set, name, lock, data1)
         await fail('ERR_OWNER', freezone.connect(bob).set, name, lock, data2)
-        await fail('LOCK()', freezone.set, name, lock, data1)
+        await wrap_fail(errwrap.provider, errwrap, 'LOCK()', errwrap.set, name, lock, data1)
     })
 
     it('store CID variants', async ()=>{
         const cids = [cidDefault, cidSHA3, cidV0, cidBlake2b160]
         for (const [index, cid] of cids.entries()) {
             const name = b32(index.toString())
-            await send(freezone.take, name)
+            await wrap_send(errwrap.provider, errwrap, errwrap.take, name)
             const [meta, data] = lib.prepareCID(cid, false)
-            await send(freezone.set, name, meta, data)
+            await wrap_send(errwrap.provider, errwrap, errwrap.set, name, meta, data)
 
             const[lock_meta, lock_data] = lib.prepareCID(cid, true)
-            await send(freezone.set, name, lock_meta, lock_data)
-            await fail('LOCK', freezone.set, name, lock_meta, lock_data)
+            await wrap_send(errwrap.provider, errwrap, errwrap.set, name, lock_meta, lock_data)
+            await wrap_fail(errwrap.provider, errwrap, 'LOCK()', errwrap.set, name, lock_meta, lock_data)
 
             const slot = keccak256(coder.encode(["address", "bytes32"], [freezone.address, name]))
             const [read_meta, read_data] = await testlib.pair(dmap, slot)
