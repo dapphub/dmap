@@ -80,9 +80,12 @@ INVALID
 DEPLOY
 // deployed code start
 CALLDATASIZE
+//(cdsize)
 PUSH1 0x24
+//(0x24 cdsize)
 EQ
-PUSH1 0x9D
+//(cdsize_pair)
+PUSH1 0x9A
 // jump to pair block
 JUMPI
 // set block start
@@ -117,20 +120,16 @@ CALLDATASIZE
 PUSH1 0x64
 EQ
 AND
-PUSH1 0x92
+PUSH1 0x8F
 // jump to set return
 JUMPI
 CALLDATASIZE
 PUSH1 0x64
 EQ
-PUSH1 0x62
+PUSH1 0x5F
 // jump to lock fail block
 JUMPI
-POP
-POP
-POP
-POP
-POP
+PUSH1 0x0
 PUSH1 0x0
 // bad calldata
 REVERT
@@ -159,19 +158,32 @@ PUSH1 0x00
 RETURN
 JUMPDEST
 // pair block start
+//()
 PUSH1 0x1
+//(0x1)
 PUSH1 0x4
+//(0x4 0x1)
 CALLDATALOAD
+//(slot 0x1)
 DUP1
+//(slot slot 0x1)
 SLOAD
+//(meta slot 0x1)
 PUSH1 0x0
+//(0x0 meta slot 0x1)
 MSTORE
+//(slot 0x1)
 ADD
+//(nextslot)
 SLOAD
+//(data)
 PUSH1 0x20
+//(0x20 data)
 MSTORE
+//()
 PUSH1 0x40
 PUSH1 0x0
+//(0x0 0x40)
 RETURN
 INVALID
 LOG2

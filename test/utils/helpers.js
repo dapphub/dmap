@@ -87,31 +87,35 @@ const check_entry = async (dmap, usr, key, _meta, _data) => {
 }
 
 
-const wrap_fail = async (provider, wrap, ...args) => {
-    const expected = args[0]
-    await send(...args.slice(1))
-    const ok = await provider.getStorageAt(wrap.address, 1)
-    const data = await provider.getStorageAt(wrap.address, 2)
-    want(ethers.utils.hexZeroPad(ok, 32)).to.eql('0x'+'0'.repeat(64))
-    const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(expected)).slice(0, 10)
-    want(data.slice(0, 10)).to.eql(hash)
+const wrap_fail = async (wrap, expected, ...args) => {
+    await send(...args)
+    const ok = await wrap.ok();
+    const data = await wrap.data()
+    want(ok).to.eql(false)
+    if (expected == '0x') {
+        want(data).to.eql('0x')
+    } else {
+        const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(expected)).slice(0, 10)
+        want(data).to.eql(hash)
+    }
 }
 
-const wrap_fail_str = async (provider, wrap, ...args) => {
-    const expected = args[0]
+const wrap_fail_str = async (wrap, expected, ...args) => {
     await send(...args.slice(1))
-    want(await provider.getStorageAt(wrap.address, 1)).to.eql('0x')
+    const ok = await wrap.ok();
+    const data = await wrap.data()
+    want(ok).to.eql(false)
     // TODO where is the string?
     const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("Error(string)")).slice(0, 10)
-    want((await provider.getStorageAt(wrap.address, 2)).slice(0, 10)).to.eql(hash)
+    want(data).to.eql(hash)
 }
 
-const wrap_send = async (provider, wrap, ...args) => {
+const wrap_send = async (wrap, expected, ...args) => {
     await send(...args)
-    const ok = await provider.getStorageAt(wrap.address, 1)
-    const data = await provider.getStorageAt(wrap.address, 2)
-    want(ethers.utils.hexZeroPad(ok, 32)).to.eql('0x'+'0'.repeat(63)+'1')
-    want(ethers.utils.hexZeroPad(data, 32)).to.eql('0x'+'0'.repeat(64))
+    const ok = await wrap.ok()
+    const data = await wrap.data()
+    want(ok).to.eql(true)
+    want(data).to.eql(expected)
 }
 
 module.exports = {
