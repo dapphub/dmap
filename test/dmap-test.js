@@ -13,6 +13,7 @@ const { wrap_fail, wrap_send } = require('./utils/helpers')
 const { check_gas, padRight, check_entry, testlib } = require('./utils/helpers')
 const { bounds } = require('./bounds')
 const lib = require('../dmap.js')
+const {SignerWithAddress} = require("@nomiclabs/hardhat-ethers/signers");
 
 let dmapi_abi = require('../artifacts/core/dmap.sol/Dmap.json').abi
 let dmap_i = new ethers.utils.Interface(dmapi_abi)
@@ -46,12 +47,20 @@ describe('dmap', ()=>{
         freezone = dapp.freezone
 
         // ErrorWrapper with dmap (Dmap + _dmap) abi
-        const errwrap_type = await hh.artifacts.readArtifact('ErrorWrapper')
-        const errwrap_deployer = new ethers.ContractFactory(
-            dmap.interface,
-            errwrap_type.bytecode,
+        let errwrap_type = await hh.artifacts.readArtifact('ErrorWrapper')
+        const errwrap_type_names = errwrap_type.abi.map(x => x.name)
+        const Dmap_type = await hh.artifacts.readArtifact('Dmap')
+        Dmap_type.abi.forEach((x) => {
+            if (!errwrap_type_names.includes(x.name)) {
+                x.stateMutability = 'payable'
+                errwrap_type.abi = errwrap_type.abi.concat([x])
+            }
+        })
+        const errwrap_deployer = await ethers.getContractFactoryFromArtifact(
+            errwrap_type,
             ali
         )
+
         errwrap = await errwrap_deployer.deploy(dmap.address)
         await errwrap.deployed()
 
@@ -236,51 +245,51 @@ describe('dmap', ()=>{
 
         it('set without data', async () => {
             // set just lock bit, nothing else
-            await wrap_send(errwrap.provider, errwrap, errwrap.set, b32("1"), LOCK, constants.HashZero, {gasLimit: GLIMIT})
+            await wrap_send(errwrap, '0x', errwrap.set, b32("1"), LOCK, constants.HashZero, {gasLimit: GLIMIT})
             await check_entry(dmap, errwrap.address, b32("1"), LOCK, constants.HashZero)
 
 
             // should fail whether or not ali attempts to change something
-            await wrap_fail(errwrap.provider, errwrap, 'LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
+            await wrap_fail(errwrap, 'LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
 
-            await wrap_fail(errwrap.provider, errwrap, 'LOCK()', lib.set, errwrap, b32("1"), LOCK, constants.HashZero)
-            await wrap_fail(errwrap.provider, errwrap, 'LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, b32('hello'))
-            await wrap_fail(errwrap.provider, errwrap, 'LOCK()', lib.set, errwrap, b32("1"), LOCK, b32('hello'))
+            await wrap_fail(errwrap, 'LOCK()', lib.set, errwrap, b32("1"), LOCK, constants.HashZero)
+            await wrap_fail(errwrap, 'LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, b32('hello'))
+            await wrap_fail(errwrap, 'LOCK()', lib.set, errwrap, b32("1"), LOCK, b32('hello'))
             await check_ext_unchanged()
         })
 
         it('set with data', async () => {
             // set lock and data
-            await wrap_send(errwrap.provider, errwrap, lib.set, errwrap, b32("1"), LOCK, b32('hello'))
+            await wrap_send(errwrap, '0x', lib.set, errwrap, b32("1"), LOCK, b32('hello'))
             await check_entry(dmap, errwrap.address, b32("1"), LOCK, b32('hello'))
-            await wrap_fail(errwrap.provider, errwrap, 'LOCK()', lib.set, errwrap, b32("1"), LOCK, b32('hello'))
+            await wrap_fail(errwrap, 'LOCK()', lib.set, errwrap, b32("1"), LOCK, b32('hello'))
             await check_ext_unchanged()
         })
 
         it("set a few times, then lock", async () => {
-            await wrap_send(errwrap.provider, errwrap, lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
+            await wrap_send(errwrap, '0x', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
             await check_entry(dmap, errwrap.address, b32("1"), constants.HashZero, constants.HashZero)
 
-            await wrap_send(errwrap.provider, errwrap, lib.set, errwrap, b32("1"), constants.HashZero, b32('hello'))
+            await wrap_send(errwrap, '0x', lib.set, errwrap, b32("1"), constants.HashZero, b32('hello'))
             await check_entry(dmap, errwrap.address, b32("1"), constants.HashZero, b32('hello'))
 
-            await wrap_send(errwrap.provider, errwrap, lib.set, errwrap, b32("1"), constants.HashZero, b32('goodbye'))
+            await wrap_send(errwrap, '0x', lib.set, errwrap, b32("1"), constants.HashZero, b32('goodbye'))
             await check_entry(dmap, errwrap.address, b32("1"), constants.HashZero, b32('goodbye'))
 
-            await wrap_send(errwrap.provider, errwrap, lib.set, errwrap, b32("1"), LOCK, b32('goodbye'))
+            await wrap_send(errwrap, '0x', lib.set, errwrap, b32("1"), LOCK, b32('goodbye'))
             await check_entry(dmap, errwrap.address, b32("1"), LOCK, b32('goodbye'))
 
-            await wrap_fail(errwrap.provider, errwrap, 'LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
+            await wrap_fail(errwrap, 'LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
         })
 
         it("0x7ffff... doesn't lock, 0xffff... locks", async () => {
             const FLIP_LOCK = '0x7'+'f'.repeat(63)
-            await wrap_send(errwrap.provider, errwrap, lib.set, errwrap, b32("1"), FLIP_LOCK, constants.HashZero)
+            await wrap_send(errwrap, '0x', lib.set, errwrap, b32("1"), FLIP_LOCK, constants.HashZero)
 
             const neg_one = '0x'+'ff'.repeat(32)
-            await wrap_send(errwrap.provider, errwrap, lib.set, errwrap, b32("1"), neg_one, constants.HashZero)
-            await wrap_fail(errwrap.provider, errwrap, 'LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
+            await wrap_send(errwrap, '0x', lib.set, errwrap, b32("1"), neg_one, constants.HashZero)
+            await wrap_fail(errwrap, 'LOCK()', lib.set, errwrap, b32("1"), constants.HashZero, constants.HashZero)
             await check_ext_unchanged()
         })
     })
@@ -312,7 +321,7 @@ describe('dmap', ()=>{
             it('get', async () => {
                 const calldata = dmap_i.encodeFunctionData("get", [ALI, name])
                 await want(ali.sendTransaction(
-                    {to: dmap.address, data: calldata.slice(0, calldata.length)}
+                    {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
                 )).rejectedWith('revert')
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata + '00'}
@@ -345,6 +354,52 @@ describe('dmap', ()=>{
                 await ali.sendTransaction({to: dmap.address, data: calldata.slice(0, calldata.length)})
             })
         })
+    })
+
+    describe('stack check', async () => {
+        const name = b32('myname')
+        const meta = b32('meta')
+        const data = b32('data')
+        it('set and pair', async () => {
+            const data = '0x'+'ff'.repeat(32)
+            await wrap_send(errwrap, '0x', errwrap.set, name, LOCK, data)
+            const slot = keccak256(coder.encode(["address", "bytes32"], [errwrap.address, name]))
+            const expected = coder.encode(["bytes32", "bytes32"], [LOCK, data])
+            await wrap_send(errwrap, expected, errwrap.pair, slot)
+        })
+
+        describe('calldatasize', () => {
+            it('set', async () => {
+                const calldata = dmap_i.encodeFunctionData("set", [name, meta, data])
+                await wrap_fail(errwrap, '0x', async x => ali.sendTransaction(x),
+                    {to: errwrap.address, data: calldata.slice(0, calldata.length - 2)}
+                )
+                await wrap_fail(errwrap, '0x', async x => ali.sendTransaction(x),
+                    {to: errwrap.address, data: calldata + '00'}
+                )
+                await wrap_send(errwrap, '0x', async x => ali.sendTransaction(x),
+                    {to: errwrap.address, data: calldata}
+                )
+            })
+
+            it('pair', async () => {
+                await wrap_send(errwrap, '0x', errwrap.set, name, meta, data)
+                const slot = keccak256(coder.encode(["address", "bytes32"], [errwrap.address, name]))
+                const calldata = dmap_i.encodeFunctionData("pair", [slot])
+                await wrap_fail(errwrap, '0x', async x => ali.sendTransaction(x),
+                    {to: errwrap.address, data: calldata.slice(0, calldata.length - 2)}
+                )
+                await wrap_fail(errwrap, '0x', async x => ali.sendTransaction(x),
+                    {to: errwrap.address, data: calldata + '00'}
+                )
+                const expected = dmap_i.encodeFunctionResult("pair", [meta, data])
+                await wrap_send(errwrap, expected, async x => ali.sendTransaction(x),
+                    {to: errwrap.address, data: calldata}
+                )
+            })
+        })
+
+        // no need for revert LOCK stack check...plenty of wrapped LOCK tests
     })
 
     describe('gas', () => {
