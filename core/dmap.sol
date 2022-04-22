@@ -32,7 +32,7 @@ contract _dmap_ {
         sstore(1, shl(96, rootzone))
     }}
 
-    fallback(bytes calldata) external payable returns (bytes memory) { assembly {
+    fallback() external payable { assembly {
         if eq(36, calldatasize()) {
             let slot := calldataload(4)
             mstore(0, sload(slot))
