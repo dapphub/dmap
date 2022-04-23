@@ -34,9 +34,8 @@ contract _dmap_ {
 
     fallback() external payable { assembly {
         if eq(36, calldatasize()) {
-            let slot := calldataload(4)
-            mstore(0, sload(slot))
-            mstore(32, sload(add(slot, 1)))
+            mstore(0, sload(calldataload(4)))
+            mstore(32, sload(add(calldataload(4), 1)))
             return(0, 64)
         }
         let name := calldataload(4)
