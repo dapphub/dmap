@@ -285,8 +285,10 @@ describe('dmap', ()=>{
         describe('calldata', () => {
             const name = b32('MyKey')
             // pair is implemented in lib, not dmap
+            const getabi = ["function get(address zone, bytes32 name) external view returns (bytes32, bytes32)"]
+            const get_i = new ethers.utils.Interface(getabi)
             it('get', async () => {
-                const calldata = dmap_i.encodeFunctionData("get", [ALI, name])
+                const calldata = get_i.encodeFunctionData("get", [ALI, name])
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata.slice(0, calldata.length)}
                 )).rejectedWith('revert')
@@ -307,9 +309,11 @@ describe('dmap', ()=>{
                 await ali.sendTransaction({to: dmap.address, data: calldata})
             })
 
+            const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
+            const slot_i = new ethers.utils.Interface(slotabi)
             it('slot', async () => {
                 // slot aliases pair
-                const calldata = dmap_i.encodeFunctionData("slot", [name])
+                const calldata = slot_i.encodeFunctionData("slot", [name])
                 await ali.sendTransaction({to: dmap.address, data: calldata.slice(0, calldata.length)})
             })
 

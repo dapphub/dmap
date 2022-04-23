@@ -46,8 +46,8 @@ lib.get = async (dmap, zone, name) => {
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
-    const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
-    const res = dmap_i.decodeFunctionResult("get", resdata)
+    const resdata = dmap_i.encodeFunctionResult("pair", [meta, data])
+    const res = dmap_i.decodeFunctionResult("pair", resdata)
     return res
 }
 
@@ -56,10 +56,12 @@ lib.set = async (dmap, name, meta, data) => {
     return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
 }
 
+const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
+const slot_i = new ethers.utils.Interface(slotabi)
 lib.slot = async (dmap, slot) => {
     const val = await dmap.provider.getStorageAt(dmap.address, slot)
-    const resdata = dmap_i.encodeFunctionResult("slot", [val])
-    const res = dmap_i.decodeFunctionResult("slot", resdata)
+    const resdata = slot_i.encodeFunctionResult("slot", [val])
+    const res = slot_i.decodeFunctionResult("slot", resdata)
     return res[0]
 }
 
