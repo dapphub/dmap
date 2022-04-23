@@ -39,19 +39,19 @@ contract _dmap_ {
             mstore(32, sload(add(slot, 1)))
             return(0, 64)
         }
+        let name := calldataload(4)
+        let meta := calldataload(36)
+        let data := calldataload(68)
+        mstore(0, caller())
+        mstore(32, name)
+        let slot := keccak256(0, 64)
+        log4(0, 0, caller(), name, meta, data)
+        sstore(add(slot, 1), data)
+        if iszero(or(xor(100, calldatasize()), and(FLAG_LOCK, sload(slot)))) {
+            sstore(slot, meta)
+            return(0, 0)
+        }
         if eq(100, calldatasize()) {
-            let name := calldataload(4)
-            let meta := calldataload(36)
-            let data := calldataload(68)
-            mstore(0, caller())
-            mstore(32, name)
-            let slot := keccak256(0, 64)
-            log4(0, 0, caller(), name, meta, data)
-            sstore(add(slot, 1), data)
-            if iszero(and(FLAG_LOCK, sload(slot))) {
-                sstore(slot, meta)
-                return(0, 0)
-            }
             mstore(0, SIG_LOCK)
             revert(0, 4)
         }
