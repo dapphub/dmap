@@ -7,6 +7,9 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const packdir = args.packdir ?? './pack/'
 
     const dmap_type = await hh.artifacts.readArtifact('Dmap')
+    const _dmap__type = await hh.artifacts.readArtifact('_dmap_')
+    dmap_type.bytecode = _dmap__type.bytecode
+    dmap_type.deployedBytecode = _dmap__type.deployedBytecode
     const dmap_deployer = await hh.ethers.getContractFactory('_dmap_')
 
     const root_type = await hh.artifacts.readArtifact('RootZone')
