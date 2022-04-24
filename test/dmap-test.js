@@ -179,9 +179,9 @@ describe('dmap', ()=>{
         })
     })
 
-    describe('slot and pair', () => {
-        it('root pair', async () => {
-            const [rootMeta, rootData] = await testlib.pair(dmap, '0x' + '00'.repeat(32))
+    describe('slot and get', () => {
+        it('root get', async () => {
+            const [rootMeta, rootData] = await testlib.get(dmap, '0x' + '00'.repeat(32))
             want(ethers.utils.hexDataSlice(rootData, 0, 20))
                 .to.eql(rootzone.address.toLowerCase())
             want(rootMeta).to.eql(LOCK)
@@ -198,7 +198,7 @@ describe('dmap', ()=>{
 
         it('direct traverse', async ()=>{
             const root_free_slot = keccak256(coder.encode(["address", "bytes32"], [rootzone.address, b32('free')]))
-            const [root_free_meta, root_free_data] = await testlib.pair(dmap, root_free_slot)
+            const [root_free_meta, root_free_data] = await testlib.get(dmap, root_free_slot)
             want(root_free_data).eq(padRight(freezone.address))
             const flags = Buffer.from(root_free_meta.slice(2), 'hex')[0]
             want(flags & lib.FLAG_LOCK).to.equal(lib.FLAG_LOCK)
@@ -285,10 +285,10 @@ describe('dmap', ()=>{
         describe('calldata', () => {
             const name = b32('MyKey')
             // pair is implemented in lib, not dmap
-            const getabi = ["function get(address zone, bytes32 name) external view returns (bytes32, bytes32)"]
-            const get_i = new ethers.utils.Interface(getabi)
-            it('get', async () => {
-                const calldata = get_i.encodeFunctionData("get", [ALI, name])
+            const pairabi = ["function pair(address zone, bytes32 name) external view returns (bytes32, bytes32)"]
+            const pair_i = new ethers.utils.Interface(pairabi)
+            it('pair', async () => {
+                const calldata = pair_i.encodeFunctionData("pair", [ALI, name])
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata.slice(0, calldata.length)}
                 )).rejectedWith('revert')
@@ -312,13 +312,13 @@ describe('dmap', ()=>{
             const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
             const slot_i = new ethers.utils.Interface(slotabi)
             it('slot', async () => {
-                // slot aliases pair
+                // slot aliases get
                 const calldata = slot_i.encodeFunctionData("slot", [name])
-                await ali.sendTransaction({to: dmap.address, data: calldata.slice(0, calldata.length)})
+                await ali.sendTransaction({to: dmap.address, data: calldata})
             })
 
-            it('pair', async () => {
-                const calldata = dmap_i.encodeFunctionData("pair", [name])
+            it('get', async () => {
+                const calldata = dmap_i.encodeFunctionData("get", [name])
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
                 )).rejectedWith('revert')
@@ -367,14 +367,14 @@ describe('dmap', ()=>{
             })
         })
 
-        it('pair', async () => {
+        it('get', async () => {
             await send(lib.set, dmap, name, one, one)
             const slot = keccak256(coder.encode(["address", "bytes32"], [ALI, name]))
-            const calldata = dmap_i.encodeFunctionData("pair", [slot])
+            const calldata = dmap_i.encodeFunctionData("get", [slot])
             const tx = await dmap.signer.sendTransaction({to: dmap.address, data: calldata})
             const rx = await tx.wait()
 
-            const bound = bounds.dmap.pair
+            const bound = bounds.dmap.get
             await check_gas(rx.gasUsed, bound[0], bound[1])
         })
    })
