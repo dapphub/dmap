@@ -52,32 +52,32 @@ async function check_gas (gas, minGas, maxGas) {
 
 
 let testlib = {}
-testlib.pair = async (dmap, slot) => {
-    // like lib.pair, but calls dmap instead of direct storage access
+testlib.get = async (dmap, slot) => {
+    // like lib.get, but calls dmap instead of direct storage access
     const pairabi = ["function pair(bytes32) returns (bytes32 meta, bytes32 data)"]
     const iface = new ethers.utils.Interface(pairabi)
     const calldata = iface.encodeFunctionData("pair", [slot])
     const resdata = await dmap.signer.call({to: dmap.address, data: calldata})
     const res = iface.decodeFunctionResult("pair", resdata)
-    want(res).to.eql(await lib.pair(dmap, slot))
+    want(res).to.eql(await lib.get(dmap, slot))
     return res
 }
 // check that get, pair, and slot all return [meta, data]
 const check_entry = async (dmap, usr, key, _meta, _data) => {
     const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
     const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
-    const resGet = await lib.get(dmap, usr, key)
-    want(resGet.meta).to.eql(meta)
-    want(resGet.data).to.eql(data)
-    want(resGet).to.eql([meta, data])
+    const resZoneName = await lib.getByZoneAndName(dmap, usr, key)
+    want(resZoneName.meta).to.eql(meta)
+    want(resZoneName.data).to.eql(data)
+    want(resZoneName).to.eql([meta, data])
 
     const coder = ethers.utils.defaultAbiCoder
     const keccak256 = ethers.utils.keccak256
     const slot = keccak256(coder.encode(["address", "bytes32"], [usr, key]))
-    const resPair = await testlib.pair(dmap, slot)
-    want(resPair.meta).to.eql(meta)
-    want(resPair.data).to.eql(data)
-    want(resPair).to.eql([meta, data])
+    const resGet = await testlib.get(dmap, slot)
+    want(resGet.meta).to.eql(meta)
+    want(resGet.data).to.eql(data)
+    want(resGet).to.eql([meta, data])
 
     const nextslot = ethers.utils.hexZeroPad(
         ethers.BigNumber.from(slot).add(1).toHexString(), 32

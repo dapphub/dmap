@@ -34,8 +34,7 @@ lib.parse =s=> {
     })
 }
 
-lib.get = async (dmap, zone, name) => {
-    const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
+lib.get = async (dmap, slot) => {
     const nextslot = ethers.utils.hexZeroPad(
         ethers.BigNumber.from(slot).add(1).toHexString(), 32
     )
@@ -46,9 +45,14 @@ lib.get = async (dmap, zone, name) => {
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
-    const resdata = dmap_i.encodeFunctionResult("pair", [meta, data])
-    const res = dmap_i.decodeFunctionResult("pair", resdata)
+    const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
+    const res = dmap_i.decodeFunctionResult("get", resdata)
     return res
+}
+
+lib.getByZoneAndName = async (dmap, zone, name) => {
+    const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
+    return lib.get(dmap, slot)
 }
 
 lib.set = async (dmap, name, meta, data) => {
@@ -65,25 +69,10 @@ lib.slot = async (dmap, slot) => {
     return res[0]
 }
 
-lib.pair = async (dmap, slot) => {
-    const nextslot = ethers.utils.hexZeroPad(
-        ethers.BigNumber.from(slot).add(1).toHexString(), 32
-    )
-    let meta, data
-    await Promise.all(
-        [
-            dmap.provider.getStorageAt(dmap.address, slot),
-            dmap.provider.getStorageAt(dmap.address, nextslot)
-        ]
-    ).then(res => [meta, data] = res)
-    const resdata = dmap_i.encodeFunctionResult("pair", [meta, data])
-    const res = dmap_i.decodeFunctionResult("pair", resdata)
-    return res
-}
 
 lib.walk = async (dmap, path) => {
     if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
-    let [meta, data] = await lib.pair(dmap, '0x' + '00'.repeat(32))
+    let [meta, data] = await lib.get(dmap, '0x' + '00'.repeat(32))
     let ctx = {locked: path.charAt(0) === ':'}
     for (const step of lib.parse(path)) {
         zone = data.slice(0, 21 * 2)
@@ -91,7 +80,7 @@ lib.walk = async (dmap, path) => {
             fail(`zero register`)
         }
         const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length);
-        [meta, data] = await lib.get(dmap, zone, fullname)
+        [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
             need((Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)

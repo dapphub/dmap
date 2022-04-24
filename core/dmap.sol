@@ -15,7 +15,7 @@ interface Dmap {
     ) anonymous;
 
     function set(bytes32 name, bytes32 meta, bytes32 data) external;
-    function pair(bytes32 s) external view returns (bytes32 meta, bytes32 data);
+    function get(bytes32 slot) external view returns (bytes32 meta, bytes32 data);
 }
 
 contract _dmap_ {
@@ -32,7 +32,7 @@ contract _dmap_ {
     fallback() external payable { assembly {
         if eq(36, calldatasize()) {
             mstore(0, sload(calldataload(4)))
-            mstore(32, sload(add(calldataload(4), 1)))
+            mstore(32, sload(add(1, calldataload(4))))
             return(0, 64)
         }
         let name := calldataload(4)
