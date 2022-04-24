@@ -2,7 +2,7 @@ import { ethers } from 'ethers'
 import { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
 const dmap = require('../dmap.js')
-const dmapAddress = '0x7fA88e1014B0640833a03ACfEC71F242b5fBDC85'
+const dmapAddress = '0x6daa8f4b23d220ce08a4cfdb040ee705e643e449'
 const dmapArtifact = require('../artifacts/core/dmap.sol/Dmap.json')
 const IPFS = require('ipfs-http-client')
 
