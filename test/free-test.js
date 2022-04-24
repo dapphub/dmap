@@ -60,13 +60,13 @@ describe('freezone', ()=>{
         await send(freezone.take, name)
         await send(freezone.set, name, open, data1)
         const slot = keccak256(coder.encode(["address", "bytes32"], [freezone.address, name]))
-        const [res_meta, res_data] = await testlib.pair(dmap, slot)
+        const [res_meta, res_data] = await testlib.get(dmap, slot)
 
         want(ethers.utils.hexlify(data1)).eq(res_data)
         want(ethers.utils.hexlify(open)).eq(res_meta)
 
         await send(freezone.set, name, lock, data2)
-        const [res_meta_2, res_data_2] = await testlib.pair(dmap, slot)
+        const [res_meta_2, res_data_2] = await testlib.get(dmap, slot)
 
         want(ethers.utils.hexlify(data2)).eq(res_data_2)
         want(ethers.utils.hexlify(lock)).eq(res_meta_2)
@@ -83,7 +83,7 @@ describe('freezone', ()=>{
 
         await send(freezone.connect(bob).set, name, lock, data1)
         const slot = keccak256(coder.encode(["address", "bytes32"], [freezone.address, name]))
-        const [res_meta, res_data] = await testlib.pair(dmap.connect(bob), slot)
+        const [res_meta, res_data] = await testlib.get(dmap.connect(bob), slot)
 
         want(ethers.utils.hexlify(data1)).eq(res_data)
         want(ethers.utils.hexlify(lock)).eq(res_meta)
@@ -145,7 +145,7 @@ describe('freezone', ()=>{
             await fail('LOCK', freezone.set, name, lock_meta, lock_data)
 
             const slot = keccak256(coder.encode(["address", "bytes32"], [freezone.address, name]))
-            const [read_meta, read_data] = await testlib.pair(dmap, slot)
+            const [read_meta, read_data] = await testlib.get(dmap, slot)
             const res_cid = lib.unpackCID(read_meta, read_data)
             const helper_cid = await lib.readCID(dmap, 'free:' + index.toString())
             want(cid).eq(res_cid)
