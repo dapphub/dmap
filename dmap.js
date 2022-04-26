@@ -1,8 +1,13 @@
 const ebnf = require('ebnf')
 const ethers = require('ethers')
 const multiformats = require('multiformats')
-const abi    = require('./artifacts/core/dmap.sol/Dmap.json').abi
+
+const pack = require('./pack/premap.dpack.json')
+const artifact = require('./pack/Dmap.json')
+
+const abi    = artifact.abi
 const dmap_i = new ethers.utils.Interface(abi)
+const dmap_address = pack.objects.dmap.address
 
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
@@ -12,6 +17,9 @@ const keccak256 = ethers.utils.keccak256
 const prefLenIndex = 2
 
 module.exports = lib = {}
+
+lib.address = dmap_address
+lib.artifact = artifact
 
 lib.FLAG_LOCK = 1 << 7
 lib.grammar = `

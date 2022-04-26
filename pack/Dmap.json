@@ -1,0 +1,94 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Dmap",
+  "sourceName": "core/dmap.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "LOCK",
+      "type": "error"
+    },
+    {
+      "anonymous": true,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "zone",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "name",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "meta",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "data",
+          "type": "bytes32"
+        }
+      ],
+      "name": "Set",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "slot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "get",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "meta",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "data",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "name",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "meta",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "data",
+          "type": "bytes32"
+        }
+      ],
+      "name": "set",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b5060405161016738038061016783398101604081905261002f91610042565b600160ff1b60005560601b600155610072565b60006020828403121561005457600080fd5b81516001600160a01b038116811461006b57600080fd5b9392505050565b60e7806100806000396000f3fe608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580547f8000000000000000000000000000000000000000000000000000000000000000163660641817607757828155005b505050503660640360ac577fa4f0d7d00000000000000000000000000000000000000000000000000000000060005260046000fd5b600080fdfea2646970667358221220f1dd384635737b10f38bc53d8e50b1a499c75d139ab94907b42e7797a5e1f30c64736f6c634300080d0033",
+  "deployedBytecode": "0x608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580547f8000000000000000000000000000000000000000000000000000000000000000163660641817607757828155005b505050503660640360ac577fa4f0d7d00000000000000000000000000000000000000000000000000000000060005260046000fd5b600080fdfea2646970667358221220f1dd384635737b10f38bc53d8e50b1a499c75d139ab94907b42e7797a5e1f30c64736f6c634300080d0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
