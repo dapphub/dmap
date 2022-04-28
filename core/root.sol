@@ -6,11 +6,15 @@ import { Dmap } from './dmap.sol';
 
 contract RootZone {
     Dmap    public immutable dmap;
-    uint256 public           last;
-    bytes32 public           mark;
     uint256        immutable FREQ = 31 hours;
     bytes32        immutable LOCK = bytes32(uint256(1 << 255));
+    bytes32 public           dark;
+    bytes32 public           mark;
+    uint256 public           pile;
+    uint256 public           term;
+    address public           user;
 
+    event Ante(uint256 indexed pile);
     event Hark(bytes32 indexed mark);
     event Etch(bytes32 indexed name, address indexed zone);
 
@@ -23,13 +27,23 @@ contract RootZone {
         dmap = d;
     }
 
-    function hark(bytes32 hash) external payable {
-        if (block.timestamp < last + FREQ) revert ErrPending();
-        if (msg.value != 1 ether) revert ErrPayment();
-        (bool ok, ) = block.coinbase.call{value:(10**18)}("");
+    function ante(bytes32 hash) external payable {
+        if (msg.value <= pile) revert ErrPayment();
+        if (block.timestamp >= term && pile != 0) revert ErrExpired();
+        user.call{value:(pile)}("");  // choosing to continue on failure, they lose the ether
+        pile = msg.value;
+        user = msg.sender;
+        dark = hash;
+        term = block.timestamp + FREQ;
+        emit Ante(pile);
+    }
+
+    function hark() external {
+        if (block.timestamp < term) revert ErrPending();
+        (bool ok, ) = block.coinbase.call{value:(pile)}("");
         if (!ok) revert ErrReceipt();
-        last = block.timestamp;
-        mark = hash;
+        pile = 0;
+        mark = dark;
         emit Hark(mark);
     }
 

@@ -1,7 +1,7 @@
 const fs = require('fs')
 const { getContractAddress } = require('@ethersproject/address')
 const dpack = require('@etherpacks/dpack')
-const { b32, send } = require("minihat");
+const { b32, send, wait } = require("minihat");
 
 task('deploy-mock-dmap', async (args, hh)=> {
     const packdir = args.packdir ?? './pack/'
@@ -34,7 +34,9 @@ task('deploy-mock-dmap', async (args, hh)=> {
     const types = [ "bytes32", "bytes32", "address" ]
     const encoded = ethers.utils.defaultAbiCoder.encode(types, [ salt, name, zone ])
     const commitment = hh.ethers.utils.keccak256(encoded)
-    await send(tx_root.hark, commitment, { value: ethers.utils.parseEther('1') })
+    await send(tx_root.ante, commitment, { value: ethers.utils.parseEther('0.001') })
+    await wait(hh, 60 * 60 * 32)
+    await send(tx_root.hark)
     await send(tx_root.etch, salt, name, zone)
 
     const pb = await dpack.builder(hh.network.name)

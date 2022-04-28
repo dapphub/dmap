@@ -8,7 +8,7 @@ contract RecursiveCoinbase {
         if( !lock ) {
             lock = true;
             RootZone rz = RootZone(msg.sender);
-            rz.hark{value:1 ether}(0);
+            rz.hark();
             lock = false;
         }
     }
