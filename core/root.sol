@@ -30,7 +30,7 @@ contract RootZone {
     function ante(bytes32 hash) external payable {
         if (msg.value <= pile) revert ErrPayment();
         if (block.timestamp >= term && pile != 0) revert ErrPending();
-        user.call{value:(pile)}("");  // choosing to continue on failure, they lose the ether
+        user.call{gas: 2300, value: pile}("");
         pile = msg.value;
         user = msg.sender;
         dark = hash;
@@ -40,7 +40,7 @@ contract RootZone {
 
     function hark() external {
         if (block.timestamp < term) revert ErrPending();
-        (bool ok, ) = block.coinbase.call{value:(pile)}("");
+        (bool ok, ) = block.coinbase.call{value: pile}("");
         if (!ok) revert ErrReceipt();
         pile = 0;
         mark = dark;

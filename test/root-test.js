@@ -5,7 +5,6 @@ const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
 
 const {expectEvent, padRight, check_gas, check_entry} = require('./utils/helpers')
 const {bounds} = require("./bounds");
-const lib = require("../dmap");
 const debug = require('debug')('dmap:test')
 const constants = ethers.constants
 
@@ -151,31 +150,59 @@ describe('rootzone', ()=>{
         await fail('ErrPending', rootzone.hark)
     })
 
-    it('successive auctions', async ()=>{
+    it('auction resets', async ()=>{
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+        await wait(hh, delay_period)
+        await send(rootzone.hark)
+        await send(rootzone.ante, commitment2, { value: ethers.utils.parseEther('0.1') })
+        await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
+        await wait(hh, delay_period)
+        await send(rootzone.hark)
+        await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
+        await send(rootzone.ante, commitment3, { value: ethers.utils.parseEther('0.1') })
+        await wait(hh, delay_period)
+        await send(rootzone.hark)
+        await send(rootzone.etch, b32('salt'), b32('zone3'), zone3)
+        await check_entry(dmap, rootzone.address, b32('zone1'), LOCK, padRight(zone1))
+        await check_entry(dmap, rootzone.address, b32('zone2'), LOCK, padRight(zone2))
+        await check_entry(dmap, rootzone.address, b32('zone3'), LOCK, padRight(zone3))
     })
 
     it('rootzone survives after refund fails', async ()=>{
-        // repeat hark
+        // The danger to avoid is bids being made from unrefundable contracts which can't be beaten. Failing to refund
+        // must not revert.
+
+        const ub1_type = await ethers.getContractFactory('UnrefundableBidder1', ali)
+        const ub2_type = await ethers.getContractFactory('UnrefundableBidder2', ali)
+        const ub3_type = await ethers.getContractFactory('UnrefundableBidder3', ali)
+        const ub1 = await ub1_type.deploy()
+        const ub2 = await ub2_type.deploy()
+        const ub3 = await ub3_type.deploy()
+        await send(ub1.bid, commitment1, rootzone.address, { value: ethers.utils.parseEther('0.1') })
+        await send(ub2.bid, commitment1, rootzone.address, { value: ethers.utils.parseEther('0.2') })
+        await send(ub3.bid, commitment1, rootzone.address, { value: ethers.utils.parseEther('0.3') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.4') })
+        await wait(hh, delay_period)
+        await send(rootzone.hark)
+        await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
+        await check_entry(dmap, rootzone.address, b32('zone1'), LOCK, padRight(zone1))
+        const rootZoneBalance = await ethers.provider.getBalance(rootzone.address)
+        want(rootZoneBalance.eq(ethers.utils.parseEther('0.6'))).true
     })
 
     it('coinbase gets the pile in hark', async ()=>{
-        /*
         await hh.network.provider.send(
-            "hardhat_setCoinbase", [constants.AddressZero] // not payable
+            "hardhat_setCoinbase", [constants.AddressZero]
         )
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('10') })
+        await wait(hh, delay_period)
         const valStartBalance = await ethers.provider.getBalance(constants.AddressZero)
+        await send(rootzone.hark)
         const valFinalBalance = await ethers.provider.getBalance(constants.AddressZero)
-
-        console.log(valStartBalance)
-        console.log(valFinalBalance)
-
-        want(valFinalBalance.sub(valStartBalance).eq(ethers.utils.parseEther('0.3'))).true
-
-         */
+        want(valFinalBalance.sub(valStartBalance).gt(ethers.utils.parseEther('10'))).true
     })
 
     it('etch fail wrong hash', async ()=>{
-        await wait(hh, delay_period)
         await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.01') })
         await wait(hh, 60 * 60 * 32)
         await send(rootzone.hark)
