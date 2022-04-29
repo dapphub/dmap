@@ -7,7 +7,7 @@ module.exports.bounds = {
     get:  [25851, 25851],
   },
   rootzone: {
-    ante:  [39692, 39692],
+    ante:  [35805, 35805],
     hark:  [41011, 41011],
     etch:  [74950, 74950],
   },

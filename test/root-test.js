@@ -169,7 +169,7 @@ describe('rootzone', ()=>{
 
     it('rootzone survives after refund fails', async ()=>{
         // The danger to avoid is bids being made from unrefundable contracts which can't be beaten. Failing to refund
-        // must not revert. The stuck ether becomes part of the new bid.
+        // must not revert. The bounced ether becomes part of the new bid.
 
         const ub1_type = await ethers.getContractFactory('UnrefundableBidder1', ali)
         const ub2_type = await ethers.getContractFactory('UnrefundableBidder2', ali)
@@ -203,7 +203,7 @@ describe('rootzone', ()=>{
 
     it('etch fail wrong hash', async ()=>{
         await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.01') })
-        await wait(hh, 60 * 60 * 32)
+        await wait(hh, delay_period)
         await send(rootzone.hark)
         await fail('ErrExpired', rootzone.etch, b32('wrong_salt'), b32('zone1'), zone1)
         await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
@@ -271,8 +271,7 @@ describe('rootzone', ()=>{
 
     describe('gas', () => {
         it('ante', async () => {
-            await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
-            const rx = await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.2') })
+            const rx = await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
             const bound = bounds.rootzone.ante
             await check_gas(rx.gasUsed, bound[0], bound[1])
         })
