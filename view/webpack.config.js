@@ -4,7 +4,7 @@ const webpack = require('webpack');
 module.exports = {
     mode: 'production',
     entry: {
-        main: './view/app.js',
+        main: './app.js',
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -17,6 +17,7 @@ module.exports = {
     ],
     optimization: {
         minimize: false,
+        /*
         splitChunks: {
             cacheGroups: {
                 dependencies: {
@@ -27,5 +28,6 @@ module.exports = {
                 },
             },
         },
+*/
     },
 };

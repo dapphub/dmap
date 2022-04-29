@@ -1,6 +1,6 @@
 require('@nomiclabs/hardhat-ethers')
 
-require('./task/deploy-mock-dmap.js')
+require('./dmap-mock-deploy.js')
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
