@@ -8,11 +8,13 @@ contract RootZone {
     Dmap    public immutable dmap;
     uint256        immutable FREQ = 31 hours;
     bytes32        immutable LOCK = bytes32(uint256(1 << 255));
-    bytes32 public           dark;
-    bytes32 public           mark;
-    uint256 public           pile;
-    uint256 public           term;
-    address public           user;
+    bytes32 public            dark;
+    bytes32 public            mark;
+    uint256 public            pile;
+    uint256 public            term;
+    address public            user;
+
+    mapping(address=>uint256) public back;
 
     event Ante(uint256 indexed pile);
     event Hark(bytes32 indexed mark);
@@ -22,6 +24,7 @@ contract RootZone {
     error ErrPayment();
     error ErrPending();
     error ErrReceipt();
+    error ErrRefund();
 
     constructor(Dmap d) {
         dmap = d;
@@ -30,12 +33,18 @@ contract RootZone {
     function ante(bytes32 hash) external payable {
         if (msg.value <= pile * 101 / 100) revert ErrPayment();
         if (block.timestamp >= term && pile != 0) revert ErrPending();
-        user.call{gas: 2300, value: pile}("");
+        back[user] += pile;
         pile = msg.value;
         user = msg.sender;
         dark = hash;
         term = block.timestamp + FREQ;
         emit Ante(pile);
+    }
+
+    function withdraw() external {
+        (bool ok,) = payable(msg.sender).call{value: back[msg.sender]}("");
+        if (!ok) revert ErrRefund();
+        back[user] = 0;
     }
 
     function hark() external {
