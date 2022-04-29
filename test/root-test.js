@@ -5,6 +5,7 @@ const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
 
 const {expectEvent, padRight, check_gas, check_entry} = require('./utils/helpers')
 const {bounds} = require("./bounds");
+const lib = require("../dmap");
 const debug = require('debug')('dmap:test')
 const constants = ethers.constants
 
@@ -18,9 +19,14 @@ describe('rootzone', ()=>{
 
     const zone1 = '0x' + '0'.repeat(38) + '11'
     const zone2 = '0x' + '0'.repeat(38) + '12'
+    const zone3 = '0x' + '0'.repeat(38) + '13'
+    const commitment1 = getCommitment(b32('zone1'), zone1)
+    const commitment2 = getCommitment(b32('zone2'), zone2)
+    const commitment3 = getCommitment(b32('zone3'), zone3)
 
     const delay_period = 60 * 60 * 31
     const LOCK = '0x80'+'00'.repeat(31)
+
 
     function getCommitment (name, zone, salt=b32('salt')) {
         const types = [ "bytes32", "bytes32", "address" ]
@@ -66,50 +72,111 @@ describe('rootzone', ()=>{
         await check_entry(dmap, rootzone.address, b32('zone2'), constants.HashZero, constants.HashZero)
     })
 
-    it('auction conclusion timing', async ()=>{
-        const commitment = getCommitment(b32('zone1'), zone1)
-        await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.1') })
+    it('new bids must be higher', async ()=>{
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.2') })
+        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('0') })
+        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.2') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.25') })
+    })
+
+    it('bids can not be placed after timeout', async ()=>{
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+        await wait(hh, delay_period)
+        await fail('ErrPending', rootzone.ante, commitment2, { value: ethers.utils.parseEther('10.0') })
+    })
+
+    it('bids refunded iff unsuccessful', async ()=>{
+        const aliStartBalance = await ali.getBalance()
+        const bobStartBalance = await bob.getBalance()
+        const catStartBalance = await cat.getBalance()
+
+        aliTx = await send(rootzone.connect(ali).ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+        bobTx = await send(rootzone.connect(bob).ante, commitment2, { value: ethers.utils.parseEther('0.2') })
+        catTx = await send(rootzone.connect(cat).ante, commitment3, { value: ethers.utils.parseEther('0.3') })
+
+        const aliFinalBalance = await ali.getBalance()
+        const bobFinalBalance = await bob.getBalance()
+        const catFinalBalance = await cat.getBalance()
+
+        want((aliStartBalance.sub(aliTx.gasUsed.mul(aliTx.effectiveGasPrice))).eq(aliFinalBalance)).true
+        want((bobStartBalance.sub(bobTx.gasUsed.mul(bobTx.effectiveGasPrice))).eq(bobFinalBalance)).true
+        want((catStartBalance.sub(catTx.gasUsed.mul(catTx.effectiveGasPrice))
+                .sub(ethers.utils.parseEther('0.3'))).eq(catFinalBalance)).true
+    })
+
+    it('harks only possible >= 31 hours after last successful bid', async ()=>{
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
         await fail('ErrPending', rootzone.hark)
         await wait(hh, 60 * 60 * 10)
-        await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.2') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.2') })
         await wait(hh, 60 * 60 * 30)
         await fail('ErrPending', rootzone.hark)
-        await wait(hh, 60 * 61)
+        await wait(hh, 60 * 60)
         await send(rootzone.hark)
         await check_entry(dmap, rootzone.address, b32('zone1'), constants.HashZero, constants.HashZero)
     })
 
-    it('root survives after refund fails', async ()=>{
+    it('mark of the winner is set', async ()=>{
+        await send(rootzone.connect(ali).ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+        await send(rootzone.connect(bob).ante, commitment2, { value: ethers.utils.parseEther('0.2') })
+        await wait(hh, delay_period)
+        await send(rootzone.connect(ali).hark)
+        await fail('ErrExpired', rootzone.etch, b32('salt'), b32('zone1'), zone1)
+        await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
+        await check_entry(dmap, rootzone.address, b32('zone2'), LOCK, padRight(zone2))
+    })
+
+    it('winners can etch up until there is a new winner', async ()=>{
+        await send(rootzone.connect(ali).ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+        await wait(hh, delay_period)
+        await fail('ErrExpired', rootzone.etch, b32('salt'), b32('zone1'), zone1)
+        await send(rootzone.hark)
+        await send(rootzone.connect(bob).ante, commitment2, { value: ethers.utils.parseEther('0.1') })
+        await wait(hh, delay_period)
+        await send(rootzone.connect(ali).etch, b32('salt'), b32('zone1'), zone1)
+        await check_entry(dmap, rootzone.address, b32('zone1'), LOCK, padRight(zone1))
+        await send(rootzone.connect(ali).hark)
+        await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
+        await check_entry(dmap, rootzone.address, b32('zone2'), LOCK, padRight(zone2))
+    })
+
+    it('harks can not take eth from new auction', async ()=>{
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+        await wait(hh, delay_period)
+        await send(rootzone.hark)
+        await send(rootzone.hark)
+        await send(rootzone.ante, commitment2, { value: ethers.utils.parseEther('0.2') })
+        await fail('ErrPending', rootzone.hark)
+    })
+
+    it('successive auctions', async ()=>{
+    })
+
+    it('rootzone survives after refund fails', async ()=>{
         // repeat hark
     })
 
-    it('bids can not be placed after timeout', async ()=>{
-    })
+    it('coinbase gets the pile in hark', async ()=>{
+        /*
+        await hh.network.provider.send(
+            "hardhat_setCoinbase", [constants.AddressZero] // not payable
+        )
+        const valStartBalance = await ethers.provider.getBalance(constants.AddressZero)
+        const valFinalBalance = await ethers.provider.getBalance(constants.AddressZero)
 
-    it('multiple auctions', async ()=>{
-    })
+        console.log(valStartBalance)
+        console.log(valFinalBalance)
 
-    it('', async ()=>{
-    })
+        want(valFinalBalance.sub(valStartBalance).eq(ethers.utils.parseEther('0.3'))).true
 
-    // it('fee', async ()=>{
-    //     await wait(hh, delay_period)
-    //     const aliStartBalance = await ali.getBalance()
-    //     const commitment = getCommitment(b32('zone1'), zone1)
-    //     await fail('ErrPayment', rootzone.hark, commitment)
-    //     await fail('ErrPayment', rootzone.hark, commitment, { value: ethers.utils.parseEther('0.9') })
-    //     await fail('ErrPayment', rootzone.hark, commitment, { value: ethers.utils.parseEther('1.1') })
-    //     await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
-    //     const aliEndBalance = await ali.getBalance()
-    //     want((aliStartBalance.sub(ethers.utils.parseEther('1.0'))).gt(aliEndBalance)).true
-    //     want((aliStartBalance.sub(ethers.utils.parseEther('1.5'))).lt(aliEndBalance)).true
-    //     await check_entry(dmap, rootzone.address, b32('zone1'), constants.HashZero, constants.HashZero)
-    // })
+         */
+    })
 
     it('etch fail wrong hash', async ()=>{
         await wait(hh, delay_period)
-        const commitment = getCommitment(b32('zone1'), zone1)
-        await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.01') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.01') })
         await wait(hh, 60 * 60 * 32)
         await send(rootzone.hark)
         await fail('ErrExpired', rootzone.etch, b32('wrong_salt'), b32('zone1'), zone1)
@@ -118,16 +185,13 @@ describe('rootzone', ()=>{
     })
 
     it('error priority', async () => {
-        await wait(hh, delay_period)
-        const commitment = getCommitment(b32('zone1'), zone1)
-        await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('1') })
-
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('1') })
         // pending, payment, receipt
         await fail('ErrPending', rootzone.hark)
         // payment, receipt
-        await fail('ErrPayment', rootzone.ante, commitment, { value: ethers.utils.parseEther('1') })
-        await fail('ErrPayment', rootzone.ante, commitment, { value: ethers.utils.parseEther('0') })
-        await fail('ErrPayment', rootzone.ante, commitment, { value: ethers.utils.parseEther('0.5') })
+        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('1') })
+        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('0') })
+        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.5') })
         // receipt
         await hh.network.provider.send(
             "hardhat_setCoinbase", [rootzone.address] // not payable
@@ -137,7 +201,6 @@ describe('rootzone', ()=>{
     })
 
     it('etch fail rewrite zone', async ()=>{
-        await wait(hh, delay_period)
         const commitment = getCommitment(b32('free'), zone1)
         await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('1') })
         await wait(hh, delay_period)
@@ -146,33 +209,20 @@ describe('rootzone', ()=>{
         await check_entry(dmap, rootzone.address, b32('zone1'), constants.HashZero, constants.HashZero)
     })
 
-    // it('state updates', async ()=>{
-    //     await wait(hh, delay_period)
-    //     const commitment = getCommitment(b32('zone1'), zone1)
-    //     await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
-    //
-    //     await wait(hh, delay_period)
-    //     const newCommitment = getCommitment(b32('zone2'), zone2)
-    //     await send(rootzone.hark, newCommitment, { value: ethers.utils.parseEther('1') })
-    //
-    //     await fail('ErrExpired', rootzone.etch, b32('salt'), b32('zone1'), zone1)
-    //     await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
-    //
-    //     await check_entry(dmap, rootzone.address, b32('zone1'), constants.HashZero, constants.HashZero)
-    //     await check_entry(dmap, rootzone.address, b32('zone2'), LOCK, padRight(zone2))
-    // })
+    it('Ante event', async () => {
+        const rx = await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.5') })
+        expectEvent(rx, "Ante", [ethers.utils.parseEther('0.5')])
+    })
 
     it('Hark event', async () => {
-        const commitment = getCommitment(b32('zone1'), zone1)
-        await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.5') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.5') })
         await wait(hh, delay_period)
         const rx = await send(rootzone.hark)
-        expectEvent(rx, "Hark", [commitment])
+        expectEvent(rx, "Hark", [commitment1])
     })
 
     it('Etch event', async () => {
-        const commitment = getCommitment(b32('zone1'), zone1)
-        await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.5') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.5') })
         await wait(hh, delay_period)
         await send(rootzone.hark)
         const rx = await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
@@ -187,24 +237,21 @@ describe('rootzone', ()=>{
             "hardhat_setCoinbase", [mc.address]
         )
 
-        const commitment = getCommitment(b32('zone1'), zone1)
-        await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.5') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.5') })
         await wait(hh, delay_period)
         await fail('ErrReceipt', rootzone.hark)
     })
 
     describe('gas', () => {
-        const commitment = getCommitment(b32('zone1'), zone1)
-
         it('ante', async () => {
-            await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.1') })
-            const rx = await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.2') })
+            await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+            const rx = await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.2') })
             const bound = bounds.rootzone.ante
             await check_gas(rx.gasUsed, bound[0], bound[1])
         })
 
         it('hark', async () => {
-            await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.5') })
+            await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.5') })
             await wait(hh, delay_period)
             const rx = await send(rootzone.hark)
             const bound = bounds.rootzone.hark
@@ -212,7 +259,7 @@ describe('rootzone', ()=>{
         })
 
         it('etch', async () => {
-            await send(rootzone.ante, commitment, { value: ethers.utils.parseEther('0.5') })
+            await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.5') })
             await wait(hh, delay_period)
             await send(rootzone.hark)
             const rx = await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)

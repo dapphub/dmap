@@ -18,9 +18,9 @@ contract RootZone {
     event Hark(bytes32 indexed mark);
     event Etch(bytes32 indexed name, address indexed zone);
 
-    error ErrPending();
     error ErrExpired();
     error ErrPayment();
+    error ErrPending();
     error ErrReceipt();
 
     constructor(Dmap d) {
@@ -29,7 +29,7 @@ contract RootZone {
 
     function ante(bytes32 hash) external payable {
         if (msg.value <= pile) revert ErrPayment();
-        if (block.timestamp >= term && pile != 0) revert ErrExpired();
+        if (block.timestamp >= term && pile != 0) revert ErrPending();
         user.call{value:(pile)}("");  // choosing to continue on failure, they lose the ether
         pile = msg.value;
         user = msg.sender;
