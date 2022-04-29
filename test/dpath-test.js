@@ -12,7 +12,7 @@ describe('dpath', ()=> {
     let rootzone
 
     before(async ()=>{
-        await hh.run('deploy-mock-dmap')
+        await hh.run('dmap-mock-deploy')
         const [signer] = await ethers.getSigners()
         const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, signer)
         dmap = dapp.dmap
