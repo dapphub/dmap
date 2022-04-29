@@ -1,9 +1,29 @@
+import {default as detect}
+  from '@metamask/detect-provider'
 
+import {default as pack}
+  from './pack/premap.dpack.json' assert { type: 'json' };
 
-const pack = require('./pack/premap.dpack.json')
-const artifact = require('./pack/Dmap.json') // TODO verify (or load via CID)
+import {default as artifact}
+  from './pack/Dmap.json' assert { type: 'json' };
 
-module.exports = dmap = {}
+let provider;
+if (globalThis.window) {
+    let _provider = await detect()
+    if (provider) {
+        if (_provider == window.provider) {
+            provider = _provider
+        } else {
+            console.log('conflicting providers detected')
+        }
+    } else {
+        console.log('no provider detected')
+    }
+} else {
+    console.log('WARN no window object, nothing loaded')
+}
+
+export const dmap = {}
 
 dmap.address = pack.objects.dmap.address;
 dmap.abi = artifact.abi; // TODO check == pack.types.Dmap->artifact.abi
