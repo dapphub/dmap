@@ -71,13 +71,14 @@ describe('rootzone', ()=>{
         await check_entry(dmap, rootzone.address, b32('zone2'), constants.HashZero, constants.HashZero)
     })
 
-    it('new bids must be higher', async ()=>{
-        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
-        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.2') })
+    it('new bids must be >1% higher', async ()=>{
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.9') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('1.0') })
         await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('0') })
-        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
-        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.2') })
-        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.25') })
+        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.9') })
+        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('1.0') })
+        await fail('ErrPayment', rootzone.ante, commitment1, { value: ethers.utils.parseEther('1.01') })
+        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('1.011') })
     })
 
     it('bids can not be placed after timeout', async ()=>{

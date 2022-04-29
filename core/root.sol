@@ -28,7 +28,7 @@ contract RootZone {
     }
 
     function ante(bytes32 hash) external payable {
-        if (msg.value <= pile) revert ErrPayment();
+        if (msg.value <= pile * 101 / 100) revert ErrPayment();
         if (block.timestamp >= term && pile != 0) revert ErrPending();
         user.call{gas: 2300, value: pile}("");
         pile = msg.value;
