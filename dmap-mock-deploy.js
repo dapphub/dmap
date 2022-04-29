@@ -3,7 +3,7 @@ const { getContractAddress } = require('@ethersproject/address')
 const dpack = require('@etherpacks/dpack')
 const { b32, send } = require("minihat");
 
-task('deploy-mock-dmap', async (args, hh)=> {
+task('dmap-mock-deploy', async (args, hh)=> {
     const packdir = args.packdir ?? './pack/'
 
     const dmap_type = await hh.artifacts.readArtifact('Dmap')
