@@ -10,6 +10,7 @@ contract RootZone {
     bytes32        immutable LOCK = bytes32(uint256(1 << 255));
     bytes32 public           dark;
     bytes32 public           mark;
+    uint256 public           pile;
     uint256 public           term;
     address public           user;
 
@@ -27,20 +28,21 @@ contract RootZone {
     }
 
     function ante(bytes32 hash) external payable {
-        uint256 balance = address(this).balance;
-        if (msg.value * 2 <= balance) revert ErrPayment();
-        if (block.timestamp >= term && msg.value != balance) revert ErrPending();
-        user.call{gas: 2300, value: balance - msg.value}("");
+        if (msg.value <= pile) revert ErrPayment();
+        if (block.timestamp >= term && pile != 0) revert ErrPending();
+        user.call{gas: 2300, value: pile}("");
+        pile = msg.value;
         user = msg.sender;
         dark = hash;
         term = block.timestamp + FREQ;
-        emit Ante(balance);
+        emit Ante(pile);
     }
 
     function hark() external {
         if (block.timestamp < term) revert ErrPending();
-        (bool ok, ) = block.coinbase.call{value: address(this).balance}("");
+        (bool ok, ) = block.coinbase.call{value: pile}("");
         if (!ok) revert ErrReceipt();
+        pile = 0;
         mark = dark;
         emit Hark(mark);
     }
