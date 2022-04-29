@@ -65,7 +65,6 @@ describe('rootzone', ()=>{
         want(Number(await rootzone.term())).to.be.greaterThan(0)
         want(await rootzone.mark()).to.eql(mark)
         want(await rootzone.dark()).to.eql(mark)
-        want(await rootzone.pile()).to.eql(constants.Zero)
         want(await rootzone.user()).to.eql(ALI)
         await check_entry(dmap, rootzone.address, b32('zone1'), constants.HashZero, constants.HashZero)
         await check_entry(dmap, rootzone.address, b32('zone2'), constants.HashZero, constants.HashZero)
@@ -170,7 +169,7 @@ describe('rootzone', ()=>{
 
     it('rootzone survives after refund fails', async ()=>{
         // The danger to avoid is bids being made from unrefundable contracts which can't be beaten. Failing to refund
-        // must not revert.
+        // must not revert. The stuck ether becomes part of the new bid.
 
         const ub1_type = await ethers.getContractFactory('UnrefundableBidder1', ali)
         const ub2_type = await ethers.getContractFactory('UnrefundableBidder2', ali)
@@ -180,14 +179,14 @@ describe('rootzone', ()=>{
         const ub3 = await ub3_type.deploy()
         await send(ub1.bid, commitment1, rootzone.address, { value: ethers.utils.parseEther('0.1') })
         await send(ub2.bid, commitment1, rootzone.address, { value: ethers.utils.parseEther('0.2') })
-        await send(ub3.bid, commitment1, rootzone.address, { value: ethers.utils.parseEther('0.3') })
-        await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.4') })
+        await send(ub3.bid, commitment1, rootzone.address, { value: ethers.utils.parseEther('0.4') })
+        await send(rootzone.ante, commitment2, { value: ethers.utils.parseEther('0.8') })
         await wait(hh, delay_period)
         await send(rootzone.hark)
-        await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
-        await check_entry(dmap, rootzone.address, b32('zone1'), LOCK, padRight(zone1))
+        await send(rootzone.etch, b32('salt'), b32('zone2'), zone2)
+        await check_entry(dmap, rootzone.address, b32('zone2'), LOCK, padRight(zone2))
         const rootZoneBalance = await ethers.provider.getBalance(rootzone.address)
-        want(rootZoneBalance.eq(ethers.utils.parseEther('0.6'))).true
+        want(rootZoneBalance.eq(ethers.utils.parseEther('0'))).true
     })
 
     it('coinbase gets the pile in hark', async ()=>{
@@ -266,7 +265,8 @@ describe('rootzone', ()=>{
 
         await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.5') })
         await wait(hh, delay_period)
-        await fail('ErrReceipt', rootzone.hark)
+        await send(rootzone.hark)
+        want(await rootzone.mark()).to.eql(commitment1)
     })
 
     describe('gas', () => {
