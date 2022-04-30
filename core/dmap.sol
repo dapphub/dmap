@@ -19,13 +19,10 @@ interface Dmap {
 }
 
 contract _dmap_ {
-    bytes32 constant FLAG_LOCK = 0x1;
-    bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
-
-    error LOCK();  // export in ABI
+    error LOCK();  // export in ABI (0xa4f0d7d0)
 
     constructor(address rootzone) { assembly {
-        sstore(0, FLAG_LOCK)
+        sstore(0, 1)
         sstore(1, shl(96, rootzone))
     }}
 
@@ -43,12 +40,12 @@ contract _dmap_ {
         let slot := keccak256(0, 64)
         log4(0, 0, caller(), name, meta, data)
         sstore(add(slot, 1), data)
-        if iszero(or(xor(100, calldatasize()), and(FLAG_LOCK, sload(slot)))) {
+        if iszero(or(xor(100, calldatasize()), and(1, sload(slot)))) {
             sstore(slot, meta)
             return(0, 0)
         }
         if eq(100, calldatasize()) {
-            mstore(0, SIG_LOCK)
+            mstore(0, 0xa4f0d7d0)
             revert(0, 4)
         }
         revert(0, 0)
