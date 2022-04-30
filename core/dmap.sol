@@ -19,8 +19,6 @@ interface Dmap {
 }
 
 contract _dmap_ {
-    error LOCK();  // export in ABI (0xa4f0d7d0)
-
     constructor(address rootzone) { assembly {
         sstore(0, 1)
         sstore(1, shl(96, rootzone))
