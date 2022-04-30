@@ -4,10 +4,10 @@ const webpack = require('webpack');
 module.exports = {
     mode: 'production',
     entry: {
-        main: './app.js',
+        main: './main.js',
     },
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname),
         filename: '[name].js',
     },
     plugins: [
