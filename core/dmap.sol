@@ -6,8 +6,6 @@
 pragma solidity 0.8.13;
 
 interface Dmap {
-    function get(bytes32 slot) external view returns (bytes32 meta, bytes32 data);
-    function set(bytes32 name, bytes32 meta, bytes32 data) external;
     error LOCK();
     event Set(
         address indexed zone,
@@ -15,6 +13,9 @@ interface Dmap {
         bytes32 indexed meta,
         bytes32 indexed data
     ) anonymous;
+
+    function set(bytes32 name, bytes32 meta, bytes32 data) external;
+    function get(bytes32 slot) external view returns (bytes32 meta, bytes32 data);
 }
 
 contract _dmap_ {
