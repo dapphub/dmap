@@ -42,9 +42,10 @@ contract RootZone {
     }
 
     function withdraw() external {
-        (bool ok,) = payable(msg.sender).call{value: back[msg.sender]}("");
+        uint256 refund = back[msg.sender];
+        back[msg.sender] = 0;
+        (bool ok,) = payable(msg.sender).call{value: refund}("");
         if (!ok) revert ErrRefund();
-        back[user] = 0;
     }
 
     function hark() external {

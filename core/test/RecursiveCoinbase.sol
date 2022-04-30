@@ -13,3 +13,27 @@ contract RecursiveCoinbase {
         }
     }
 }
+
+contract RecursiveWithdraw {
+    bool lock = false;
+    RootZone rz;
+    constructor(address _rz) {
+        rz = RootZone(_rz);
+    }
+
+    function ante(bytes32 hash) external payable {
+        rz.ante{value: msg.value}(hash);
+    }
+
+    function withdraw() external {
+        rz.withdraw();
+    }
+
+    fallback () external payable {
+        if (!lock) {
+            lock = true;
+            rz.withdraw();
+            lock = false;
+        }
+    }
+}

@@ -287,6 +287,16 @@ describe('rootzone', ()=>{
         await fail('ErrReceipt', rootzone.hark)
     })
 
+    it('withdraw recursive', async () => {
+        const wr_type = await ethers.getContractFactory('RecursiveWithdraw', ali)
+        const wr = await wr_type.deploy(rootzone.address)
+
+        await send(wr.ante, commitment1, {value: ethers.utils.parseEther('1')})
+        await send(rootzone.ante, commitment2, {value: ethers.utils.parseEther('1.1')})
+        await send(wr.withdraw)
+        want(await wr.provider.getBalance(wr.address)).to.eql(ethers.utils.parseEther('1'))
+    })
+
     describe('gas', () => {
         it('ante', async () => {
             const rx = await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.1') })
