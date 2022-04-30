@@ -6,6 +6,8 @@
 pragma solidity 0.8.13;
 
 interface Dmap {
+    function get(bytes32 slot) external view returns (bytes32 meta, bytes32 data);
+    function set(bytes32 name, bytes32 meta, bytes32 data) external;
     error LOCK();
     event Set(
         address indexed zone,
@@ -13,9 +15,6 @@ interface Dmap {
         bytes32 indexed meta,
         bytes32 indexed data
     ) anonymous;
-
-    function set(bytes32 name, bytes32 meta, bytes32 data) external;
-    function get(bytes32 slot) external view returns (bytes32 meta, bytes32 data);
 }
 
 contract _dmap_ {
@@ -23,7 +22,6 @@ contract _dmap_ {
         sstore(0, 1)
         sstore(1, shl(96, rootzone))
     }}
-
     fallback() external payable { assembly {
         if eq(36, calldatasize()) {
             mstore(0, sload(calldataload(4)))
@@ -48,5 +46,4 @@ contract _dmap_ {
         }
         revert(0, 0)
     }}
-
 }
