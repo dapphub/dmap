@@ -4,11 +4,11 @@ const webpack = require('webpack');
 module.exports = {
     mode: 'production',
     entry: {
-        main: './app.js',
+        main: './main.js',
     },
     output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: '[name].js',
+        path: path.resolve(__dirname),
+        filename: '[name].unmin.js',
     },
     plugins: [
         new webpack.ProvidePlugin({
@@ -17,7 +17,6 @@ module.exports = {
     ],
     optimization: {
         minimize: false,
-        /*
         splitChunks: {
             cacheGroups: {
                 dependencies: {
@@ -28,6 +27,5 @@ module.exports = {
                 },
             },
         },
-*/
     },
 };
