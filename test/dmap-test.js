@@ -291,21 +291,22 @@ describe('dmap', ()=>{
                 const calldata = pair_i.encodeFunctionData("pair", [ALI, name])
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata.slice(0, calldata.length)}
-                )).rejectedWith('revert')
+                )).rejectedWith('reverted without a reason string')
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata + '00'}
-                )).rejectedWith('revert')
-                await want(ali.sendTransaction({to: dmap.address, data: calldata})).rejectedWith('revert')
+                )).rejectedWith('reverted without a reason string')
+                await want(ali.sendTransaction({to: dmap.address, data: calldata}))
+                    .rejectedWith('reverted without a reason string')
             })
 
             it('set', async () => {
                 const calldata = dmap_i.encodeFunctionData("set", [name, name, name])
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
-                )).rejectedWith('revert')
+                )).rejectedWith('reverted without a reason string')
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata + '00'}
-                )).rejectedWith('revert')
+                )).rejectedWith('reverted without a reason string')
                 await ali.sendTransaction({to: dmap.address, data: calldata})
             })
 
@@ -321,7 +322,7 @@ describe('dmap', ()=>{
                 const calldata = dmap_i.encodeFunctionData("get", [name])
                 await want(ali.sendTransaction(
                     {to: dmap.address, data: calldata.slice(0, calldata.length - 2)}
-                )).rejectedWith('revert')
+                )).rejectedWith('reverted without a reason string')
                 await ali.sendTransaction({to: dmap.address, data: calldata.slice(0, calldata.length)})
             })
         })
