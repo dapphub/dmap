@@ -19,8 +19,10 @@ interface Dmap {
 }
 
 contract _dmap_ {
+    error LOCK();
+    uint256 constant FLAG_LOCK = 0x1;
     constructor(address rootzone) { assembly {
-        sstore(0, 1)
+        sstore(0, FLAG_LOCK)
         sstore(1, shl(96, rootzone))
     }}
     fallback() external payable { assembly {
@@ -37,12 +39,12 @@ contract _dmap_ {
         let slot := keccak256(0, 64)
         log4(0, 0, caller(), name, meta, data)
         sstore(add(slot, 1), data)
-        if iszero(or(xor(100, calldatasize()), and(1, sload(slot)))) {
+        if iszero(or(xor(100, calldatasize()), and(FLAG_LOCK, sload(slot)))) {
             sstore(slot, meta)
             return(0, 0)
         }
         if eq(100, calldatasize()) {
-            mstore(0, 0xa4f0d7d0)
+            mstore(0, shl(224, 0xa4f0d7d0))
             revert(0, 4)
         }
         revert(0, 0)
