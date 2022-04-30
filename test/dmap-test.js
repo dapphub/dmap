@@ -23,7 +23,7 @@ describe('dmap', ()=>{
 
     let ali, bob, cat
     let ALI, BOB, CAT
-    const LOCK = '0x80'+'00'.repeat(31)
+    const LOCK = `0x${'00'.repeat(31)}01`
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
@@ -200,7 +200,7 @@ describe('dmap', ()=>{
             const root_free_slot = keccak256(coder.encode(["address", "bytes32"], [rootzone.address, b32('free')]))
             const [root_free_meta, root_free_data] = await testlib.get(dmap, root_free_slot)
             want(root_free_data).eq(padRight(freezone.address))
-            const flags = Buffer.from(root_free_meta.slice(2), 'hex')[0]
+            const flags = Buffer.from(root_free_meta.slice(2), 'hex')[31]
             want(flags & lib.FLAG_LOCK).to.equal(lib.FLAG_LOCK)
         })
     })
@@ -250,8 +250,8 @@ describe('dmap', ()=>{
             await check_ext_unchanged()
         })
 
-        it("0x7ffff... doesn't lock, 0xffff... locks", async () => {
-            const FLIP_LOCK = '0x7'+'f'.repeat(63)
+        it("0xffff...e doesn't lock, 0xffff...f locks", async () => {
+            const FLIP_LOCK = '0x'+'f'.repeat(63)+'e'
             await send(lib.set, dmap, b32("1"), FLIP_LOCK, constants.HashZero)
 
             const neg_one = '0x'+'ff'.repeat(32)
