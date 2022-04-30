@@ -71,8 +71,8 @@ describe('freezone', ()=>{
         want(ethers.utils.hexlify(data2)).eq(res_data_2)
         want(ethers.utils.hexlify(lock)).eq(res_meta_2)
 
-        await fail('LOCK', freezone.set, name, lock, data1)
-        await fail('LOCK', freezone.set, name, open, data1)
+        await fail('LOCKED', freezone.set, name, lock, data1)
+        await fail('LOCKED', freezone.set, name, open, data1)
     })
 
     it('sets after give', async ()=>{
@@ -129,7 +129,7 @@ describe('freezone', ()=>{
         await send(freezone.take, name)
         await send(freezone.set, name, lock, data1)
         await fail('ERR_OWNER', freezone.connect(bob).set, name, lock, data2)
-        await fail('LOCK()', freezone.set, name, lock, data1)
+        await fail('LOCKED()', freezone.set, name, lock, data1)
     })
 
     /*
