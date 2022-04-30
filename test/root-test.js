@@ -117,7 +117,7 @@ describe('rootzone', ()=>{
         await wait(hh, delay_period)
         const commitment = getCommitment(b32('free'), zone1)
         await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
-        await fail('revert', rootzone.etch, b32('salt'), b32('free'), zone1)
+        await fail('LOCK', rootzone.etch, b32('salt'), b32('free'), zone1)
         await check_entry(dmap, rootzone.address, b32('zone1'), constants.HashZero, constants.HashZero)
     })
 
