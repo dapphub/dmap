@@ -23,7 +23,7 @@ describe('dmap', ()=>{
 
     let ali, bob, cat
     let ALI, BOB, CAT
-    const LOCK = '0x80'+'00'.repeat(31)
+    const LOCK = `0x${'00'.repeat(31)}01`
     before(async ()=>{
         [ali, bob, cat] = await ethers.getSigners();
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
