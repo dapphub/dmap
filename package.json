@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "buildweb": "cd view && webpack",
+    "buildweb": "cd docs && webpack",
     "pretest": "npx hardhat compile",
     "test": "npx mocha test"
   },
