@@ -8,11 +8,11 @@ contract RootZone {
     Dmap    public immutable dmap;
     uint256        immutable FREQ = 31 hours;
     bytes32        immutable LOCK = bytes32(uint256(1 << 255));
-    bytes32 public            dark;
-    bytes32 public            mark;
-    uint256 public            pile;
-    uint256 public            term;
-    address public            user;
+    bytes32 public           dark;
+    bytes32 public           mark;
+    uint256 public           pile;
+    uint256 public           term;
+    address public           user;
 
     mapping(address=>uint256) public back;
 
