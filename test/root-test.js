@@ -20,7 +20,7 @@ describe('rootzone', ()=>{
     const zone2 = '0x' + '0'.repeat(38) + '12'
 
     const delay_period = 60 * 60 * 31
-    const LOCK = '0x80'+'00'.repeat(31)
+    const LOCK = `0x${'00'.repeat(31)}01`
 
     function getCommitment (name, zone, salt=b32('salt')) {
         const types = [ "bytes32", "bytes32", "address" ]

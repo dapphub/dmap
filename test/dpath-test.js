@@ -6,7 +6,7 @@ const lib = require('../dmap.js')
 const {padRight} = require("./utils/helpers");
 
 describe('dpath', ()=> {
-    const LOCK = '0x80'+'00'.repeat(31)
+    const LOCK = `0x${'00'.repeat(31)}01`
     let dmap
     let freezone
     let rootzone

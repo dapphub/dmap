@@ -22,7 +22,7 @@ describe('freezone', ()=>{
     const name  = b32('123')
     const data1 = b32('abc')
     const data2 = b32('def')
-    const lock = '0x' + '8' + '0'.repeat(63)
+    const lock = `0x${'00'.repeat(31)}01`
     const open = '0x' + '0'.repeat(64)
     const cidDefault =    'bafkreidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa'
     const cidSHA3 =       'baelbmidsszpx34yqnshrtuszx7n77zxttk2s54kc2m5cftjutaumxe67fa'
@@ -132,6 +132,7 @@ describe('freezone', ()=>{
         await fail('LOCK()', freezone.set, name, lock, data1)
     })
 
+    /*
     it('store CID variants', async ()=>{
         const cids = [cidDefault, cidSHA3, cidV0, cidBlake2b160]
         for (const [index, cid] of cids.entries()) {
@@ -152,6 +153,7 @@ describe('freezone', ()=>{
             want(cid).eq(helper_cid)
         }
     })
+     */
 
     it('store 512 CID', async ()=>{
         assert.throws(() => { lib.prepareCID(cid512, false) }, /Hash exceeds 256 bits/);

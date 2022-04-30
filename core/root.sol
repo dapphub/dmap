@@ -9,7 +9,7 @@ contract RootZone {
     uint256 public           last;
     bytes32 public           mark;
     uint256        immutable FREQ = 31 hours;
-    bytes32        immutable LOCK = bytes32(uint256(1 << 255));
+    bytes32        immutable LOCK = bytes32(uint(0x1));
 
     event Hark(bytes32 indexed mark);
     event Etch(bytes32 indexed name, address indexed zone);

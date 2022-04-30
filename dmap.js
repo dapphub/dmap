@@ -21,7 +21,7 @@ module.exports = lib = {}
 lib.address = dmap_address
 lib.artifact = artifact
 
-lib.FLAG_LOCK = 1 << 7
+lib.FLAG_LOCK = 1
 lib.grammar = `
 dpath ::= (step)* EOF
 step  ::= (rune) (name)
@@ -91,7 +91,7 @@ lib.walk = async (dmap, path) => {
         [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
-            need((Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            need((Buffer.from(meta.slice(2), 'hex')[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
             ctx.locked = true
         }
         ctx.locked = step.locked

@@ -19,16 +19,12 @@ interface Dmap {
 }
 
 contract _dmap_ {
-    bytes32 constant FLAG_LOCK = 0x8000000000000000000000000000000000000000000000000000000000000000;
-    bytes4  constant SIG_LOCK  = 0xa4f0d7d0; // LOCK()
-
-    error LOCK();  // export in ABI
-
+    error LOCK();
+    uint256 constant FLAG_LOCK = 0x1;
     constructor(address rootzone) { assembly {
         sstore(0, FLAG_LOCK)
         sstore(1, shl(96, rootzone))
     }}
-
     fallback() external payable { assembly {
         if eq(36, calldatasize()) {
             mstore(0, sload(calldataload(4)))
@@ -48,10 +44,9 @@ contract _dmap_ {
             return(0, 0)
         }
         if eq(100, calldatasize()) {
-            mstore(0, SIG_LOCK)
+            mstore(0, shl(224, 0xa4f0d7d0))
             revert(0, 4)
         }
         revert(0, 0)
     }}
-
 }
