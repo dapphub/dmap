@@ -8,7 +8,7 @@ module.exports = {
     },
     output: {
         path: path.resolve(__dirname),
-        filename: '[name].js',
+        filename: '[name].packed.js',
     },
     plugins: [
         new webpack.ProvidePlugin({
