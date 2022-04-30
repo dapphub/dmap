@@ -250,7 +250,7 @@ describe('dmap', ()=>{
             await check_ext_unchanged()
         })
 
-        it("0xffff...f doesn't lock, 0xffff...e locks", async () => {
+        it("0xffff...e doesn't lock, 0xffff...f locks", async () => {
             const FLIP_LOCK = '0x'+'f'.repeat(63)+'e'
             await send(lib.set, dmap, b32("1"), FLIP_LOCK, constants.HashZero)
 
