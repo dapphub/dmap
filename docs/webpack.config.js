@@ -8,7 +8,7 @@ module.exports = {
     },
     output: {
         path: path.resolve(__dirname),
-        filename: '[name].packed.js',
+        filename: '[name].unmin.js',
     },
     plugins: [
         new webpack.ProvidePlugin({
@@ -17,7 +17,6 @@ module.exports = {
     ],
     optimization: {
         minimize: false,
-        /*
         splitChunks: {
             cacheGroups: {
                 dependencies: {
@@ -28,6 +27,5 @@ module.exports = {
                 },
             },
         },
-*/
     },
 };
