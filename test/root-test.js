@@ -92,18 +92,35 @@ describe('rootzone', ()=>{
         const bobStartBalance = await bob.getBalance()
         const catStartBalance = await cat.getBalance()
 
-        aliTx = await send(rootzone.connect(ali).ante, commitment1, { value: ethers.utils.parseEther('0.1') })
-        bobTx = await send(rootzone.connect(bob).ante, commitment2, { value: ethers.utils.parseEther('0.2') })
-        catTx = await send(rootzone.connect(cat).ante, commitment3, { value: ethers.utils.parseEther('0.3') })
+        let aliTx = await send(rootzone.connect(ali).ante, commitment1, { value: ethers.utils.parseEther('0.1') })
+        let bobTx = await send(rootzone.connect(bob).ante, commitment2, { value: ethers.utils.parseEther('0.2') })
+        let catTx = await send(rootzone.connect(cat).ante, commitment3, { value: ethers.utils.parseEther('0.3') })
+
+        const aliAnteBalance = await ali.getBalance()
+        const bobAnteBalance = await bob.getBalance()
+        const catAnteBalance = await cat.getBalance()
+
+        want((aliStartBalance.sub(aliTx.gasUsed.mul(aliTx.effectiveGasPrice)))
+            .sub(ethers.utils.parseEther('0.1')).eq(aliAnteBalance)).true
+        want((bobStartBalance.sub(bobTx.gasUsed.mul(bobTx.effectiveGasPrice)))
+            .sub(ethers.utils.parseEther('0.2')).eq(bobAnteBalance)).true
+        want((catStartBalance.sub(catTx.gasUsed.mul(catTx.effectiveGasPrice))
+            .sub(ethers.utils.parseEther('0.3'))).eq(catAnteBalance)).true
+
+        aliTx = await send(rootzone.connect(ali).withdraw)
+        bobTx = await send(rootzone.connect(bob).withdraw)
+        catTx = await send(rootzone.connect(cat).withdraw)
 
         const aliFinalBalance = await ali.getBalance()
         const bobFinalBalance = await bob.getBalance()
         const catFinalBalance = await cat.getBalance()
 
-        want((aliStartBalance.sub(aliTx.gasUsed.mul(aliTx.effectiveGasPrice))).eq(aliFinalBalance)).true
-        want((bobStartBalance.sub(bobTx.gasUsed.mul(bobTx.effectiveGasPrice))).eq(bobFinalBalance)).true
-        want((catStartBalance.sub(catTx.gasUsed.mul(catTx.effectiveGasPrice))
-                .sub(ethers.utils.parseEther('0.3'))).eq(catFinalBalance)).true
+        want(aliAnteBalance.sub(aliTx.gasUsed.mul(aliTx.effectiveGasPrice))
+            .add(ethers.utils.parseEther('0.1'))).to.eql(aliFinalBalance)
+        want(bobAnteBalance.sub(bobTx.gasUsed.mul(bobTx.effectiveGasPrice))
+            .add(ethers.utils.parseEther('0.2'))).to.eql(bobFinalBalance)
+        want(catAnteBalance.sub(catTx.gasUsed.mul(catTx.effectiveGasPrice)))
+            .to.eql(catFinalBalance)
     })
 
     it('harks only possible >= 31 hours after last successful bid', async ()=>{
@@ -268,6 +285,16 @@ describe('rootzone', ()=>{
         await send(rootzone.ante, commitment1, { value: ethers.utils.parseEther('0.5') })
         await wait(hh, delay_period)
         await fail('ErrReceipt', rootzone.hark)
+    })
+
+    it('withdraw recursive', async () => {
+        const wr_type = await ethers.getContractFactory('RecursiveWithdraw', ali)
+        const wr = await wr_type.deploy(rootzone.address)
+
+        await send(wr.ante, commitment1, {value: ethers.utils.parseEther('1')})
+        await send(rootzone.ante, commitment2, {value: ethers.utils.parseEther('1.1')})
+        await send(wr.withdraw)
+        want(await wr.provider.getBalance(wr.address)).to.eql(ethers.utils.parseEther('1'))
     })
 
     describe('gas', () => {

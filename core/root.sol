@@ -14,6 +14,8 @@ contract RootZone {
     uint256 public           term;
     address public           user;
 
+    mapping(address=>uint256) public back;
+
     event Ante(uint256 indexed pile);
     event Hark(bytes32 indexed mark);
     event Etch(bytes32 indexed name, address indexed zone);
@@ -22,6 +24,7 @@ contract RootZone {
     error ErrPayment();
     error ErrPending();
     error ErrReceipt();
+    error ErrRefund();
 
     constructor(Dmap d) {
         dmap = d;
@@ -30,12 +33,19 @@ contract RootZone {
     function ante(bytes32 hash) external payable {
         if (msg.value <= pile * 101 / 100) revert ErrPayment();
         if (block.timestamp >= term && pile != 0) revert ErrPending();
-        user.call{gas: 2300, value: pile}("");
+        back[user] += pile;
         pile = msg.value;
         user = msg.sender;
         dark = hash;
         term = block.timestamp + FREQ;
         emit Ante(pile);
+    }
+
+    function withdraw() external {
+        uint256 refund = back[msg.sender];
+        back[msg.sender] = 0;
+        (bool ok,) = payable(msg.sender).call{value: refund}("");
+        if (!ok) revert ErrRefund();
     }
 
     function hark() external {
