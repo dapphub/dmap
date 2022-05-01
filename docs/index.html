@@ -12,15 +12,14 @@
   #result {
       white-space: pre;
   }
-  p {
-      width: 78ch;
+  body {
+      max-width: 78ch;
   }
 </style>
 </head>
 <body>
 
 <h1>dmap</h1>
-
 
 <p>
   This page is designed to be saved (as in "File > Save") and be usable even if DNS or this web host go offline or are compromised.
@@ -39,8 +38,8 @@
 <p>
   Make sure you are bootstrapped and can get oriented <a href="https://gateway.pinata.cloud/ipfs/QmabsDLuyDbbfJ9nRo9NUY6WTchNNWCxjfZZ8PVBdkEgva">even if DNS goes offline</a>.
 </p>
-<hr>
 
+<h2>configure</h2>
 <div>
   <label for="ethNode">eth provider</label>
   <input type="text" id="ethNode" name="ethNode" value="<using window.ethereum>" style='width:60ch'>
@@ -50,7 +49,6 @@
     <label for="ipfsNode">ipfs rpc url</label>
     <input type="text" id="ipfsNode" name="ipfsNode" value="/ip4/127.0.0.1/tcp/5001" title="optional" style='width:60ch'>
 </div>
-<hr>
 </br>
 
 <h2>resolve a dpath</h2>
