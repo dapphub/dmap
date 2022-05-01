@@ -48,8 +48,11 @@ window.onload = async() => {
     const line =s=> { $('#result').textContent += s + '\n' }
 
     $('#btnGet').addEventListener('click', async () =>  {
-        const dpath = $('#dpath').value;
-        line(`WALK ${dpath}`)
+        let dpath = $('#dpath').value;
+        if (dpath.length && dpath[0] != ':') {
+            dpath = ':' + dpath
+        }
+        line(`\nWALK  ${dpath}`)
         const provider = new ethers.providers.Web3Provider(window.ethereum)
         const dmapContract = new ethers.Contract(
             dmapAddress,
