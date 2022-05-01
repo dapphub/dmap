@@ -1,10 +1,10 @@
 import { ethers } from 'ethers'
 import { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
-const dmap = require('../dmap.js')
-const dmapAddress = dmap.address
-const dmapArtifact = dmap.artifact
 const IPFS = require('ipfs-http-client')
+
+const dmap = require('../dmap.js')
+
 
 const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://gateway.pinata.cloud/ipfs/',
@@ -55,8 +55,8 @@ window.onload = async() => {
         line(`\nWALK  ${dpath}`)
         const provider = new ethers.providers.Web3Provider(window.ethereum)
         const dmapContract = new ethers.Contract(
-            dmapAddress,
-            dmapArtifact.abi,
+            dmap.address,
+            dmap.artifact.abi,
             provider
         );
 
