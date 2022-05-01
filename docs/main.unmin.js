@@ -10,7 +10,7 @@ const ethers = __webpack_require__(5341)
 const multiformats = __webpack_require__(7534)
 
 const pack = __webpack_require__(3789)
-const artifact = __webpack_require__(6960)
+const artifact = __webpack_require__(791)
 
 const abi    = artifact.abi
 const dmap_i = new ethers.utils.Interface(abi)
@@ -272,7 +272,7 @@ window.onload = async() => {
 
 /***/ }),
 
-/***/ 6960:
+/***/ 3789:
 /***/ ((module) => {
 
 "use strict";
@@ -280,11 +280,11 @@ module.exports = JSON.parse('{"format":"dpack-1","network":"ethereum","types":{"
 
 /***/ }),
 
-/***/ 3789:
+/***/ 791:
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"format":"dpack-1","network":"ethereum","types":{"Dmap":{"typename":"Dmap","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}}},"objects":{"dmap":{"objectname":"dmap","typename":"Dmap","address":"0x90949c9937A11BA943C7A72C3FA073a37E3FdD96","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}}}}');
+module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap","sourceName":"core/dmap.sol","abi":[{"inputs":[],"name":"LOCKED","type":"error"},{"anonymous":true,"inputs":[{"indexed":true,"internalType":"address","name":"zone","type":"address"},{"indexed":true,"internalType":"bytes32","name":"name","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"meta","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"Set","type":"event"},{"inputs":[{"internalType":"bytes32","name":"slot","type":"bytes32"}],"name":"get","outputs":[{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"name","type":"bytes32"},{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"set","outputs":[],"stateMutability":"nonpayable","type":"function"}],"bytecode":"0x608060405234801561001057600080fd5b5060405161012e38038061012e83398101604081905261002f91610041565b60016000558060601b60015550610071565b60006020828403121561005357600080fd5b81516001600160a01b038116811461006a57600080fd5b9392505050565b60af8061007f6000396000f3fe608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580546001163660641817605857828155005b505050503660640360745763a1422f6960e01b60005260046000fd5b600080fdfea2646970667358221220475e238f09c07b2df011287cd0b887d9e0864657776ab6a3484c43f79237fefa64736f6c634300080d0033","deployedBytecode":"0x608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580546001163660641817605857828155005b505050503660640360745763a1422f6960e01b60005260046000fd5b600080fdfea2646970667358221220475e238f09c07b2df011287cd0b887d9e0864657776ab6a3484c43f79237fefa64736f6c634300080d0033","linkReferences":{},"deployedLinkReferences":{}}');
 
 /***/ })
 
