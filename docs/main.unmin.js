@@ -229,7 +229,7 @@ window.onload = async() => {
             const cid = dmap.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
             const targetDigest = JSON.stringify(multiformats_cid__WEBPACK_IMPORTED_MODULE_0__.CID.parse(cid).multihash.digest)
-            const resolved = await resolveCID(cid, targetDigest, $('#localNode').value)
+            const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
             let utf8decoder = new TextDecoder()
             line(utf8decoder.decode(resolved))
         }
