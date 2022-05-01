@@ -154,10 +154,10 @@ lib.readCID = async (dmap, path) => {
 
 
 
-const dmap = __webpack_require__(2971)
-const dmapAddress = dmap.address
-const dmapArtifact = dmap.artifact
 const IPFS = __webpack_require__(2708)
+
+const dmap = __webpack_require__(2971)
+
 
 const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://gateway.pinata.cloud/ipfs/',
@@ -208,8 +208,8 @@ window.onload = async() => {
         line(`\nWALK  ${dpath}`)
         const provider = new ethers__WEBPACK_IMPORTED_MODULE_2__/* .Web3Provider */ .Q(window.ethereum)
         const dmapContract = new ethers__WEBPACK_IMPORTED_MODULE_3__/* .Contract */ .CH(
-            dmapAddress,
-            dmapArtifact.abi,
+            dmap.address,
+            dmap.artifact.abi,
             provider
         );
 

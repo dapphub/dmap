@@ -27771,7 +27771,7 @@ exports.sha1 = __webpack_require__(9330);
 exports.sha224 = __webpack_require__(5168);
 exports.sha256 = __webpack_require__(375);
 exports.sha384 = __webpack_require__(8899);
-exports.sha512 = __webpack_require__(790);
+exports.sha512 = __webpack_require__(556);
 
 
 /***/ }),
@@ -28017,7 +28017,7 @@ SHA256.prototype._digest = function digest(enc) {
 
 var utils = __webpack_require__(8626);
 
-var SHA512 = __webpack_require__(790);
+var SHA512 = __webpack_require__(556);
 
 function SHA384() {
   if (!(this instanceof SHA384))
@@ -28052,7 +28052,7 @@ SHA384.prototype._digest = function digest(enc) {
 
 /***/ }),
 
-/***/ 790:
+/***/ 556:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 "use strict";
@@ -35545,7 +35545,7 @@ function compareBytes(b1, b2) {
 
 /***/ }),
 
-/***/ 1301:
+/***/ 790:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -36544,7 +36544,7 @@ var _1negint = __webpack_require__(608);
 // EXTERNAL MODULE: ../node_modules/cborg/esm/lib/2bytes.js
 var _2bytes = __webpack_require__(622);
 // EXTERNAL MODULE: ../node_modules/cborg/esm/lib/3string.js
-var _3string = __webpack_require__(1301);
+var _3string = __webpack_require__(790);
 // EXTERNAL MODULE: ../node_modules/cborg/esm/lib/4array.js
 var _4array = __webpack_require__(7656);
 // EXTERNAL MODULE: ../node_modules/cborg/esm/lib/5map.js
@@ -36808,7 +36808,7 @@ function encode(data, options) {
 /* harmony import */ var _0uint_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(7228);
 /* harmony import */ var _1negint_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(608);
 /* harmony import */ var _2bytes_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(622);
-/* harmony import */ var _3string_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(1301);
+/* harmony import */ var _3string_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(790);
 /* harmony import */ var _4array_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(7656);
 /* harmony import */ var _5map_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(1613);
 /* harmony import */ var _6tag_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(6589);

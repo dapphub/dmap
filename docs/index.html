@@ -18,24 +18,44 @@
 </style>
 </head>
 <body>
+
 <h1>dmap</h1>
 
-<p> This page is designed to be saved (as in "File > Save") to be usable even if DNS or this web host goes offline. </br>
-  The code is un-minified and we are working to make it smaller and easier to verify. We are aiming to drop most dependencies and get it under 1k LOC. </br>
-  Your local ETH thin client and IPFS client are fundamental to securing your software supply chain. </br>
+<p>
+  This page is designed to be saved (as in "File > Save") </br>
+  and be usable even if DNS or this web host goes offline.
+</p>
+<p>
+  (The code is un-minified and we are working to drop all depencencides </br>
+  and get it under 1k LOC so it is easy to manually verify.)
+</p>
+<p>
+  Your local ETH thin client and IPFS client are fundamental </br>
+  to securing your software supply chain.
+</p>
+<p>
   Make sure you are boostrapped and can get oriented even if DNS goes offline.
 </p>
-
+<hr>
 
 <div>
-    <label for="ipfsNode">ipfs node</label>
-    <input type="text" id="localNode" name="localNode" value="/ip4/127.0.0.1/tcp/5001" title="optional">
+  <label for="ethNode">eth provider</label>
+  <input type="text" id="ethNode" name="ethNode" value="<using window.ethereum>" style='width:60ch'>
 </div>
 
 <div>
+    <label for="ipfsNode">ipfs rpc url</label>
+    <input type="text" id="ipfsNode" name="ipfsNode" value="/ip4/127.0.0.1/tcp/5001" title="optional" style='width:60ch'>
+</div>
+<hr>
+</br>
+
+<h2>resolve a dpath</h2>
+
+<div>
+    <input type="button" id="btnGet" value="walk">
     <label for="dpath">dmap://</label>
-    <input type="text" id="dpath" name="dpath" value="free.weth">
-    <input type="button" id="btnGet" value="Get">
+    <input type="text" id="dpath" name="dpath" value=":free" style='width:58ch'>
 </div>
 
 <div id="result"></div>
