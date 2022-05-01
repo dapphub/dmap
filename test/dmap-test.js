@@ -262,11 +262,11 @@ describe('dmap', ()=>{
     })
 
     describe('DmapFace', () => {
-        it('error LOCK', async () => {
+        it('error LOCKED', async () => {
             // ethers has one error pool for all contracts, so just read it
-            const errfrag = dmap_i.getError("LOCK")
+            const errfrag = dmap_i.getError("LOCKED")
             want(errfrag.inputs.length).to.eql(0)
-            want(errfrag.name).to.eql("LOCK")
+            want(errfrag.name).to.eql("LOCKED")
         })
 
         it('event Set', async () => {

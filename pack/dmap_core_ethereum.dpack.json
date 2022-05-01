@@ -1,0 +1,22 @@
+{
+  "format": "dpack-1",
+  "network": "ethereum",
+  "types": {
+    "Dmap": {
+      "typename": "Dmap",
+      "artifact": {
+        "/": "bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"
+      }
+    }
+  },
+  "objects": {
+    "dmap": {
+      "objectname": "dmap",
+      "typename": "Dmap",
+      "address": "0x90949c9937A11BA943C7A72C3FA073a37E3FdD96",
+      "artifact": {
+        "/": "bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"
+      }
+    }
+  }
+}

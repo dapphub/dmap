@@ -1,0 +1,50 @@
+{
+  "format": "dpack-1",
+  "network": "ethereum",
+  "types": {
+    "Dmap": {
+      "typename": "Dmap",
+      "artifact": {
+        "/": "bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"
+      }
+    },
+    "RootZone": {
+      "typename": "RootZone",
+      "artifact": {
+        "/": "bafkreifpdomogczabwueeedk6vqo7j53i2kptqpsewy2u7iswlh52rjxge"
+      }
+    },
+    "FreeZone": {
+      "typename": "FreeZone",
+      "artifact": {
+        "/": "bafkreihekvimgm36smqur6uqucwdmv2bva4fmoizao7vmz5yoalpk6u4cq"
+      }
+    }
+  },
+  "objects": {
+    "dmap": {
+      "objectname": "dmap",
+      "typename": "Dmap",
+      "address": "0x90949c9937A11BA943C7A72C3FA073a37E3FdD96",
+      "artifact": {
+        "/": "bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"
+      }
+    },
+    "rootzone": {
+      "objectname": "rootzone",
+      "typename": "RootZone",
+      "address": "0x022ea9ba506E38eF6093b6AB53e48bbD60f86832",
+      "artifact": {
+        "/": "bafkreifpdomogczabwueeedk6vqo7j53i2kptqpsewy2u7iswlh52rjxge"
+      }
+    },
+    "freezone": {
+      "objectname": "freezone",
+      "typename": "FreeZone",
+      "address": "0xf151b2c51f0885684A502D9e901846D9FFcE3D4a",
+      "artifact": {
+        "/": "bafkreihekvimgm36smqur6uqucwdmv2bva4fmoizao7vmz5yoalpk6u4cq"
+      }
+    }
+  }
+}
