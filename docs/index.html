@@ -23,7 +23,7 @@
 
 
 <p>
-  This page is designed to be saved (as in "File > Save" or `wget -r`) and be usable even if DNS or this web host goes offline.
+  This page is designed to be saved (as in "File > Save") and be usable even if DNS or this web host go offline or are compromised.
 </p>
 <p>
   You can also add it to ipfs, which is an easy way to monitor changes:
@@ -32,11 +32,10 @@
     wget dmap.sh && ipfs add dmap.sh -r --pin --cid-version=1
 </pre>
 <p>
-  (The code is un-minified and we are working to drop all depencencides and get it under 1k LOC so it is easy to manually verify.)
-</p>
-<p>
   Your local ETH thin client and IPFS client are fundamental to securing your software supply chain.
 </p>
+<p>
+  Do not depend on this domain name to resolve to the correct dmap interface.
 <p>
   Make sure you are bootstrapped and can get oriented <a href="https://gateway.pinata.cloud/ipfs/QmabsDLuyDbbfJ9nRo9NUY6WTchNNWCxjfZZ8PVBdkEgva">even if DNS goes offline</a>.
 </p>
