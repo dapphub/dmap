@@ -2,7 +2,7 @@ const ebnf = require('ebnf')
 const ethers = require('ethers')
 const multiformats = require('multiformats')
 
-const pack = require('./pack/premap.dpack.json')
+const pack = require('./pack/dmap.json')
 const artifact = require('./pack/Dmap.json')
 
 const abi    = artifact.abi
