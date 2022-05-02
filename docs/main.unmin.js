@@ -6,8 +6,7 @@
 
 /* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
 const ebnf = __webpack_require__(1425)
-const ethers = __webpack_require__(5341)
-const multiformats = __webpack_require__(7534)
+const ethers = __webpack_require__(7043)
 
 const pack = __webpack_require__(3789)
 const artifact = __webpack_require__(791)
@@ -21,7 +20,6 @@ const need =(b,s)=> b || fail(s)
 
 const coder = ethers.utils.defaultAbiCoder
 const keccak256 = ethers.utils.keccak256
-const prefLenIndex = 2
 
 module.exports = lib = {}
 
@@ -106,39 +104,6 @@ lib.walk = async (dmap, path) => {
     return {meta, data}
 }
 
-lib.prepareCID = (cidStr, lock) => {
-    const cid = multiformats.CID.parse(cidStr)
-    need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
-    const prefixLen = cid.byteLength - cid.multihash.size
-    const meta = new Uint8Array(32).fill(0)
-    const data = new Uint8Array(32).fill(0)
-
-    data.set(cid.bytes.slice(-cid.multihash.size), 32 - cid.multihash.size)
-    meta.set(cid.bytes.slice(0, prefixLen), 32 - prefixLen)
-    if (lock) meta[0] |= lib.FLAG_LOCK
-    meta[prefLenIndex] = prefixLen
-    return [meta, data]
-}
-
-lib.unpackCID = (metaStr, dataStr) => {
-    const meta = Buffer.from(metaStr.slice(2), 'hex')
-    const data = Buffer.from(dataStr.slice(2), 'hex')
-    const prefixLen = meta[prefLenIndex]
-    const specs = multiformats.CID.inspectBytes(meta.slice(-prefixLen))
-    const hashLen = specs.digestSize
-    const cidBytes = new Uint8Array(prefixLen + hashLen)
-
-    cidBytes.set(meta.slice(-prefixLen), 0)
-    cidBytes.set(data.slice(32 - hashLen), prefixLen)
-    const cid = multiformats.CID.decode(cidBytes)
-    return cid.toString()
-}
-
-lib.readCID = async (dmap, path) => {
-    const packed = await lib.walk(dmap, path)
-    return lib.unpackCID(packed.meta, packed.data)
-}
-
 
 /***/ }),
 
@@ -157,6 +122,7 @@ lib.readCID = async (dmap, path) => {
 const IPFS = __webpack_require__(2708)
 
 const dmap = __webpack_require__(2971)
+const utils = __webpack_require__(4288)
 
 
 const gateways = ['https://ipfs.fleek.co/ipfs/',
@@ -226,7 +192,7 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = dmap.unpackCID(walkResult.meta, walkResult.data)
+            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
             const targetDigest = JSON.stringify(multiformats_cid__WEBPACK_IMPORTED_MODULE_0__.CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
@@ -251,6 +217,55 @@ window.onload = async() => {
     });
 }
 
+
+/***/ }),
+
+/***/ 4288:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+/* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
+const multiformats = __webpack_require__(7534)
+const lib = __webpack_require__(2971)
+
+const fail =s=> { throw new Error(s) }
+const need =(b,s)=> b || fail(s)
+
+const prefLenIndex = 30
+
+module.exports = utils = {}
+
+utils.prepareCID = (cidStr, lock) => {
+    const cid = multiformats.CID.parse(cidStr)
+    need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
+    const prefixLen = cid.byteLength - cid.multihash.size
+    const meta = new Uint8Array(32).fill(0)
+    const data = new Uint8Array(32).fill(0)
+
+    data.set(cid.bytes.slice(-cid.multihash.size), 32 - cid.multihash.size)
+    meta.set(cid.bytes.slice(0, prefixLen))
+    if (lock) meta[31] |= lib.FLAG_LOCK
+    meta[prefLenIndex] = prefixLen
+    return [meta, data]
+}
+
+utils.unpackCID = (metaStr, dataStr) => {
+    const meta = Buffer.from(metaStr.slice(2), 'hex')
+    const data = Buffer.from(dataStr.slice(2), 'hex')
+    const prefixLen = meta[prefLenIndex]
+    const specs = multiformats.CID.inspectBytes(meta.slice(0, prefixLen))
+    const hashLen = specs.digestSize
+    const cidBytes = new Uint8Array(prefixLen + hashLen)
+
+    cidBytes.set(meta.slice(0, prefixLen), 0)
+    cidBytes.set(data.slice(32 - hashLen), prefixLen)
+    const cid = multiformats.CID.decode(cidBytes)
+    return cid.toString()
+}
+
+utils.readCID = async (dmap, path) => {
+    const packed = await lib.walk(dmap, path)
+    return utils.unpackCID(packed.meta, packed.data)
+}
 
 /***/ }),
 
