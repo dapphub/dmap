@@ -5,17 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>dmap</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-<style>
-  * {
-      font-family: monospace;
-  }
-  #result {
-      white-space: pre;
-  }
-  body {
-      max-width: 78ch;
-  }
-</style>
+    <style>
+      body {
+          font-family: monospace;
+          max-width: 78ch;
+      }
+    </style>
+    <script defer src="dependencies.unmin.js"></script>
+    <script defer src="main.unmin.js"></script>
 </head>
 <body>
 
@@ -59,10 +56,8 @@
     <input type="text" id="dpath" name="dpath" value=":free.bird" style='width:58ch'>
 </div>
 
-<div id="result"></div>
+<pre id="result"></pre>
 
-<script defer src="dependencies.unmin.js"></script>
-<script defer src="main.unmin.js"></script>
 
 <noscript>You need to enable JavaScript to use dmap.</noscript>
 </body>
