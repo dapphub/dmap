@@ -6,10 +6,9 @@
 
 /* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
 const ebnf = __webpack_require__(1425)
-const ethers = __webpack_require__(5341)
-const multiformats = __webpack_require__(7534)
+const ethers = __webpack_require__(7043)
 
-const pack = __webpack_require__(1471)
+const pack = __webpack_require__(3655)
 const artifact = __webpack_require__(6960)
 
 const abi    = artifact.abi
@@ -21,14 +20,13 @@ const need =(b,s)=> b || fail(s)
 
 const coder = ethers.utils.defaultAbiCoder
 const keccak256 = ethers.utils.keccak256
-const prefLenIndex = 2
 
 module.exports = lib = {}
 
 lib.address = dmap_address
 lib.artifact = artifact
 
-lib.FLAG_LOCK = 1 << 7
+lib.FLAG_LOCK = 1
 lib.grammar = `
 dpath ::= (step)* EOF
 step  ::= (rune) (name)
@@ -98,45 +96,12 @@ lib.walk = async (dmap, path) => {
         [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
-            need((Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            need((Buffer.from(meta.slice(2), 'hex')[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
             ctx.locked = true
         }
         ctx.locked = step.locked
     }
     return {meta, data}
-}
-
-lib.prepareCID = (cidStr, lock) => {
-    const cid = multiformats.CID.parse(cidStr)
-    need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
-    const prefixLen = cid.byteLength - cid.multihash.size
-    const meta = new Uint8Array(32).fill(0)
-    const data = new Uint8Array(32).fill(0)
-
-    data.set(cid.bytes.slice(-cid.multihash.size), 32 - cid.multihash.size)
-    meta.set(cid.bytes.slice(0, prefixLen), 32 - prefixLen)
-    if (lock) meta[0] |= lib.FLAG_LOCK
-    meta[prefLenIndex] = prefixLen
-    return [meta, data]
-}
-
-lib.unpackCID = (metaStr, dataStr) => {
-    const meta = Buffer.from(metaStr.slice(2), 'hex')
-    const data = Buffer.from(dataStr.slice(2), 'hex')
-    const prefixLen = meta[prefLenIndex]
-    const specs = multiformats.CID.inspectBytes(meta.slice(-prefixLen))
-    const hashLen = specs.digestSize
-    const cidBytes = new Uint8Array(prefixLen + hashLen)
-
-    cidBytes.set(meta.slice(-prefixLen), 0)
-    cidBytes.set(data.slice(32 - hashLen), prefixLen)
-    const cid = multiformats.CID.decode(cidBytes)
-    return cid.toString()
-}
-
-lib.readCID = async (dmap, path) => {
-    const packed = await lib.walk(dmap, path)
-    return lib.unpackCID(packed.meta, packed.data)
 }
 
 
@@ -155,6 +120,7 @@ lib.readCID = async (dmap, path) => {
 
 
 const dmap = __webpack_require__(2971)
+const utils = __webpack_require__(4288)
 const dmapAddress = dmap.address
 const dmapArtifact = dmap.artifact
 const IPFS = __webpack_require__(2708)
@@ -223,7 +189,7 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = dmap.unpackCID(walkResult.meta, walkResult.data)
+            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
             const targetDigest = JSON.stringify(multiformats_cid__WEBPACK_IMPORTED_MODULE_0__.CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#localNode').value)
@@ -248,6 +214,55 @@ window.onload = async() => {
     });
 }
 
+
+/***/ }),
+
+/***/ 4288:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+/* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
+const multiformats = __webpack_require__(7534)
+const lib = __webpack_require__(2971)
+
+const fail =s=> { throw new Error(s) }
+const need =(b,s)=> b || fail(s)
+
+const prefLenIndex = 30
+
+module.exports = utils = {}
+
+utils.prepareCID = (cidStr, lock) => {
+    const cid = multiformats.CID.parse(cidStr)
+    need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
+    const prefixLen = cid.byteLength - cid.multihash.size
+    const meta = new Uint8Array(32).fill(0)
+    const data = new Uint8Array(32).fill(0)
+
+    data.set(cid.bytes.slice(-cid.multihash.size), 32 - cid.multihash.size)
+    meta.set(cid.bytes.slice(0, prefixLen))
+    if (lock) meta[31] |= lib.FLAG_LOCK
+    meta[prefLenIndex] = prefixLen
+    return [meta, data]
+}
+
+utils.unpackCID = (metaStr, dataStr) => {
+    const meta = Buffer.from(metaStr.slice(2), 'hex')
+    const data = Buffer.from(dataStr.slice(2), 'hex')
+    const prefixLen = meta[prefLenIndex]
+    const specs = multiformats.CID.inspectBytes(meta.slice(0, prefixLen))
+    const hashLen = specs.digestSize
+    const cidBytes = new Uint8Array(prefixLen + hashLen)
+
+    cidBytes.set(meta.slice(0, prefixLen), 0)
+    cidBytes.set(data.slice(32 - hashLen), prefixLen)
+    const cid = multiformats.CID.decode(cidBytes)
+    return cid.toString()
+}
+
+utils.readCID = async (dmap, path) => {
+    const packed = await lib.walk(dmap, path)
+    return utils.unpackCID(packed.meta, packed.data)
+}
 
 /***/ }),
 
@@ -276,15 +291,15 @@ window.onload = async() => {
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap","sourceName":"core/dmap.sol","abi":[{"inputs":[],"name":"LOCK","type":"error"},{"anonymous":true,"inputs":[{"indexed":true,"internalType":"address","name":"zone","type":"address"},{"indexed":true,"internalType":"bytes32","name":"name","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"meta","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"Set","type":"event"},{"inputs":[{"internalType":"bytes32","name":"slot","type":"bytes32"}],"name":"get","outputs":[{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"name","type":"bytes32"},{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"set","outputs":[],"stateMutability":"nonpayable","type":"function"}],"bytecode":"0x608060405234801561001057600080fd5b5060405161016738038061016783398101604081905261002f91610042565b600160ff1b60005560601b600155610072565b60006020828403121561005457600080fd5b81516001600160a01b038116811461006b57600080fd5b9392505050565b60e7806100806000396000f3fe608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580547f8000000000000000000000000000000000000000000000000000000000000000163660641817607757828155005b505050503660640360ac577fa4f0d7d00000000000000000000000000000000000000000000000000000000060005260046000fd5b600080fdfea2646970667358221220f1dd384635737b10f38bc53d8e50b1a499c75d139ab94907b42e7797a5e1f30c64736f6c634300080d0033","deployedBytecode":"0x608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580547f8000000000000000000000000000000000000000000000000000000000000000163660641817607757828155005b505050503660640360ac577fa4f0d7d00000000000000000000000000000000000000000000000000000000060005260046000fd5b600080fdfea2646970667358221220f1dd384635737b10f38bc53d8e50b1a499c75d139ab94907b42e7797a5e1f30c64736f6c634300080d0033","linkReferences":{},"deployedLinkReferences":{}}');
+module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap","sourceName":"core/dmap.sol","abi":[{"inputs":[],"name":"LOCKED","type":"error"},{"anonymous":true,"inputs":[{"indexed":true,"internalType":"address","name":"zone","type":"address"},{"indexed":true,"internalType":"bytes32","name":"name","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"meta","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"Set","type":"event"},{"inputs":[{"internalType":"bytes32","name":"slot","type":"bytes32"}],"name":"get","outputs":[{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"name","type":"bytes32"},{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"set","outputs":[],"stateMutability":"nonpayable","type":"function"}],"bytecode":"0x608060405234801561001057600080fd5b5060405161012e38038061012e83398101604081905261002f91610041565b60016000558060601b60015550610071565b60006020828403121561005357600080fd5b81516001600160a01b038116811461006a57600080fd5b9392505050565b60af8061007f6000396000f3fe608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580546001163660641817605857828155005b505050503660640360745763a1422f6960e01b60005260046000fd5b600080fdfea2646970667358221220475e238f09c07b2df011287cd0b887d9e0864657776ab6a3484c43f79237fefa64736f6c634300080d0033","deployedBytecode":"0x608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580546001163660641817605857828155005b505050503660640360745763a1422f6960e01b60005260046000fd5b600080fdfea2646970667358221220475e238f09c07b2df011287cd0b887d9e0864657776ab6a3484c43f79237fefa64736f6c634300080d0033","linkReferences":{},"deployedLinkReferences":{}}');
 
 /***/ }),
 
-/***/ 1471:
+/***/ 3655:
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"format":"dpack-1","network":"goerli","types":{"Dmap":{"typename":"Dmap","artifact":{"/":"bafkreig6eylwv3ycrp5spwrtevdtllq4rkub44g6gy5c27lpc7hgy33uqi"}},"RootZone":{"typename":"RootZone","artifact":{"/":"bafkreihichgzifyxns7fmhywfugsaad2jbx2buubgcq7ofyg6n6iofp65y"}},"FreeZone":{"typename":"FreeZone","artifact":{"/":"bafkreic7kytcoyczzwc3bqi33wh7n7lejkxbrdruq2lpk2feowd2wf22je"}}},"objects":{"dmap":{"objectname":"dmap","typename":"Dmap","address":"0x6dAa8F4b23D220Ce08a4CFDb040eE705E643e449","artifact":{"/":"bafkreig6eylwv3ycrp5spwrtevdtllq4rkub44g6gy5c27lpc7hgy33uqi"}},"rootzone":{"objectname":"rootzone","typename":"RootZone","address":"0xEDa48aCC95daFF28f6f56e325d0b8A11802cAD66","artifact":{"/":"bafkreihichgzifyxns7fmhywfugsaad2jbx2buubgcq7ofyg6n6iofp65y"}},"freezone":{"objectname":"freezone","typename":"FreeZone","address":"0xb40832863d5D67d1F4e9d1192a17BAE8aC6a8081","artifact":{"/":"bafkreic7kytcoyczzwc3bqi33wh7n7lejkxbrdruq2lpk2feowd2wf22je"}}}}');
+module.exports = JSON.parse('{"format":"dpack-1","network":"ethereum","types":{"Dmap":{"typename":"Dmap","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}},"RootZone":{"typename":"RootZone","artifact":{"/":"bafkreifpdomogczabwueeedk6vqo7j53i2kptqpsewy2u7iswlh52rjxge"}},"FreeZone":{"typename":"FreeZone","artifact":{"/":"bafkreihekvimgm36smqur6uqucwdmv2bva4fmoizao7vmz5yoalpk6u4cq"}}},"objects":{"dmap":{"objectname":"dmap","typename":"Dmap","address":"0x90949c9937A11BA943C7A72C3FA073a37E3FdD96","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}},"rootzone":{"objectname":"rootzone","typename":"RootZone","address":"0x022ea9ba506E38eF6093b6AB53e48bbD60f86832","artifact":{"/":"bafkreifpdomogczabwueeedk6vqo7j53i2kptqpsewy2u7iswlh52rjxge"}},"freezone":{"objectname":"freezone","typename":"FreeZone","address":"0xf151b2c51f0885684A502D9e901846D9FFcE3D4a","artifact":{"/":"bafkreihekvimgm36smqur6uqucwdmv2bva4fmoizao7vmz5yoalpk6u4cq"}}}}');
 
 /***/ })
 

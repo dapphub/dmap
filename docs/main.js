@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 import { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
 const dmap = require('../dmap.js')
+const utils = require('./utils.js')
 const dmapAddress = dmap.address
 const dmapArtifact = dmap.artifact
 const IPFS = require('ipfs-http-client')
@@ -70,7 +71,7 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = dmap.unpackCID(walkResult.meta, walkResult.data)
+            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
             const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#localNode').value)
