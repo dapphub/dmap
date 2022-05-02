@@ -1,11 +1,11 @@
 import { ethers } from 'ethers'
 import { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
+const IPFS = require('ipfs-http-client')
+
 const dmap = require('../dmap.js')
 const utils = require('./utils.js')
-const dmapAddress = dmap.address
-const dmapArtifact = dmap.artifact
-const IPFS = require('ipfs-http-client')
+
 
 const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://gateway.pinata.cloud/ipfs/',
@@ -49,12 +49,15 @@ window.onload = async() => {
     const line =s=> { $('#result').textContent += s + '\n' }
 
     $('#btnGet').addEventListener('click', async () =>  {
-        const dpath = $('#dpath').value;
-        line(`WALK ${dpath}`)
+        let dpath = $('#dpath').value;
+        if (dpath.length && dpath[0] != ':') {
+            dpath = ':' + dpath
+        }
+        line(`\nWALK  ${dpath}`)
         const provider = new ethers.providers.Web3Provider(window.ethereum)
         const dmapContract = new ethers.Contract(
-            dmapAddress,
-            dmapArtifact.abi,
+            dmap.address,
+            dmap.artifact.abi,
             provider
         );
 
@@ -74,7 +77,7 @@ window.onload = async() => {
             const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
             const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
-            const resolved = await resolveCID(cid, targetDigest, $('#localNode').value)
+            const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
             let utf8decoder = new TextDecoder()
             line(utf8decoder.decode(resolved))
         }

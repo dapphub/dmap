@@ -1,8 +1,8 @@
 const ebnf = require('ebnf')
 const ethers = require('ethers')
 
-const pack = require('./pack/dmap_full_ethereum.dpack.json')
-const artifact = require('./pack/Dmap.json')
+const pack = require('./pack/dmap.json')
+const artifact = require('./pack/ipfs/Dmap.json')
 
 const abi    = artifact.abi
 const dmap_i = new ethers.utils.Interface(abi)
