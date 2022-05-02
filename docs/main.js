@@ -4,6 +4,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 const IPFS = require('ipfs-http-client')
 
 const dmap = require('../dmap.js')
+const utils = require('./utils.js')
 
 
 const gateways = ['https://ipfs.fleek.co/ipfs/',
@@ -73,7 +74,7 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = dmap.unpackCID(walkResult.meta, walkResult.data)
+            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
             const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)

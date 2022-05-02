@@ -1,6 +1,5 @@
 const ebnf = require('ebnf')
 const ethers = require('ethers')
-const multiformats = require('multiformats')
 
 const pack = require('./pack/dmap.json')
 const artifact = require('./pack/ipfs/Dmap.json')
@@ -14,7 +13,6 @@ const need =(b,s)=> b || fail(s)
 
 const coder = ethers.utils.defaultAbiCoder
 const keccak256 = ethers.utils.keccak256
-const prefLenIndex = 2
 
 module.exports = lib = {}
 
@@ -97,37 +95,4 @@ lib.walk = async (dmap, path) => {
         ctx.locked = step.locked
     }
     return {meta, data}
-}
-
-lib.prepareCID = (cidStr, lock) => {
-    const cid = multiformats.CID.parse(cidStr)
-    need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
-    const prefixLen = cid.byteLength - cid.multihash.size
-    const meta = new Uint8Array(32).fill(0)
-    const data = new Uint8Array(32).fill(0)
-
-    data.set(cid.bytes.slice(-cid.multihash.size), 32 - cid.multihash.size)
-    meta.set(cid.bytes.slice(0, prefixLen), 32 - prefixLen)
-    if (lock) meta[0] |= lib.FLAG_LOCK
-    meta[prefLenIndex] = prefixLen
-    return [meta, data]
-}
-
-lib.unpackCID = (metaStr, dataStr) => {
-    const meta = Buffer.from(metaStr.slice(2), 'hex')
-    const data = Buffer.from(dataStr.slice(2), 'hex')
-    const prefixLen = meta[prefLenIndex]
-    const specs = multiformats.CID.inspectBytes(meta.slice(-prefixLen))
-    const hashLen = specs.digestSize
-    const cidBytes = new Uint8Array(prefixLen + hashLen)
-
-    cidBytes.set(meta.slice(-prefixLen), 0)
-    cidBytes.set(data.slice(32 - hashLen), prefixLen)
-    const cid = multiformats.CID.decode(cidBytes)
-    return cid.toString()
-}
-
-lib.readCID = async (dmap, path) => {
-    const packed = await lib.walk(dmap, path)
-    return lib.unpackCID(packed.meta, packed.data)
 }

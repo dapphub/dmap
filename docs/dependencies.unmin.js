@@ -7,7 +7,7 @@
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "i": () => (/* binding */ version)
 /* harmony export */ });
-const version = "abi/5.5.0";
+const version = "abi/5.6.0";
 //# sourceMappingURL=_version.js.map
 
 /***/ }),
@@ -2010,9 +2010,7 @@ class Interface {
                         errorName = error.name;
                         errorSignature = error.format();
                     }
-                    catch (error) {
-                        console.log(error);
-                    }
+                    catch (error) { }
                 }
                 break;
             }
@@ -2300,7 +2298,7 @@ var lib_esm = __webpack_require__(300);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/abstract-provider/lib.esm/_version.js
-const version = "abstract-provider/5.5.1";
+const version = "abstract-provider/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/abstract-provider/lib.esm/index.js
 
@@ -2394,7 +2392,7 @@ class Provider {
                 // We may want to compute this more accurately in the future,
                 // using the formula "check if the base fee is correct".
                 // See: https://eips.ethereum.org/EIPS/eip-1559
-                maxPriorityFeePerGas = bignumber/* BigNumber.from */.O$.from("2500000000");
+                maxPriorityFeePerGas = bignumber/* BigNumber.from */.O$.from("1500000000");
                 maxFeePerGas = block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas);
             }
             return { maxFeePerGas, maxPriorityFeePerGas, gasPrice };
@@ -2432,7 +2430,7 @@ var lib_esm = __webpack_require__(300);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/abstract-signer/lib.esm/_version.js
-const version = "abstract-signer/5.5.0";
+const version = "abstract-signer/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/abstract-signer/lib.esm/index.js
 
@@ -2450,7 +2448,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 const logger = new logger_lib_esm/* Logger */.Yd(version);
 const allowedTransactionKeys = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "nonce", "to", "type", "value"
+    "accessList", "ccipReadEnabled", "chainId", "customData", "data", "from", "gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "nonce", "to", "type", "value"
 ];
 const forwardErrors = [
     logger_lib_esm/* Logger.errors.INSUFFICIENT_FUNDS */.Yd.errors.INSUFFICIENT_FUNDS,
@@ -2767,7 +2765,7 @@ var rlp_lib_esm = __webpack_require__(6868);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/address/lib.esm/_version.js
-const version = "address/5.5.0";
+const version = "address/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/address/lib.esm/index.js
 
@@ -3077,7 +3075,7 @@ const Base58 = new BaseX("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuv
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "i": () => (/* binding */ version)
 /* harmony export */ });
-const version = "bignumber/5.5.0";
+const version = "bignumber/5.6.0";
 //# sourceMappingURL=_version.js.map
 
 /***/ }),
@@ -3156,7 +3154,7 @@ class BigNumber {
     div(other) {
         const o = BigNumber.from(other);
         if (o.isZero()) {
-            throwFault("division by zero", "div");
+            throwFault("division-by-zero", "div");
         }
         return toBigNumber(toBN(this).div(toBN(other)));
     }
@@ -3166,53 +3164,53 @@ class BigNumber {
     mod(other) {
         const value = toBN(other);
         if (value.isNeg()) {
-            throwFault("cannot modulo negative values", "mod");
+            throwFault("division-by-zero", "mod");
         }
         return toBigNumber(toBN(this).umod(value));
     }
     pow(other) {
         const value = toBN(other);
         if (value.isNeg()) {
-            throwFault("cannot raise to negative values", "pow");
+            throwFault("negative-power", "pow");
         }
         return toBigNumber(toBN(this).pow(value));
     }
     and(other) {
         const value = toBN(other);
         if (this.isNegative() || value.isNeg()) {
-            throwFault("cannot 'and' negative values", "and");
+            throwFault("unbound-bitwise-result", "and");
         }
         return toBigNumber(toBN(this).and(value));
     }
     or(other) {
         const value = toBN(other);
         if (this.isNegative() || value.isNeg()) {
-            throwFault("cannot 'or' negative values", "or");
+            throwFault("unbound-bitwise-result", "or");
         }
         return toBigNumber(toBN(this).or(value));
     }
     xor(other) {
         const value = toBN(other);
         if (this.isNegative() || value.isNeg()) {
-            throwFault("cannot 'xor' negative values", "xor");
+            throwFault("unbound-bitwise-result", "xor");
         }
         return toBigNumber(toBN(this).xor(value));
     }
     mask(value) {
         if (this.isNegative() || value < 0) {
-            throwFault("cannot mask negative values", "mask");
+            throwFault("negative-width", "mask");
         }
         return toBigNumber(toBN(this).maskn(value));
     }
     shl(value) {
         if (this.isNegative() || value < 0) {
-            throwFault("cannot shift negative values", "shl");
+            throwFault("negative-width", "shl");
         }
         return toBigNumber(toBN(this).shln(value));
     }
     shr(value) {
         if (this.isNegative() || value < 0) {
-            throwFault("cannot shift negative values", "shr");
+            throwFault("negative-width", "shr");
         }
         return toBigNumber(toBN(this).shrn(value));
     }
@@ -3434,7 +3432,7 @@ __webpack_require__.d(__webpack_exports__, {
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/bytes/lib.esm/_version.js
-const version = "bytes/5.5.0";
+const version = "bytes/5.6.1";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/bytes/lib.esm/index.js
 
@@ -3508,7 +3506,7 @@ function arrayify(value, options) {
         let hex = value.substring(2);
         if (hex.length % 2) {
             if (options.hexPad === "left") {
-                hex = "0x0" + hex.substring(2);
+                hex = "0" + hex;
             }
             else if (options.hexPad === "right") {
                 hex += "0";
@@ -3708,17 +3706,28 @@ function splitSignature(signature) {
         s: "0x",
         _vs: "0x",
         recoveryParam: 0,
-        v: 0
+        v: 0,
+        yParityAndS: "0x",
+        compact: "0x"
     };
     if (isBytesLike(signature)) {
-        const bytes = arrayify(signature);
-        if (bytes.length !== 65) {
-            logger.throwArgumentError("invalid signature string; must be 65 bytes", "signature", signature);
-        }
+        let bytes = arrayify(signature);
         // Get the r, s and v
-        result.r = hexlify(bytes.slice(0, 32));
-        result.s = hexlify(bytes.slice(32, 64));
-        result.v = bytes[64];
+        if (bytes.length === 64) {
+            // EIP-2098; pull the v from the top bit of s and clear it
+            result.v = 27 + (bytes[32] >> 7);
+            bytes[32] &= 0x7f;
+            result.r = hexlify(bytes.slice(0, 32));
+            result.s = hexlify(bytes.slice(32, 64));
+        }
+        else if (bytes.length === 65) {
+            result.r = hexlify(bytes.slice(0, 32));
+            result.s = hexlify(bytes.slice(32, 64));
+            result.v = bytes[64];
+        }
+        else {
+            logger.throwArgumentError("invalid signature string", "signature", signature);
+        }
         // Allow a recid to be used as the v
         if (result.v < 27) {
             if (result.v === 0 || result.v === 1) {
@@ -3822,6 +3831,8 @@ function splitSignature(signature) {
             logger.throwArgumentError("signature _vs mismatch v and s", "signature", signature);
         }
     }
+    result.yParityAndS = result._vs;
+    result.compact = result.r + result.yParityAndS.substring(2);
     return result;
 }
 function joinSignature(signature) {
@@ -3922,7 +3933,7 @@ var transactions_lib_esm = __webpack_require__(9165);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/contracts/lib.esm/_version.js
-const version = "contracts/5.5.0";
+const version = "contracts/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/contracts/lib.esm/index.js
 
@@ -3953,7 +3964,8 @@ const allowedTransactionKeys = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, nonce: true, to: true, value: true,
     type: true, accessList: true,
     maxFeePerGas: true, maxPriorityFeePerGas: true,
-    customData: true
+    customData: true,
+    ccipReadEnabled: true
 };
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -4111,6 +4123,9 @@ function populateTransaction(contract, fragment, args) {
         if (ro.customData) {
             tx.customData = (0,properties_lib_esm/* shallowCopy */.DC)(ro.customData);
         }
+        if (ro.ccipReadEnabled) {
+            tx.ccipReadEnabled = !!ro.ccipReadEnabled;
+        }
         // Remove the overrides
         delete overrides.nonce;
         delete overrides.gasLimit;
@@ -4122,6 +4137,7 @@ function populateTransaction(contract, fragment, args) {
         delete overrides.maxFeePerGas;
         delete overrides.maxPriorityFeePerGas;
         delete overrides.customData;
+        delete overrides.ccipReadEnabled;
         // Make sure there are no stray overrides, which may indicate a
         // typo or using an unsupported key.
         const leftovers = Object.keys(overrides).filter((key) => (overrides[key] != null));
@@ -4467,6 +4483,8 @@ class BaseContract {
                 });
             }
         }
+        // Swallow bad ENS names to prevent Unhandled Exceptions
+        this.resolvedAddress.catch((e) => { });
         const uniqueNames = {};
         const uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -4957,7 +4975,7 @@ class ContractFactory {
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "i": () => (/* binding */ version)
 /* harmony export */ });
-const version = "hash/5.5.0";
+const version = "hash/5.6.0";
 //# sourceMappingURL=_version.js.map
 
 /***/ }),
@@ -4985,8 +5003,9 @@ function id(text) {
 
 "use strict";
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "V": () => (/* binding */ namehash),
-/* harmony export */   "r": () => (/* binding */ isValidName)
+/* harmony export */   "Kn": () => (/* binding */ dnsEncode),
+/* harmony export */   "VM": () => (/* binding */ namehash),
+/* harmony export */   "r1": () => (/* binding */ isValidName)
 /* harmony export */ });
 /* harmony import */ var _ethersproject_bytes__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(3756);
 /* harmony import */ var _ethersproject_strings__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(592);
@@ -5033,6 +5052,15 @@ function namehash(name) {
         current = partition[2] || "";
     }
     return (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_5__/* .hexlify */ .Dv)(result);
+}
+function dnsEncode(name) {
+    return (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_5__/* .hexlify */ .Dv)((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_5__/* .concat */ .zo)(name.split(".").map((comp) => {
+        // We jam in an _ prefix to fill in with the length later
+        // Note: Nameprep throws if the component is over 63 bytes
+        const bytes = (0,_ethersproject_strings__WEBPACK_IMPORTED_MODULE_3__/* .toUtf8Bytes */ .Y0)("_" + (0,_ethersproject_strings__WEBPACK_IMPORTED_MODULE_2__/* .nameprep */ .Ll)(comp));
+        bytes[0] = bytes.length - 1;
+        return bytes;
+    }))) + "00";
 }
 //# sourceMappingURL=namehash.js.map
 
@@ -5531,7 +5559,7 @@ __webpack_require__.d(__webpack_exports__, {
 // UNUSED EXPORTS: LogLevel
 
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/logger/lib.esm/_version.js
-const version = "logger/5.5.0";
+const version = "logger/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js
 
@@ -5714,6 +5742,40 @@ class Logger {
         messageDetails.push(`code=${code}`);
         messageDetails.push(`version=${this.version}`);
         const reason = message;
+        let url = "";
+        switch (code) {
+            case ErrorCode.NUMERIC_FAULT: {
+                url = "NUMERIC_FAULT";
+                const fault = message;
+                switch (fault) {
+                    case "overflow":
+                    case "underflow":
+                    case "division-by-zero":
+                        url += "-" + fault;
+                        break;
+                    case "negative-power":
+                    case "negative-width":
+                        url += "-unsupported";
+                        break;
+                    case "unbound-bitwise-result":
+                        url += "-unbound-result";
+                        break;
+                }
+                break;
+            }
+            case ErrorCode.CALL_EXCEPTION:
+            case ErrorCode.INSUFFICIENT_FUNDS:
+            case ErrorCode.MISSING_NEW:
+            case ErrorCode.NONCE_EXPIRED:
+            case ErrorCode.REPLACEMENT_UNDERPRICED:
+            case ErrorCode.TRANSACTION_REPLACED:
+            case ErrorCode.UNPREDICTABLE_GAS_LIMIT:
+                url = code;
+                break;
+        }
+        if (url) {
+            message += " [ See: https:/\/links.ethers.org/v5-errors-" + url + " ]";
+        }
         if (messageDetails.length) {
             message += " (" + messageDetails.join(", ") + ")";
         }
@@ -5866,7 +5928,7 @@ __webpack_require__.d(__webpack_exports__, {
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/networks/lib.esm/_version.js
-const version = "networks/5.5.2";
+const version = "networks/5.6.1";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/networks/lib.esm/index.js
 
@@ -5883,25 +5945,25 @@ function ethDefaultProvider(network) {
             options = {};
         }
         const providerList = [];
-        if (providers.InfuraProvider) {
+        if (providers.InfuraProvider && options.infura !== "-") {
             try {
                 providerList.push(new providers.InfuraProvider(network, options.infura));
             }
             catch (error) { }
         }
-        if (providers.EtherscanProvider) {
+        if (providers.EtherscanProvider && options.etherscan !== "-") {
             try {
                 providerList.push(new providers.EtherscanProvider(network, options.etherscan));
             }
             catch (error) { }
         }
-        if (providers.AlchemyProvider) {
+        if (providers.AlchemyProvider && options.alchemy !== "-") {
             try {
                 providerList.push(new providers.AlchemyProvider(network, options.alchemy));
             }
             catch (error) { }
         }
-        if (providers.PocketProvider) {
+        if (providers.PocketProvider && options.pocket !== "-") {
             // These networks are currently faulty on Pocket as their
             // network does not handle the Berlin hardfork, which is
             // live on these ones.
@@ -5915,9 +5977,15 @@ function ethDefaultProvider(network) {
             }
             catch (error) { }
         }
-        if (providers.CloudflareProvider) {
+        if (providers.CloudflareProvider && options.cloudflare !== "-") {
             try {
                 providerList.push(new providers.CloudflareProvider(network));
+            }
+            catch (error) { }
+        }
+        if (providers.AnkrProvider && options.ankr !== "-") {
+            try {
+                providerList.push(new providers.AnkrProvider(network, options.ankr));
             }
             catch (error) { }
         }
@@ -6115,7 +6183,7 @@ __webpack_require__.d(__webpack_exports__, {
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/properties/lib.esm/_version.js
-const version = "properties/5.5.0";
+const version = "properties/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/properties/lib.esm/index.js
 
@@ -6254,7 +6322,7 @@ class Description {
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "i": () => (/* binding */ version)
 /* harmony export */ });
-const version = "providers/5.5.3";
+const version = "providers/5.6.2";
 //# sourceMappingURL=_version.js.map
 
 /***/ }),
@@ -6310,6 +6378,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 const logger = new _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger */ .Yd(_version__WEBPACK_IMPORTED_MODULE_2__/* .version */ .i);
 
+const MAX_CCIP_REDIRECTS = 10;
 //////////////////////////////
 // Event Serializeing
 function checkTopic(topic) {
@@ -6410,6 +6479,8 @@ class Event {
         (0,_ethersproject_properties__WEBPACK_IMPORTED_MODULE_5__/* .defineReadOnly */ .zG)(this, "tag", tag);
         (0,_ethersproject_properties__WEBPACK_IMPORTED_MODULE_5__/* .defineReadOnly */ .zG)(this, "listener", listener);
         (0,_ethersproject_properties__WEBPACK_IMPORTED_MODULE_5__/* .defineReadOnly */ .zG)(this, "once", once);
+        this._lastBlockNumber = -2;
+        this._inflight = false;
     }
     get event() {
         switch (this.type) {
@@ -6474,18 +6545,18 @@ const matchers = [
     matcherIpfs,
     new RegExp("^eip155:[0-9]+/(erc[0-9]+):(.*)$", "i"),
 ];
-function _parseString(result) {
+function _parseString(result, start) {
     try {
-        return (0,_ethersproject_strings__WEBPACK_IMPORTED_MODULE_9__/* .toUtf8String */ .ZN)(_parseBytes(result));
+        return (0,_ethersproject_strings__WEBPACK_IMPORTED_MODULE_9__/* .toUtf8String */ .ZN)(_parseBytes(result, start));
     }
     catch (error) { }
     return null;
 }
-function _parseBytes(result) {
+function _parseBytes(result, start) {
     if (result === "0x") {
         return null;
     }
-    const offset = _ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(result, 0, 32)).toNumber();
+    const offset = _ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(result, start, start + 32)).toNumber();
     const length = _ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(result, offset, offset + 32)).toNumber();
     return (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(result, offset + 32, offset + 32 + length);
 }
@@ -6502,6 +6573,43 @@ function getIpfsLink(link) {
     }
     return `https:/\/gateway.ipfs.io/ipfs/${link}`;
 }
+function numPad(value) {
+    const result = (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .arrayify */ .lE)(value);
+    if (result.length > 32) {
+        throw new Error("internal; should not happen");
+    }
+    const padded = new Uint8Array(32);
+    padded.set(result, 32 - result.length);
+    return padded;
+}
+function bytesPad(value) {
+    if ((value.length % 32) === 0) {
+        return value;
+    }
+    const result = new Uint8Array(Math.ceil(value.length / 32) * 32);
+    result.set(value);
+    return result;
+}
+// ABI Encodes a series of (bytes, bytes, ...)
+function encodeBytes(datas) {
+    const result = [];
+    let byteCount = 0;
+    // Add place-holders for pointers as we add items
+    for (let i = 0; i < datas.length; i++) {
+        result.push(null);
+        byteCount += 32;
+    }
+    for (let i = 0; i < datas.length; i++) {
+        const data = (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .arrayify */ .lE)(datas[i]);
+        // Update the bytes offset
+        result[i] = numPad(byteCount);
+        // The length and padded value of data
+        result.push(numPad(data.length));
+        result.push(bytesPad(data));
+        byteCount += 32 + Math.ceil(data.length / 32) * 32;
+    }
+    return (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexConcat */ .xs)(result);
+}
 class Resolver {
     // The resolvedAddress is only for creating a ReverseLookup resolver
     constructor(provider, address, name, resolvedAddress) {
@@ -6510,22 +6618,67 @@ class Resolver {
         (0,_ethersproject_properties__WEBPACK_IMPORTED_MODULE_5__/* .defineReadOnly */ .zG)(this, "address", provider.formatter.address(address));
         (0,_ethersproject_properties__WEBPACK_IMPORTED_MODULE_5__/* .defineReadOnly */ .zG)(this, "_resolvedAddress", resolvedAddress);
     }
-    _fetchBytes(selector, parameters) {
+    supportsWildcard() {
+        if (!this._supportsEip2544) {
+            // supportsInterface(bytes4 = selector("resolve(bytes,bytes)"))
+            this._supportsEip2544 = this.provider.call({
+                to: this.address,
+                data: "0x01ffc9a79061b92300000000000000000000000000000000000000000000000000000000"
+            }).then((result) => {
+                return _ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from(result).eq(1);
+            }).catch((error) => {
+                if (error.code === _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION) {
+                    return false;
+                }
+                // Rethrow the error: link is down, etc. Let future attempts retry.
+                this._supportsEip2544 = null;
+                throw error;
+            });
+        }
+        return this._supportsEip2544;
+    }
+    _fetch(selector, parameters) {
         return __awaiter(this, void 0, void 0, function* () {
             // e.g. keccak256("addr(bytes32,uint256)")
             const tx = {
                 to: this.address,
-                data: (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexConcat */ .xs)([selector, (0,_ethersproject_hash__WEBPACK_IMPORTED_MODULE_10__/* .namehash */ .V)(this.name), (parameters || "0x")])
+                ccipReadEnabled: true,
+                data: (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexConcat */ .xs)([selector, (0,_ethersproject_hash__WEBPACK_IMPORTED_MODULE_10__/* .namehash */ .VM)(this.name), (parameters || "0x")])
             };
+            // Wildcard support; use EIP-2544 to resolve the request
+            let parseBytes = false;
+            if (yield this.supportsWildcard()) {
+                parseBytes = true;
+                // selector("resolve(bytes,bytes)")
+                tx.data = (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexConcat */ .xs)(["0x9061b923", encodeBytes([(0,_ethersproject_hash__WEBPACK_IMPORTED_MODULE_10__/* .dnsEncode */ .Kn)(this.name), tx.data])]);
+            }
             try {
-                return _parseBytes(yield this.provider.call(tx));
+                let result = yield this.provider.call(tx);
+                if (((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .arrayify */ .lE)(result).length % 32) === 4) {
+                    logger.throwError("resolver threw error", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION, {
+                        transaction: tx, data: result
+                    });
+                }
+                if (parseBytes) {
+                    result = _parseBytes(result, 0);
+                }
+                return result;
             }
             catch (error) {
                 if (error.code === _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION) {
                     return null;
                 }
-                return null;
+                throw error;
             }
+        });
+    }
+    _fetchBytes(selector, parameters) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const result = yield this._fetch(selector, parameters);
+            if (result != null) {
+                return _parseBytes(result, 0);
+            }
+            return null;
         });
     }
     _getAddress(coinType, hexBytes) {
@@ -6589,16 +6742,12 @@ class Resolver {
             if (coinType === 60) {
                 try {
                     // keccak256("addr(bytes32)")
-                    const transaction = {
-                        to: this.address,
-                        data: ("0x3b3b57de" + (0,_ethersproject_hash__WEBPACK_IMPORTED_MODULE_10__/* .namehash */ .V)(this.name).substring(2))
-                    };
-                    const hexBytes = yield this.provider.call(transaction);
+                    const result = yield this._fetch("0x3b3b57de");
                     // No address
-                    if (hexBytes === "0x" || hexBytes === _ethersproject_constants__WEBPACK_IMPORTED_MODULE_11__/* .HashZero */ .R) {
+                    if (result === "0x" || result === _ethersproject_constants__WEBPACK_IMPORTED_MODULE_11__/* .HashZero */ .R) {
                         return null;
                     }
-                    return this.provider.formatter.callAddress(hexBytes);
+                    return this.provider.formatter.callAddress(result);
                 }
                 catch (error) {
                     if (error.code === _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION) {
@@ -6690,7 +6839,7 @@ class Resolver {
                                 to: this.provider.formatter.address(comps[0]),
                                 data: (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexConcat */ .xs)([selector, tokenId])
                             };
-                            let metadataUrl = _parseString(yield this.provider.call(tx));
+                            let metadataUrl = _parseString(yield this.provider.call(tx), 0);
                             if (metadataUrl == null) {
                                 return null;
                             }
@@ -6754,6 +6903,14 @@ class Resolver {
                     return "ipfs:/\/" + _ethersproject_basex__WEBPACK_IMPORTED_MODULE_7__/* .Base58.encode */ .eU.encode("0x" + ipfs[1]);
                 }
             }
+            // IPNS (CID: 1, Type: libp2p-key)
+            const ipns = hexBytes.match(/^0xe5010172(([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f]*))$/);
+            if (ipns) {
+                const length = parseInt(ipns[3], 16);
+                if (ipns[4].length === length * 2) {
+                    return "ipns:/\/" + _ethersproject_basex__WEBPACK_IMPORTED_MODULE_7__/* .Base58.encode */ .eU.encode("0x" + ipns[1]);
+                }
+            }
             // Swarm (CID: 1, Type: swarm-manifest; hash/length hard-coded to keccak256/32)
             const swarm = hexBytes.match(/^0xe40101fa011b20([0-9a-f]*)$/);
             if (swarm) {
@@ -6804,6 +6961,7 @@ class BaseProvider extends _ethersproject_abstract_provider__WEBPACK_IMPORTED_MO
         // Events being listened to
         this._events = [];
         this._emitted = { block: -2 };
+        this.disableCcipRead = false;
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -6831,6 +6989,7 @@ class BaseProvider extends _ethersproject_abstract_provider__WEBPACK_IMPORTED_MO
         }
         this._maxInternalBlockNumber = -1024;
         this._lastBlockNumber = -2;
+        this._maxFilterBlockRange = 10;
         this._pollingInterval = 4000;
         this._fastQueryDate = 0;
     }
@@ -6893,6 +7052,40 @@ class BaseProvider extends _ethersproject_abstract_provider__WEBPACK_IMPORTED_MO
     // @TODO: Remove this and just use getNetwork
     static getNetwork(network) {
         return (0,_ethersproject_networks__WEBPACK_IMPORTED_MODULE_14__/* .getNetwork */ .H)((network == null) ? "homestead" : network);
+    }
+    ccipReadFetch(tx, calldata, urls) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.disableCcipRead || urls.length === 0) {
+                return null;
+            }
+            const sender = tx.to.toLowerCase();
+            const data = calldata.toLowerCase();
+            const errorMessages = [];
+            for (let i = 0; i < urls.length; i++) {
+                const url = urls[i];
+                // URL expansion
+                const href = url.replace("{sender}", sender).replace("{data}", data);
+                // If no {data} is present, use POST; otherwise GET
+                const json = (url.indexOf("{data}") >= 0) ? null : JSON.stringify({ data, sender });
+                const result = yield (0,_ethersproject_web__WEBPACK_IMPORTED_MODULE_12__/* .fetchJson */ .rd)({ url: href, errorPassThrough: true }, json, (value, response) => {
+                    value.status = response.statusCode;
+                    return value;
+                });
+                if (result.data) {
+                    return result.data;
+                }
+                const errorMessage = (result.message || "unknown error");
+                // 4xx indicates the result is not present; stop
+                if (result.status >= 400 && result.status < 500) {
+                    return logger.throwError(`response not found during CCIP fetch: ${errorMessage}`, _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.SERVER_ERROR */ .Yd.errors.SERVER_ERROR, { url, errorMessage });
+                }
+                // 5xx indicates server issue; try the next url
+                errorMessages.push(errorMessage);
+            }
+            return logger.throwError(`error encountered during CCIP fetch: ${errorMessages.map((m) => JSON.stringify(m)).join(", ")}`, _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.SERVER_ERROR */ .Yd.errors.SERVER_ERROR, {
+                urls, errorMessages
+            });
+        });
     }
     // Fetches the blockNumber, but will reuse any result that is less
     // than maxAge old or has been requested since the last request
@@ -7041,20 +7234,44 @@ class BaseProvider extends _ethersproject_abstract_provider__WEBPACK_IMPORTED_MO
                         break;
                     }
                     case "filter": {
-                        const filter = event.filter;
-                        filter.fromBlock = this._lastBlockNumber + 1;
-                        filter.toBlock = blockNumber;
-                        const runner = this.getLogs(filter).then((logs) => {
-                            if (logs.length === 0) {
-                                return;
+                        // We only allow a single getLogs to be in-flight at a time
+                        if (!event._inflight) {
+                            event._inflight = true;
+                            // Filter from the last known event; due to load-balancing
+                            // and some nodes returning updated block numbers before
+                            // indexing events, a logs result with 0 entries cannot be
+                            // trusted and we must retry a range which includes it again
+                            const filter = event.filter;
+                            filter.fromBlock = event._lastBlockNumber + 1;
+                            filter.toBlock = blockNumber;
+                            // Prevent fitler ranges from growing too wild
+                            if (filter.toBlock - this._maxFilterBlockRange > filter.fromBlock) {
+                                filter.fromBlock = filter.toBlock - this._maxFilterBlockRange;
                             }
-                            logs.forEach((log) => {
-                                this._emitted["b:" + log.blockHash] = log.blockNumber;
-                                this._emitted["t:" + log.transactionHash] = log.blockNumber;
-                                this.emit(filter, log);
+                            const runner = this.getLogs(filter).then((logs) => {
+                                // Allow the next getLogs
+                                event._inflight = false;
+                                if (logs.length === 0) {
+                                    return;
+                                }
+                                logs.forEach((log) => {
+                                    // Only when we get an event for a given block number
+                                    // can we trust the events are indexed
+                                    if (log.blockNumber > event._lastBlockNumber) {
+                                        event._lastBlockNumber = log.blockNumber;
+                                    }
+                                    // Make sure we stall requests to fetch blocks and txs
+                                    this._emitted["b:" + log.blockHash] = log.blockNumber;
+                                    this._emitted["t:" + log.transactionHash] = log.blockNumber;
+                                    this.emit(filter, log);
+                                });
+                            }).catch((error) => {
+                                this.emit("error", error);
+                                // Allow another getLogs (the range was not updated)
+                                event._inflight = false;
                             });
-                        }).catch((error) => { this.emit("error", error); });
-                        runners.push(runner);
+                            runners.push(runner);
+                        }
                         break;
                     }
                 }
@@ -7566,23 +7783,97 @@ class BaseProvider extends _ethersproject_abstract_provider__WEBPACK_IMPORTED_MO
             return this.formatter.filter(yield (0,_ethersproject_properties__WEBPACK_IMPORTED_MODULE_5__/* .resolveProperties */ .mE)(result));
         });
     }
-    call(transaction, blockTag) {
+    _call(transaction, blockTag, attempt) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield (0,_ethersproject_properties__WEBPACK_IMPORTED_MODULE_5__/* .resolveProperties */ .mE)({
-                transaction: this._getTransactionRequest(transaction),
-                blockTag: this._getBlockTag(blockTag)
-            });
-            const result = yield this.perform("call", params);
+            if (attempt >= MAX_CCIP_REDIRECTS) {
+                logger.throwError("CCIP read exceeded maximum redirections", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.SERVER_ERROR */ .Yd.errors.SERVER_ERROR, {
+                    redirects: attempt, transaction
+                });
+            }
+            const txSender = transaction.to;
+            const result = yield this.perform("call", { transaction, blockTag });
+            // CCIP Read request via OffchainLookup(address,string[],bytes,bytes4,bytes)
+            if (attempt >= 0 && blockTag === "latest" && txSender != null && result.substring(0, 10) === "0x556f1830" && ((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataLength */ .E1)(result) % 32 === 4)) {
+                try {
+                    const data = (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(result, 4);
+                    // Check the sender of the OffchainLookup matches the transaction
+                    const sender = (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(data, 0, 32);
+                    if (!_ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from(sender).eq(txSender)) {
+                        logger.throwError("CCIP Read sender did not match", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION, {
+                            name: "OffchainLookup",
+                            signature: "OffchainLookup(address,string[],bytes,bytes4,bytes)",
+                            transaction, data: result
+                        });
+                    }
+                    // Read the URLs from the response
+                    const urls = [];
+                    const urlsOffset = _ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(data, 32, 64)).toNumber();
+                    const urlsLength = _ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(data, urlsOffset, urlsOffset + 32)).toNumber();
+                    const urlsData = (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(data, urlsOffset + 32);
+                    for (let u = 0; u < urlsLength; u++) {
+                        const url = _parseString(urlsData, u * 32);
+                        if (url == null) {
+                            logger.throwError("CCIP Read contained corrupt URL string", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION, {
+                                name: "OffchainLookup",
+                                signature: "OffchainLookup(address,string[],bytes,bytes4,bytes)",
+                                transaction, data: result
+                            });
+                        }
+                        urls.push(url);
+                    }
+                    // Get the CCIP calldata to forward
+                    const calldata = _parseBytes(data, 64);
+                    // Get the callbackSelector (bytes4)
+                    if (!_ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(data, 100, 128)).isZero()) {
+                        logger.throwError("CCIP Read callback selector included junk", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION, {
+                            name: "OffchainLookup",
+                            signature: "OffchainLookup(address,string[],bytes,bytes4,bytes)",
+                            transaction, data: result
+                        });
+                    }
+                    const callbackSelector = (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexDataSlice */ .p3)(data, 96, 100);
+                    // Get the extra data to send back to the contract as context
+                    const extraData = _parseBytes(data, 128);
+                    const ccipResult = yield this.ccipReadFetch(transaction, calldata, urls);
+                    if (ccipResult == null) {
+                        logger.throwError("CCIP Read disabled or provided no URLs", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION, {
+                            name: "OffchainLookup",
+                            signature: "OffchainLookup(address,string[],bytes,bytes4,bytes)",
+                            transaction, data: result
+                        });
+                    }
+                    const tx = {
+                        to: txSender,
+                        data: (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexConcat */ .xs)([callbackSelector, encodeBytes([ccipResult, extraData])])
+                    };
+                    return this._call(tx, blockTag, attempt + 1);
+                }
+                catch (error) {
+                    if (error.code === _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.SERVER_ERROR */ .Yd.errors.SERVER_ERROR) {
+                        throw error;
+                    }
+                }
+            }
             try {
                 return (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .hexlify */ .Dv)(result);
             }
             catch (error) {
                 return logger.throwError("bad result from backend", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.SERVER_ERROR */ .Yd.errors.SERVER_ERROR, {
                     method: "call",
-                    params, result, error
+                    params: { transaction, blockTag }, result, error
                 });
             }
+        });
+    }
+    call(transaction, blockTag) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.getNetwork();
+            const resolved = yield (0,_ethersproject_properties__WEBPACK_IMPORTED_MODULE_5__/* .resolveProperties */ .mE)({
+                transaction: this._getTransactionRequest(transaction),
+                blockTag: this._getBlockTag(blockTag),
+                ccipReadEnabled: Promise.resolve(transaction.ccipReadEnabled)
+            });
+            return this._call(resolved.transaction, resolved.blockTag, resolved.ccipReadEnabled ? 0 : -1);
         });
     }
     estimateGas(transaction) {
@@ -7798,43 +8089,54 @@ class BaseProvider extends _ethersproject_abstract_provider__WEBPACK_IMPORTED_MO
     }
     getResolver(name) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const address = yield this._getResolver(name);
-                if (address == null) {
+            let currentName = name;
+            while (true) {
+                if (currentName === "" || currentName === ".") {
                     return null;
                 }
-                return new Resolver(this, address, name);
-            }
-            catch (error) {
-                if (error.code === _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION) {
+                // Optimization since the eth node cannot change and does
+                // not have a wildcar resolver
+                if (name !== "eth" && currentName === "eth") {
                     return null;
                 }
-                throw error;
+                // Check the current node for a resolver
+                const addr = yield this._getResolver(currentName, "getResolver");
+                // Found a resolver!
+                if (addr != null) {
+                    const resolver = new Resolver(this, addr, name);
+                    // Legacy resolver found, using EIP-2544 so it isn't safe to use
+                    if (currentName !== name && !(yield resolver.supportsWildcard())) {
+                        return null;
+                    }
+                    return resolver;
+                }
+                // Get the parent node
+                currentName = currentName.split(".").slice(1).join(".");
             }
         });
     }
-    _getResolver(name) {
+    _getResolver(name, operation) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Get the resolver from the blockchain
+            if (operation == null) {
+                operation = "ENS";
+            }
             const network = yield this.getNetwork();
             // No ENS...
             if (!network.ensAddress) {
-                logger.throwError("network does not support ENS", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.UNSUPPORTED_OPERATION */ .Yd.errors.UNSUPPORTED_OPERATION, { operation: "ENS", network: network.name });
+                logger.throwError("network does not support ENS", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.UNSUPPORTED_OPERATION */ .Yd.errors.UNSUPPORTED_OPERATION, { operation, network: network.name });
             }
-            // keccak256("resolver(bytes32)")
-            const transaction = {
-                to: network.ensAddress,
-                data: ("0x0178b8bf" + (0,_ethersproject_hash__WEBPACK_IMPORTED_MODULE_10__/* .namehash */ .V)(name).substring(2))
-            };
             try {
-                return this.formatter.callAddress(yield this.call(transaction));
+                // keccak256("resolver(bytes32)")
+                const addrData = yield this.call({
+                    to: network.ensAddress,
+                    data: ("0x0178b8bf" + (0,_ethersproject_hash__WEBPACK_IMPORTED_MODULE_10__/* .namehash */ .VM)(name).substring(2))
+                });
+                return this.formatter.callAddress(addrData);
             }
             catch (error) {
-                if (error.code === _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION) {
-                    return null;
-                }
-                throw error;
+                // ENS registry cannot throw errors on resolver(bytes32)
             }
+            return null;
         });
     }
     resolveName(name) {
@@ -7865,34 +8167,16 @@ class BaseProvider extends _ethersproject_abstract_provider__WEBPACK_IMPORTED_MO
         return __awaiter(this, void 0, void 0, function* () {
             address = yield address;
             address = this.formatter.address(address);
-            const reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-            const resolverAddress = yield this._getResolver(reverseName);
-            if (!resolverAddress) {
+            const node = address.substring(2).toLowerCase() + ".addr.reverse";
+            const resolverAddr = yield this._getResolver(node, "lookupAddress");
+            if (resolverAddr == null) {
                 return null;
             }
             // keccak("name(bytes32)")
-            let bytes = (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .arrayify */ .lE)(yield this.call({
-                to: resolverAddress,
-                data: ("0x691f3431" + (0,_ethersproject_hash__WEBPACK_IMPORTED_MODULE_10__/* .namehash */ .V)(reverseName).substring(2))
-            }));
-            // Strip off the dynamic string pointer (0x20)
-            if (bytes.length < 32 || !_ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from(bytes.slice(0, 32)).eq(32)) {
-                return null;
-            }
-            bytes = bytes.slice(32);
-            // Not a length-prefixed string
-            if (bytes.length < 32) {
-                return null;
-            }
-            // Get the length of the string (from the length-prefix)
-            const length = _ethersproject_bignumber__WEBPACK_IMPORTED_MODULE_6__/* .BigNumber.from */ .O$.from(bytes.slice(0, 32)).toNumber();
-            bytes = bytes.slice(32);
-            // Length longer than available data
-            if (length > bytes.length) {
-                return null;
-            }
-            const name = (0,_ethersproject_strings__WEBPACK_IMPORTED_MODULE_9__/* .toUtf8String */ .ZN)(bytes.slice(0, length));
-            // Make sure the reverse record matches the foward record
+            const name = _parseString(yield this.call({
+                to: resolverAddr,
+                data: ("0x691f3431" + (0,_ethersproject_hash__WEBPACK_IMPORTED_MODULE_10__/* .namehash */ .VM)(node).substring(2))
+            }), 0);
             const addr = yield this.resolveName(name);
             if (addr != address) {
                 return null;
@@ -7906,15 +8190,42 @@ class BaseProvider extends _ethersproject_abstract_provider__WEBPACK_IMPORTED_MO
             if ((0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_3__/* .isHexString */ .A7)(nameOrAddress)) {
                 // Address; reverse lookup
                 const address = this.formatter.address(nameOrAddress);
-                const reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-                const resolverAddress = yield this._getResolver(reverseName);
+                const node = address.substring(2).toLowerCase() + ".addr.reverse";
+                const resolverAddress = yield this._getResolver(node, "getAvatar");
                 if (!resolverAddress) {
                     return null;
                 }
-                resolver = new Resolver(this, resolverAddress, "_", address);
+                // Try resolving the avatar against the addr.reverse resolver
+                resolver = new Resolver(this, resolverAddress, node);
+                try {
+                    const avatar = yield resolver.getAvatar();
+                    if (avatar) {
+                        return avatar.url;
+                    }
+                }
+                catch (error) {
+                    if (error.code !== _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION) {
+                        throw error;
+                    }
+                }
+                // Try getting the name and performing forward lookup; allowing wildcards
+                try {
+                    // keccak("name(bytes32)")
+                    const name = _parseString(yield this.call({
+                        to: resolverAddress,
+                        data: ("0x691f3431" + (0,_ethersproject_hash__WEBPACK_IMPORTED_MODULE_10__/* .namehash */ .VM)(node).substring(2))
+                    }), 0);
+                    resolver = yield this.getResolver(name);
+                }
+                catch (error) {
+                    if (error.code !== _ethersproject_logger__WEBPACK_IMPORTED_MODULE_1__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION) {
+                        throw error;
+                    }
+                    return null;
+                }
             }
             else {
-                // ENS name; forward lookup
+                // ENS name; forward lookup with wildcard
                 resolver = yield this.getResolver(nameOrAddress);
                 if (!resolver) {
                     return null;
@@ -8144,7 +8455,7 @@ class Formatter {
             type: type
         };
         formats.block = {
-            hash: hash,
+            hash: Formatter.allowNull(hash),
             parentHash: hash,
             number: number,
             timestamp: number,
@@ -8152,7 +8463,7 @@ class Formatter {
             difficulty: this.difficulty.bind(this),
             gasLimit: bigNumber,
             gasUsed: bigNumber,
-            miner: address,
+            miner: Formatter.allowNull(address),
             extraData: data,
             transactions: Formatter.allowNull(Formatter.arrayOf(hash)),
             baseFeePerGas: Formatter.allowNull(bigNumber)
@@ -8538,18 +8849,46 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 const logger = new _ethersproject_logger__WEBPACK_IMPORTED_MODULE_0__/* .Logger */ .Yd(_version__WEBPACK_IMPORTED_MODULE_1__/* .version */ .i);
 
 const errorGas = ["call", "estimateGas"];
+function spelunk(value) {
+    if (value == null) {
+        return null;
+    }
+    // These *are* the droids we're looking for.
+    if (typeof (value.message) === "string" && value.message.match("reverted") && (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_2__/* .isHexString */ .A7)(value.data)) {
+        return { message: value.message, data: value.data };
+    }
+    // Spelunk further...
+    if (typeof (value) === "object") {
+        for (const key in value) {
+            const result = spelunk(value[key]);
+            if (result) {
+                return result;
+            }
+        }
+        return null;
+    }
+    // Might be a JSON string we can further descend...
+    if (typeof (value) === "string") {
+        try {
+            return spelunk(JSON.parse(value));
+        }
+        catch (error) { }
+    }
+    return null;
+}
 function checkError(method, error, params) {
     // Undo the "convenience" some nodes are attempting to prevent backwards
     // incompatibility; maybe for v6 consider forwarding reverts as errors
-    if (method === "call" && error.code === _ethersproject_logger__WEBPACK_IMPORTED_MODULE_0__/* .Logger.errors.SERVER_ERROR */ .Yd.errors.SERVER_ERROR) {
-        const e = error.error;
-        if (e && e.message.match("reverted") && (0,_ethersproject_bytes__WEBPACK_IMPORTED_MODULE_2__/* .isHexString */ .A7)(e.data)) {
-            return e.data;
+    if (method === "call") {
+        const result = spelunk(error);
+        if (result) {
+            return result.data;
         }
         logger.throwError("missing revert data in call exception", _ethersproject_logger__WEBPACK_IMPORTED_MODULE_0__/* .Logger.errors.CALL_EXCEPTION */ .Yd.errors.CALL_EXCEPTION, {
             error, data: "0x"
         });
     }
+    // @TODO: Should we spelunk for message too?
     let message = error.message;
     if (error.code === _ethersproject_logger__WEBPACK_IMPORTED_MODULE_0__/* .Logger.errors.SERVER_ERROR */ .Yd.errors.SERVER_ERROR && error.error && typeof (error.error.message) === "string") {
         message = error.error.message;
@@ -9081,8 +9420,8 @@ class JsonRpcProvider extends _base_provider__WEBPACK_IMPORTED_MODULE_8__/* .Bas
         }
         (0,_ethersproject_properties__WEBPACK_IMPORTED_MODULE_4__/* .checkProperties */ .uj)(transaction, allowed);
         const result = {};
-        // Some nodes (INFURA ropsten; INFURA mainnet is fine) do not like leading zeros.
-        ["gasLimit", "gasPrice", "type", "maxFeePerGas", "maxPriorityFeePerGas", "nonce", "value"].forEach(function (key) {
+        // JSON-RPC now requires numeric values to be "quantity" values
+        ["chainId", "gasLimit", "gasPrice", "type", "maxFeePerGas", "maxPriorityFeePerGas", "nonce", "value"].forEach(function (key) {
             if (transaction[key] == null) {
                 return;
             }
@@ -9272,7 +9611,7 @@ var lib_esm = __webpack_require__(3756);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/rlp/lib.esm/_version.js
-const version = "rlp/5.5.0";
+const version = "rlp/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/rlp/lib.esm/index.js
 
@@ -9421,7 +9760,7 @@ var types = __webpack_require__(7082);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/sha2/lib.esm/_version.js
-const version = "sha2/5.5.0";
+const version = "sha2/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/sha2/lib.esm/sha2.js
 
@@ -11976,7 +12315,7 @@ var properties_lib_esm = __webpack_require__(300);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/signing-key/lib.esm/_version.js
-const version = "signing-key/5.5.0";
+const version = "signing-key/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/signing-key/lib.esm/index.js
 
@@ -12283,7 +12622,7 @@ var lib_esm = __webpack_require__(3756);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/strings/lib.esm/_version.js
-const version = "strings/5.5.0";
+const version = "strings/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/strings/lib.esm/utf8.js
 
@@ -12571,7 +12910,7 @@ var signing_key_lib_esm = __webpack_require__(9947);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/transactions/lib.esm/_version.js
-const version = "transactions/5.5.0";
+const version = "transactions/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/transactions/lib.esm/index.js
 
@@ -12989,7 +13328,7 @@ var utf8 = __webpack_require__(5804);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/logger/lib.esm/index.js + 1 modules
 var logger_lib_esm = __webpack_require__(1424);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/web/lib.esm/_version.js
-const version = "web/5.5.1";
+const version = "web/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/web/lib.esm/geturl.js
 
@@ -13099,6 +13438,7 @@ function _fetchData(connection, body, processFunc) {
     const throttleCallback = ((typeof (connection) === "object") ? connection.throttleCallback : null);
     const throttleSlotInterval = ((typeof (connection) === "object" && typeof (connection.throttleSlotInterval) === "number") ? connection.throttleSlotInterval : 100);
     logger.assertArgument((throttleSlotInterval > 0 && (throttleSlotInterval % 1) === 0), "invalid connection throttle slot interval", "connection.throttleSlotInterval", throttleSlotInterval);
+    const errorPassThrough = ((typeof (connection) === "object") ? !!(connection.errorPassThrough) : false);
     const headers = {};
     let url = null;
     // @TODO: Allow ConnectionInfo to override some of these values
@@ -13136,6 +13476,9 @@ function _fetchData(connection, body, processFunc) {
                 key: "Authorization",
                 value: "Basic " + (0,base64/* encode */.c)((0,utf8/* toUtf8Bytes */.Y0)(authorization))
             };
+        }
+        if (connection.skipFetchSetup != null) {
+            options.skipFetchSetup = !!connection.skipFetchSetup;
         }
     }
     const reData = new RegExp("^data:([a-z0-9-]+/[a-z0-9-]+);base64,(.*)$", "i");
@@ -13260,7 +13603,7 @@ function _fetchData(connection, body, processFunc) {
                 if (allow304 && response.statusCode === 304) {
                     body = null;
                 }
-                else if (response.statusCode < 200 || response.statusCode >= 300) {
+                else if (!errorPassThrough && (response.statusCode < 200 || response.statusCode >= 300)) {
                     runningTimeout.cancel();
                     logger.throwError("bad response", logger_lib_esm/* Logger.errors.SERVER_ERROR */.Yd.errors.SERVER_ERROR, {
                         status: response.statusCode,
@@ -18991,9 +19334,9 @@ module.exports = browserReadableStreamToIt
 
 
 
-var base64 = __webpack_require__(4782)
-var ieee754 = __webpack_require__(8898)
-var customInspectSymbol =
+const base64 = __webpack_require__(4782)
+const ieee754 = __webpack_require__(8898)
+const customInspectSymbol =
   (typeof Symbol === 'function' && typeof Symbol['for'] === 'function') // eslint-disable-line dot-notation
     ? Symbol['for']('nodejs.util.inspect.custom') // eslint-disable-line dot-notation
     : null
@@ -19002,7 +19345,7 @@ exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
 exports.INSPECT_MAX_BYTES = 50
 
-var K_MAX_LENGTH = 0x7fffffff
+const K_MAX_LENGTH = 0x7fffffff
 exports.kMaxLength = K_MAX_LENGTH
 
 /**
@@ -19032,8 +19375,8 @@ if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
 function typedArraySupport () {
   // Can typed array instances can be augmented?
   try {
-    var arr = new Uint8Array(1)
-    var proto = { foo: function () { return 42 } }
+    const arr = new Uint8Array(1)
+    const proto = { foo: function () { return 42 } }
     Object.setPrototypeOf(proto, Uint8Array.prototype)
     Object.setPrototypeOf(arr, proto)
     return arr.foo() === 42
@@ -19063,7 +19406,7 @@ function createBuffer (length) {
     throw new RangeError('The value "' + length + '" is invalid for option "size"')
   }
   // Return an augmented `Uint8Array` instance
-  var buf = new Uint8Array(length)
+  const buf = new Uint8Array(length)
   Object.setPrototypeOf(buf, Buffer.prototype)
   return buf
 }
@@ -19126,19 +19469,17 @@ function from (value, encodingOrOffset, length) {
     )
   }
 
-  var valueOf = value.valueOf && value.valueOf()
+  const valueOf = value.valueOf && value.valueOf()
   if (valueOf != null && valueOf !== value) {
     return Buffer.from(valueOf, encodingOrOffset, length)
   }
 
-  var b = fromObject(value)
+  const b = fromObject(value)
   if (b) return b
 
   if (typeof Symbol !== 'undefined' && Symbol.toPrimitive != null &&
       typeof value[Symbol.toPrimitive] === 'function') {
-    return Buffer.from(
-      value[Symbol.toPrimitive]('string'), encodingOrOffset, length
-    )
+    return Buffer.from(value[Symbol.toPrimitive]('string'), encodingOrOffset, length)
   }
 
   throw new TypeError(
@@ -19223,10 +19564,10 @@ function fromString (string, encoding) {
     throw new TypeError('Unknown encoding: ' + encoding)
   }
 
-  var length = byteLength(string, encoding) | 0
-  var buf = createBuffer(length)
+  const length = byteLength(string, encoding) | 0
+  let buf = createBuffer(length)
 
-  var actual = buf.write(string, encoding)
+  const actual = buf.write(string, encoding)
 
   if (actual !== length) {
     // Writing a hex string, for example, that contains invalid characters will
@@ -19239,9 +19580,9 @@ function fromString (string, encoding) {
 }
 
 function fromArrayLike (array) {
-  var length = array.length < 0 ? 0 : checked(array.length) | 0
-  var buf = createBuffer(length)
-  for (var i = 0; i < length; i += 1) {
+  const length = array.length < 0 ? 0 : checked(array.length) | 0
+  const buf = createBuffer(length)
+  for (let i = 0; i < length; i += 1) {
     buf[i] = array[i] & 255
   }
   return buf
@@ -19249,7 +19590,7 @@ function fromArrayLike (array) {
 
 function fromArrayView (arrayView) {
   if (isInstance(arrayView, Uint8Array)) {
-    var copy = new Uint8Array(arrayView)
+    const copy = new Uint8Array(arrayView)
     return fromArrayBuffer(copy.buffer, copy.byteOffset, copy.byteLength)
   }
   return fromArrayLike(arrayView)
@@ -19264,7 +19605,7 @@ function fromArrayBuffer (array, byteOffset, length) {
     throw new RangeError('"length" is outside of buffer bounds')
   }
 
-  var buf
+  let buf
   if (byteOffset === undefined && length === undefined) {
     buf = new Uint8Array(array)
   } else if (length === undefined) {
@@ -19281,8 +19622,8 @@ function fromArrayBuffer (array, byteOffset, length) {
 
 function fromObject (obj) {
   if (Buffer.isBuffer(obj)) {
-    var len = checked(obj.length) | 0
-    var buf = createBuffer(len)
+    const len = checked(obj.length) | 0
+    const buf = createBuffer(len)
 
     if (buf.length === 0) {
       return buf
@@ -19337,10 +19678,10 @@ Buffer.compare = function compare (a, b) {
 
   if (a === b) return 0
 
-  var x = a.length
-  var y = b.length
+  let x = a.length
+  let y = b.length
 
-  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+  for (let i = 0, len = Math.min(x, y); i < len; ++i) {
     if (a[i] !== b[i]) {
       x = a[i]
       y = b[i]
@@ -19381,7 +19722,7 @@ Buffer.concat = function concat (list, length) {
     return Buffer.alloc(0)
   }
 
-  var i
+  let i
   if (length === undefined) {
     length = 0
     for (i = 0; i < list.length; ++i) {
@@ -19389,13 +19730,14 @@ Buffer.concat = function concat (list, length) {
     }
   }
 
-  var buffer = Buffer.allocUnsafe(length)
-  var pos = 0
+  const buffer = Buffer.allocUnsafe(length)
+  let pos = 0
   for (i = 0; i < list.length; ++i) {
-    var buf = list[i]
+    let buf = list[i]
     if (isInstance(buf, Uint8Array)) {
       if (pos + buf.length > buffer.length) {
-        Buffer.from(buf).copy(buffer, pos)
+        if (!Buffer.isBuffer(buf)) buf = Buffer.from(buf)
+        buf.copy(buffer, pos)
       } else {
         Uint8Array.prototype.set.call(
           buffer,
@@ -19427,12 +19769,12 @@ function byteLength (string, encoding) {
     )
   }
 
-  var len = string.length
-  var mustMatch = (arguments.length > 2 && arguments[2] === true)
+  const len = string.length
+  const mustMatch = (arguments.length > 2 && arguments[2] === true)
   if (!mustMatch && len === 0) return 0
 
   // Use a for loop to avoid recursion
-  var loweredCase = false
+  let loweredCase = false
   for (;;) {
     switch (encoding) {
       case 'ascii':
@@ -19463,7 +19805,7 @@ function byteLength (string, encoding) {
 Buffer.byteLength = byteLength
 
 function slowToString (encoding, start, end) {
-  var loweredCase = false
+  let loweredCase = false
 
   // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
   // property of a typed array.
@@ -19541,28 +19883,28 @@ function slowToString (encoding, start, end) {
 Buffer.prototype._isBuffer = true
 
 function swap (b, n, m) {
-  var i = b[n]
+  const i = b[n]
   b[n] = b[m]
   b[m] = i
 }
 
 Buffer.prototype.swap16 = function swap16 () {
-  var len = this.length
+  const len = this.length
   if (len % 2 !== 0) {
     throw new RangeError('Buffer size must be a multiple of 16-bits')
   }
-  for (var i = 0; i < len; i += 2) {
+  for (let i = 0; i < len; i += 2) {
     swap(this, i, i + 1)
   }
   return this
 }
 
 Buffer.prototype.swap32 = function swap32 () {
-  var len = this.length
+  const len = this.length
   if (len % 4 !== 0) {
     throw new RangeError('Buffer size must be a multiple of 32-bits')
   }
-  for (var i = 0; i < len; i += 4) {
+  for (let i = 0; i < len; i += 4) {
     swap(this, i, i + 3)
     swap(this, i + 1, i + 2)
   }
@@ -19570,11 +19912,11 @@ Buffer.prototype.swap32 = function swap32 () {
 }
 
 Buffer.prototype.swap64 = function swap64 () {
-  var len = this.length
+  const len = this.length
   if (len % 8 !== 0) {
     throw new RangeError('Buffer size must be a multiple of 64-bits')
   }
-  for (var i = 0; i < len; i += 8) {
+  for (let i = 0; i < len; i += 8) {
     swap(this, i, i + 7)
     swap(this, i + 1, i + 6)
     swap(this, i + 2, i + 5)
@@ -19584,7 +19926,7 @@ Buffer.prototype.swap64 = function swap64 () {
 }
 
 Buffer.prototype.toString = function toString () {
-  var length = this.length
+  const length = this.length
   if (length === 0) return ''
   if (arguments.length === 0) return utf8Slice(this, 0, length)
   return slowToString.apply(this, arguments)
@@ -19599,8 +19941,8 @@ Buffer.prototype.equals = function equals (b) {
 }
 
 Buffer.prototype.inspect = function inspect () {
-  var str = ''
-  var max = exports.INSPECT_MAX_BYTES
+  let str = ''
+  const max = exports.INSPECT_MAX_BYTES
   str = this.toString('hex', 0, max).replace(/(.{2})/g, '$1 ').trim()
   if (this.length > max) str += ' ... '
   return '<Buffer ' + str + '>'
@@ -19654,14 +19996,14 @@ Buffer.prototype.compare = function compare (target, start, end, thisStart, this
 
   if (this === target) return 0
 
-  var x = thisEnd - thisStart
-  var y = end - start
-  var len = Math.min(x, y)
+  let x = thisEnd - thisStart
+  let y = end - start
+  const len = Math.min(x, y)
 
-  var thisCopy = this.slice(thisStart, thisEnd)
-  var targetCopy = target.slice(start, end)
+  const thisCopy = this.slice(thisStart, thisEnd)
+  const targetCopy = target.slice(start, end)
 
-  for (var i = 0; i < len; ++i) {
+  for (let i = 0; i < len; ++i) {
     if (thisCopy[i] !== targetCopy[i]) {
       x = thisCopy[i]
       y = targetCopy[i]
@@ -19740,9 +20082,9 @@ function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
 }
 
 function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
-  var indexSize = 1
-  var arrLength = arr.length
-  var valLength = val.length
+  let indexSize = 1
+  let arrLength = arr.length
+  let valLength = val.length
 
   if (encoding !== undefined) {
     encoding = String(encoding).toLowerCase()
@@ -19766,9 +20108,9 @@ function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
     }
   }
 
-  var i
+  let i
   if (dir) {
-    var foundIndex = -1
+    let foundIndex = -1
     for (i = byteOffset; i < arrLength; i++) {
       if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
         if (foundIndex === -1) foundIndex = i
@@ -19781,8 +20123,8 @@ function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
   } else {
     if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
     for (i = byteOffset; i >= 0; i--) {
-      var found = true
-      for (var j = 0; j < valLength; j++) {
+      let found = true
+      for (let j = 0; j < valLength; j++) {
         if (read(arr, i + j) !== read(val, j)) {
           found = false
           break
@@ -19809,7 +20151,7 @@ Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) 
 
 function hexWrite (buf, string, offset, length) {
   offset = Number(offset) || 0
-  var remaining = buf.length - offset
+  const remaining = buf.length - offset
   if (!length) {
     length = remaining
   } else {
@@ -19819,13 +20161,14 @@ function hexWrite (buf, string, offset, length) {
     }
   }
 
-  var strLen = string.length
+  const strLen = string.length
 
   if (length > strLen / 2) {
     length = strLen / 2
   }
-  for (var i = 0; i < length; ++i) {
-    var parsed = parseInt(string.substr(i * 2, 2), 16)
+  let i
+  for (i = 0; i < length; ++i) {
+    const parsed = parseInt(string.substr(i * 2, 2), 16)
     if (numberIsNaN(parsed)) return i
     buf[offset + i] = parsed
   }
@@ -19875,7 +20218,7 @@ Buffer.prototype.write = function write (string, offset, length, encoding) {
     )
   }
 
-  var remaining = this.length - offset
+  const remaining = this.length - offset
   if (length === undefined || length > remaining) length = remaining
 
   if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
@@ -19884,7 +20227,7 @@ Buffer.prototype.write = function write (string, offset, length, encoding) {
 
   if (!encoding) encoding = 'utf8'
 
-  var loweredCase = false
+  let loweredCase = false
   for (;;) {
     switch (encoding) {
       case 'hex':
@@ -19934,13 +20277,13 @@ function base64Slice (buf, start, end) {
 
 function utf8Slice (buf, start, end) {
   end = Math.min(buf.length, end)
-  var res = []
+  const res = []
 
-  var i = start
+  let i = start
   while (i < end) {
-    var firstByte = buf[i]
-    var codePoint = null
-    var bytesPerSequence = (firstByte > 0xEF)
+    const firstByte = buf[i]
+    let codePoint = null
+    let bytesPerSequence = (firstByte > 0xEF)
       ? 4
       : (firstByte > 0xDF)
           ? 3
@@ -19949,7 +20292,7 @@ function utf8Slice (buf, start, end) {
               : 1
 
     if (i + bytesPerSequence <= end) {
-      var secondByte, thirdByte, fourthByte, tempCodePoint
+      let secondByte, thirdByte, fourthByte, tempCodePoint
 
       switch (bytesPerSequence) {
         case 1:
@@ -20011,17 +20354,17 @@ function utf8Slice (buf, start, end) {
 // Based on http://stackoverflow.com/a/22747272/680742, the browser with
 // the lowest limit is Chrome, with 0x10000 args.
 // We go 1 magnitude less, for safety
-var MAX_ARGUMENTS_LENGTH = 0x1000
+const MAX_ARGUMENTS_LENGTH = 0x1000
 
 function decodeCodePointsArray (codePoints) {
-  var len = codePoints.length
+  const len = codePoints.length
   if (len <= MAX_ARGUMENTS_LENGTH) {
     return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
   }
 
   // Decode in chunks to avoid "call stack size exceeded".
-  var res = ''
-  var i = 0
+  let res = ''
+  let i = 0
   while (i < len) {
     res += String.fromCharCode.apply(
       String,
@@ -20032,50 +20375,50 @@ function decodeCodePointsArray (codePoints) {
 }
 
 function asciiSlice (buf, start, end) {
-  var ret = ''
+  let ret = ''
   end = Math.min(buf.length, end)
 
-  for (var i = start; i < end; ++i) {
+  for (let i = start; i < end; ++i) {
     ret += String.fromCharCode(buf[i] & 0x7F)
   }
   return ret
 }
 
 function latin1Slice (buf, start, end) {
-  var ret = ''
+  let ret = ''
   end = Math.min(buf.length, end)
 
-  for (var i = start; i < end; ++i) {
+  for (let i = start; i < end; ++i) {
     ret += String.fromCharCode(buf[i])
   }
   return ret
 }
 
 function hexSlice (buf, start, end) {
-  var len = buf.length
+  const len = buf.length
 
   if (!start || start < 0) start = 0
   if (!end || end < 0 || end > len) end = len
 
-  var out = ''
-  for (var i = start; i < end; ++i) {
+  let out = ''
+  for (let i = start; i < end; ++i) {
     out += hexSliceLookupTable[buf[i]]
   }
   return out
 }
 
 function utf16leSlice (buf, start, end) {
-  var bytes = buf.slice(start, end)
-  var res = ''
+  const bytes = buf.slice(start, end)
+  let res = ''
   // If bytes.length is odd, the last 8 bits must be ignored (same as node.js)
-  for (var i = 0; i < bytes.length - 1; i += 2) {
+  for (let i = 0; i < bytes.length - 1; i += 2) {
     res += String.fromCharCode(bytes[i] + (bytes[i + 1] * 256))
   }
   return res
 }
 
 Buffer.prototype.slice = function slice (start, end) {
-  var len = this.length
+  const len = this.length
   start = ~~start
   end = end === undefined ? len : ~~end
 
@@ -20095,7 +20438,7 @@ Buffer.prototype.slice = function slice (start, end) {
 
   if (end < start) end = start
 
-  var newBuf = this.subarray(start, end)
+  const newBuf = this.subarray(start, end)
   // Return an augmented `Uint8Array` instance
   Object.setPrototypeOf(newBuf, Buffer.prototype)
 
@@ -20116,9 +20459,9 @@ Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert)
   byteLength = byteLength >>> 0
   if (!noAssert) checkOffset(offset, byteLength, this.length)
 
-  var val = this[offset]
-  var mul = 1
-  var i = 0
+  let val = this[offset]
+  let mul = 1
+  let i = 0
   while (++i < byteLength && (mul *= 0x100)) {
     val += this[offset + i] * mul
   }
@@ -20134,8 +20477,8 @@ Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert)
     checkOffset(offset, byteLength, this.length)
   }
 
-  var val = this[offset + --byteLength]
-  var mul = 1
+  let val = this[offset + --byteLength]
+  let mul = 1
   while (byteLength > 0 && (mul *= 0x100)) {
     val += this[offset + --byteLength] * mul
   }
@@ -20186,14 +20529,58 @@ Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
     this[offset + 3])
 }
 
+Buffer.prototype.readBigUInt64LE = defineBigIntMethod(function readBigUInt64LE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const lo = first +
+    this[++offset] * 2 ** 8 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 24
+
+  const hi = this[++offset] +
+    this[++offset] * 2 ** 8 +
+    this[++offset] * 2 ** 16 +
+    last * 2 ** 24
+
+  return BigInt(lo) + (BigInt(hi) << BigInt(32))
+})
+
+Buffer.prototype.readBigUInt64BE = defineBigIntMethod(function readBigUInt64BE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const hi = first * 2 ** 24 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    this[++offset]
+
+  const lo = this[++offset] * 2 ** 24 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    last
+
+  return (BigInt(hi) << BigInt(32)) + BigInt(lo)
+})
+
 Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
   offset = offset >>> 0
   byteLength = byteLength >>> 0
   if (!noAssert) checkOffset(offset, byteLength, this.length)
 
-  var val = this[offset]
-  var mul = 1
-  var i = 0
+  let val = this[offset]
+  let mul = 1
+  let i = 0
   while (++i < byteLength && (mul *= 0x100)) {
     val += this[offset + i] * mul
   }
@@ -20209,9 +20596,9 @@ Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
   byteLength = byteLength >>> 0
   if (!noAssert) checkOffset(offset, byteLength, this.length)
 
-  var i = byteLength
-  var mul = 1
-  var val = this[offset + --i]
+  let i = byteLength
+  let mul = 1
+  let val = this[offset + --i]
   while (i > 0 && (mul *= 0x100)) {
     val += this[offset + --i] * mul
   }
@@ -20232,14 +20619,14 @@ Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
 Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
   offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 2, this.length)
-  var val = this[offset] | (this[offset + 1] << 8)
+  const val = this[offset] | (this[offset + 1] << 8)
   return (val & 0x8000) ? val | 0xFFFF0000 : val
 }
 
 Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
   offset = offset >>> 0
   if (!noAssert) checkOffset(offset, 2, this.length)
-  var val = this[offset + 1] | (this[offset] << 8)
+  const val = this[offset + 1] | (this[offset] << 8)
   return (val & 0x8000) ? val | 0xFFFF0000 : val
 }
 
@@ -20262,6 +20649,48 @@ Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
     (this[offset + 2] << 8) |
     (this[offset + 3])
 }
+
+Buffer.prototype.readBigInt64LE = defineBigIntMethod(function readBigInt64LE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const val = this[offset + 4] +
+    this[offset + 5] * 2 ** 8 +
+    this[offset + 6] * 2 ** 16 +
+    (last << 24) // Overflow
+
+  return (BigInt(val) << BigInt(32)) +
+    BigInt(first +
+    this[++offset] * 2 ** 8 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 24)
+})
+
+Buffer.prototype.readBigInt64BE = defineBigIntMethod(function readBigInt64BE (offset) {
+  offset = offset >>> 0
+  validateNumber(offset, 'offset')
+  const first = this[offset]
+  const last = this[offset + 7]
+  if (first === undefined || last === undefined) {
+    boundsError(offset, this.length - 8)
+  }
+
+  const val = (first << 24) + // Overflow
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    this[++offset]
+
+  return (BigInt(val) << BigInt(32)) +
+    BigInt(this[++offset] * 2 ** 24 +
+    this[++offset] * 2 ** 16 +
+    this[++offset] * 2 ** 8 +
+    last)
+})
 
 Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
   offset = offset >>> 0
@@ -20299,12 +20728,12 @@ Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, 
   offset = offset >>> 0
   byteLength = byteLength >>> 0
   if (!noAssert) {
-    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    const maxBytes = Math.pow(2, 8 * byteLength) - 1
     checkInt(this, value, offset, byteLength, maxBytes, 0)
   }
 
-  var mul = 1
-  var i = 0
+  let mul = 1
+  let i = 0
   this[offset] = value & 0xFF
   while (++i < byteLength && (mul *= 0x100)) {
     this[offset + i] = (value / mul) & 0xFF
@@ -20319,12 +20748,12 @@ Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, 
   offset = offset >>> 0
   byteLength = byteLength >>> 0
   if (!noAssert) {
-    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    const maxBytes = Math.pow(2, 8 * byteLength) - 1
     checkInt(this, value, offset, byteLength, maxBytes, 0)
   }
 
-  var i = byteLength - 1
-  var mul = 1
+  let i = byteLength - 1
+  let mul = 1
   this[offset + i] = value & 0xFF
   while (--i >= 0 && (mul *= 0x100)) {
     this[offset + i] = (value / mul) & 0xFF
@@ -20386,18 +20815,70 @@ Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert
   return offset + 4
 }
 
+function wrtBigUInt64LE (buf, value, offset, min, max) {
+  checkIntBI(value, min, max, buf, offset, 7)
+
+  let lo = Number(value & BigInt(0xffffffff))
+  buf[offset++] = lo
+  lo = lo >> 8
+  buf[offset++] = lo
+  lo = lo >> 8
+  buf[offset++] = lo
+  lo = lo >> 8
+  buf[offset++] = lo
+  let hi = Number(value >> BigInt(32) & BigInt(0xffffffff))
+  buf[offset++] = hi
+  hi = hi >> 8
+  buf[offset++] = hi
+  hi = hi >> 8
+  buf[offset++] = hi
+  hi = hi >> 8
+  buf[offset++] = hi
+  return offset
+}
+
+function wrtBigUInt64BE (buf, value, offset, min, max) {
+  checkIntBI(value, min, max, buf, offset, 7)
+
+  let lo = Number(value & BigInt(0xffffffff))
+  buf[offset + 7] = lo
+  lo = lo >> 8
+  buf[offset + 6] = lo
+  lo = lo >> 8
+  buf[offset + 5] = lo
+  lo = lo >> 8
+  buf[offset + 4] = lo
+  let hi = Number(value >> BigInt(32) & BigInt(0xffffffff))
+  buf[offset + 3] = hi
+  hi = hi >> 8
+  buf[offset + 2] = hi
+  hi = hi >> 8
+  buf[offset + 1] = hi
+  hi = hi >> 8
+  buf[offset] = hi
+  return offset + 8
+}
+
+Buffer.prototype.writeBigUInt64LE = defineBigIntMethod(function writeBigUInt64LE (value, offset = 0) {
+  return wrtBigUInt64LE(this, value, offset, BigInt(0), BigInt('0xffffffffffffffff'))
+})
+
+Buffer.prototype.writeBigUInt64BE = defineBigIntMethod(function writeBigUInt64BE (value, offset = 0) {
+  return wrtBigUInt64BE(this, value, offset, BigInt(0), BigInt('0xffffffffffffffff'))
+})
+
 Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
   value = +value
   offset = offset >>> 0
   if (!noAssert) {
-    var limit = Math.pow(2, (8 * byteLength) - 1)
+    const limit = Math.pow(2, (8 * byteLength) - 1)
 
     checkInt(this, value, offset, byteLength, limit - 1, -limit)
   }
 
-  var i = 0
-  var mul = 1
-  var sub = 0
+  let i = 0
+  let mul = 1
+  let sub = 0
   this[offset] = value & 0xFF
   while (++i < byteLength && (mul *= 0x100)) {
     if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
@@ -20413,14 +20894,14 @@ Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, no
   value = +value
   offset = offset >>> 0
   if (!noAssert) {
-    var limit = Math.pow(2, (8 * byteLength) - 1)
+    const limit = Math.pow(2, (8 * byteLength) - 1)
 
     checkInt(this, value, offset, byteLength, limit - 1, -limit)
   }
 
-  var i = byteLength - 1
-  var mul = 1
-  var sub = 0
+  let i = byteLength - 1
+  let mul = 1
+  let sub = 0
   this[offset + i] = value & 0xFF
   while (--i >= 0 && (mul *= 0x100)) {
     if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
@@ -20481,6 +20962,14 @@ Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) 
   this[offset + 3] = (value & 0xff)
   return offset + 4
 }
+
+Buffer.prototype.writeBigInt64LE = defineBigIntMethod(function writeBigInt64LE (value, offset = 0) {
+  return wrtBigUInt64LE(this, value, offset, -BigInt('0x8000000000000000'), BigInt('0x7fffffffffffffff'))
+})
+
+Buffer.prototype.writeBigInt64BE = defineBigIntMethod(function writeBigInt64BE (value, offset = 0) {
+  return wrtBigUInt64BE(this, value, offset, -BigInt('0x8000000000000000'), BigInt('0x7fffffffffffffff'))
+})
 
 function checkIEEE754 (buf, value, offset, ext, max, min) {
   if (offset + ext > buf.length) throw new RangeError('Index out of range')
@@ -20549,7 +21038,7 @@ Buffer.prototype.copy = function copy (target, targetStart, start, end) {
     end = target.length - targetStart + start
   }
 
-  var len = end - start
+  const len = end - start
 
   if (this === target && typeof Uint8Array.prototype.copyWithin === 'function') {
     // Use built-in when available, missing from IE11
@@ -20587,7 +21076,7 @@ Buffer.prototype.fill = function fill (val, start, end, encoding) {
       throw new TypeError('Unknown encoding: ' + encoding)
     }
     if (val.length === 1) {
-      var code = val.charCodeAt(0)
+      const code = val.charCodeAt(0)
       if ((encoding === 'utf8' && code < 128) ||
           encoding === 'latin1') {
         // Fast path: If `val` fits into a single byte, use that numeric value.
@@ -20614,16 +21103,16 @@ Buffer.prototype.fill = function fill (val, start, end, encoding) {
 
   if (!val) val = 0
 
-  var i
+  let i
   if (typeof val === 'number') {
     for (i = start; i < end; ++i) {
       this[i] = val
     }
   } else {
-    var bytes = Buffer.isBuffer(val)
+    const bytes = Buffer.isBuffer(val)
       ? val
       : Buffer.from(val, encoding)
-    var len = bytes.length
+    const len = bytes.length
     if (len === 0) {
       throw new TypeError('The value "' + val +
         '" is invalid for argument "value"')
@@ -20636,10 +21125,143 @@ Buffer.prototype.fill = function fill (val, start, end, encoding) {
   return this
 }
 
+// CUSTOM ERRORS
+// =============
+
+// Simplified versions from Node, changed for Buffer-only usage
+const errors = {}
+function E (sym, getMessage, Base) {
+  errors[sym] = class NodeError extends Base {
+    constructor () {
+      super()
+
+      Object.defineProperty(this, 'message', {
+        value: getMessage.apply(this, arguments),
+        writable: true,
+        configurable: true
+      })
+
+      // Add the error code to the name to include it in the stack trace.
+      this.name = `${this.name} [${sym}]`
+      // Access the stack to generate the error message including the error code
+      // from the name.
+      this.stack // eslint-disable-line no-unused-expressions
+      // Reset the name to the actual name.
+      delete this.name
+    }
+
+    get code () {
+      return sym
+    }
+
+    set code (value) {
+      Object.defineProperty(this, 'code', {
+        configurable: true,
+        enumerable: true,
+        value,
+        writable: true
+      })
+    }
+
+    toString () {
+      return `${this.name} [${sym}]: ${this.message}`
+    }
+  }
+}
+
+E('ERR_BUFFER_OUT_OF_BOUNDS',
+  function (name) {
+    if (name) {
+      return `${name} is outside of buffer bounds`
+    }
+
+    return 'Attempt to access memory outside buffer bounds'
+  }, RangeError)
+E('ERR_INVALID_ARG_TYPE',
+  function (name, actual) {
+    return `The "${name}" argument must be of type number. Received type ${typeof actual}`
+  }, TypeError)
+E('ERR_OUT_OF_RANGE',
+  function (str, range, input) {
+    let msg = `The value of "${str}" is out of range.`
+    let received = input
+    if (Number.isInteger(input) && Math.abs(input) > 2 ** 32) {
+      received = addNumericalSeparator(String(input))
+    } else if (typeof input === 'bigint') {
+      received = String(input)
+      if (input > BigInt(2) ** BigInt(32) || input < -(BigInt(2) ** BigInt(32))) {
+        received = addNumericalSeparator(received)
+      }
+      received += 'n'
+    }
+    msg += ` It must be ${range}. Received ${received}`
+    return msg
+  }, RangeError)
+
+function addNumericalSeparator (val) {
+  let res = ''
+  let i = val.length
+  const start = val[0] === '-' ? 1 : 0
+  for (; i >= start + 4; i -= 3) {
+    res = `_${val.slice(i - 3, i)}${res}`
+  }
+  return `${val.slice(0, i)}${res}`
+}
+
+// CHECK FUNCTIONS
+// ===============
+
+function checkBounds (buf, offset, byteLength) {
+  validateNumber(offset, 'offset')
+  if (buf[offset] === undefined || buf[offset + byteLength] === undefined) {
+    boundsError(offset, buf.length - (byteLength + 1))
+  }
+}
+
+function checkIntBI (value, min, max, buf, offset, byteLength) {
+  if (value > max || value < min) {
+    const n = typeof min === 'bigint' ? 'n' : ''
+    let range
+    if (byteLength > 3) {
+      if (min === 0 || min === BigInt(0)) {
+        range = `>= 0${n} and < 2${n} ** ${(byteLength + 1) * 8}${n}`
+      } else {
+        range = `>= -(2${n} ** ${(byteLength + 1) * 8 - 1}${n}) and < 2 ** ` +
+                `${(byteLength + 1) * 8 - 1}${n}`
+      }
+    } else {
+      range = `>= ${min}${n} and <= ${max}${n}`
+    }
+    throw new errors.ERR_OUT_OF_RANGE('value', range, value)
+  }
+  checkBounds(buf, offset, byteLength)
+}
+
+function validateNumber (value, name) {
+  if (typeof value !== 'number') {
+    throw new errors.ERR_INVALID_ARG_TYPE(name, 'number', value)
+  }
+}
+
+function boundsError (value, length, type) {
+  if (Math.floor(value) !== value) {
+    validateNumber(value, type)
+    throw new errors.ERR_OUT_OF_RANGE(type || 'offset', 'an integer', value)
+  }
+
+  if (length < 0) {
+    throw new errors.ERR_BUFFER_OUT_OF_BOUNDS()
+  }
+
+  throw new errors.ERR_OUT_OF_RANGE(type || 'offset',
+                                    `>= ${type ? 1 : 0} and <= ${length}`,
+                                    value)
+}
+
 // HELPER FUNCTIONS
 // ================
 
-var INVALID_BASE64_RE = /[^+/0-9A-Za-z-_]/g
+const INVALID_BASE64_RE = /[^+/0-9A-Za-z-_]/g
 
 function base64clean (str) {
   // Node takes equal signs as end of the Base64 encoding
@@ -20657,12 +21279,12 @@ function base64clean (str) {
 
 function utf8ToBytes (string, units) {
   units = units || Infinity
-  var codePoint
-  var length = string.length
-  var leadSurrogate = null
-  var bytes = []
+  let codePoint
+  const length = string.length
+  let leadSurrogate = null
+  const bytes = []
 
-  for (var i = 0; i < length; ++i) {
+  for (let i = 0; i < length; ++i) {
     codePoint = string.charCodeAt(i)
 
     // is surrogate component
@@ -20736,8 +21358,8 @@ function utf8ToBytes (string, units) {
 }
 
 function asciiToBytes (str) {
-  var byteArray = []
-  for (var i = 0; i < str.length; ++i) {
+  const byteArray = []
+  for (let i = 0; i < str.length; ++i) {
     // Node's code seems to be doing this and not & 0x7F..
     byteArray.push(str.charCodeAt(i) & 0xFF)
   }
@@ -20745,9 +21367,9 @@ function asciiToBytes (str) {
 }
 
 function utf16leToBytes (str, units) {
-  var c, hi, lo
-  var byteArray = []
-  for (var i = 0; i < str.length; ++i) {
+  let c, hi, lo
+  const byteArray = []
+  for (let i = 0; i < str.length; ++i) {
     if ((units -= 2) < 0) break
 
     c = str.charCodeAt(i)
@@ -20765,7 +21387,8 @@ function base64ToBytes (str) {
 }
 
 function blitBuffer (src, dst, offset, length) {
-  for (var i = 0; i < length; ++i) {
+  let i
+  for (i = 0; i < length; ++i) {
     if ((i + offset >= dst.length) || (i >= src.length)) break
     dst[i + offset] = src[i]
   }
@@ -20787,17 +21410,26 @@ function numberIsNaN (obj) {
 
 // Create lookup table for `toString('hex')`
 // See: https://github.com/feross/buffer/issues/219
-var hexSliceLookupTable = (function () {
-  var alphabet = '0123456789abcdef'
-  var table = new Array(256)
-  for (var i = 0; i < 16; ++i) {
-    var i16 = i * 16
-    for (var j = 0; j < 16; ++j) {
+const hexSliceLookupTable = (function () {
+  const alphabet = '0123456789abcdef'
+  const table = new Array(256)
+  for (let i = 0; i < 16; ++i) {
+    const i16 = i * 16
+    for (let j = 0; j < 16; ++j) {
       table[i16 + j] = alphabet[i] + alphabet[j]
     }
   }
   return table
 })()
+
+// Return not function with Error if BigInt not supported
+function defineBigIntMethod (fn) {
+  return typeof BigInt === 'undefined' ? BufferBigIntNotDefined : fn
+}
+
+function BufferBigIntNotDefined () {
+  throw new Error('BigInt not supported')
+}
 
 
 /***/ }),
@@ -21546,7 +22178,7 @@ function setup(env) {
 			namespaces = split[i].replace(/\*/g, '.*?');
 
 			if (namespaces[0] === '-') {
-				createDebug.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
+				createDebug.skips.push(new RegExp('^' + namespaces.slice(1) + '$'));
 			} else {
 				createDebug.names.push(new RegExp('^' + namespaces + '$'));
 			}
@@ -23250,7 +23882,7 @@ module.exports = createError;
 
 /***/ }),
 
-/***/ 5341:
+/***/ 7043:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -23302,6 +23934,7 @@ __webpack_require__.r(providers_lib_esm_namespaceObject);
 __webpack_require__.d(providers_lib_esm_namespaceObject, {
   "AlchemyProvider": () => (AlchemyProvider),
   "AlchemyWebSocketProvider": () => (AlchemyWebSocketProvider),
+  "AnkrProvider": () => (AnkrProvider),
   "BaseProvider": () => (base_provider/* BaseProvider */.Zk),
   "CloudflareProvider": () => (CloudflareProvider),
   "EtherscanProvider": () => (EtherscanProvider),
@@ -23379,6 +24012,7 @@ __webpack_require__.d(lib_esm_utils_namespaceObject, {
   "defaultAbiCoder": () => (abi_coder/* defaultAbiCoder */.$),
   "defaultPath": () => (defaultPath),
   "defineReadOnly": () => (properties_lib_esm/* defineReadOnly */.zG),
+  "dnsEncode": () => (namehash/* dnsEncode */.Kn),
   "entropyToMnemonic": () => (entropyToMnemonic),
   "fetchJson": () => (web_lib_esm/* fetchJson */.rd),
   "formatBytes32String": () => (formatBytes32String),
@@ -23405,12 +24039,12 @@ __webpack_require__.d(lib_esm_utils_namespaceObject, {
   "isBytesLike": () => (bytes_lib_esm/* isBytesLike */.Zq),
   "isHexString": () => (bytes_lib_esm/* isHexString */.A7),
   "isValidMnemonic": () => (isValidMnemonic),
-  "isValidName": () => (namehash/* isValidName */.r),
+  "isValidName": () => (namehash/* isValidName */.r1),
   "joinSignature": () => (bytes_lib_esm/* joinSignature */.gV),
   "keccak256": () => (keccak256_lib_esm/* keccak256 */.w),
   "mnemonicToEntropy": () => (mnemonicToEntropy),
   "mnemonicToSeed": () => (mnemonicToSeed),
-  "namehash": () => (namehash/* namehash */.V),
+  "namehash": () => (namehash/* namehash */.VM),
   "nameprep": () => (idna/* nameprep */.Ll),
   "parseBytes32String": () => (parseBytes32String),
   "parseEther": () => (parseEther),
@@ -23924,7 +24558,7 @@ var transactions_lib_esm = __webpack_require__(9165);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/hash/lib.esm/id.js
 var id = __webpack_require__(14);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/wordlists/lib.esm/_version.js
-const version = "wordlists/5.5.0";
+const version = "wordlists/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/wordlists/lib.esm/wordlist.js
 
@@ -24021,7 +24655,7 @@ const wordlists = {
 };
 //# sourceMappingURL=wordlists.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/hdnode/lib.esm/_version.js
-const _version_version = "hdnode/5.5.0";
+const _version_version = "hdnode/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/hdnode/lib.esm/index.js
 
@@ -24356,7 +24990,7 @@ function getAccountPath(index) {
 }
 //# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/random/lib.esm/_version.js
-const lib_esm_version_version = "random/5.5.1";
+const lib_esm_version_version = "random/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/random/lib.esm/random.js
 
@@ -24406,7 +25040,7 @@ function randomBytes(length) {
 var aes_js = __webpack_require__(6264);
 var aes_js_default = /*#__PURE__*/__webpack_require__.n(aes_js);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/json-wallets/lib.esm/_version.js
-const json_wallets_lib_esm_version_version = "json-wallets/5.5.0";
+const json_wallets_lib_esm_version_version = "json-wallets/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/json-wallets/lib.esm/utils.js
 
@@ -24924,7 +25558,7 @@ function decryptJsonWalletSync(json, password) {
 
 //# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/wallet/lib.esm/_version.js
-const wallet_lib_esm_version_version = "wallet/5.5.0";
+const wallet_lib_esm_version_version = "wallet/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/wallet/lib.esm/index.js
 
@@ -25197,22 +25831,32 @@ class WebSocketProvider extends json_rpc_provider/* JsonRpcProvider */.r {
                 operation: "network:any"
             });
         }
-        super(url, network);
+        if (typeof (url) === "string") {
+            super(url, network);
+        }
+        else {
+            super("_websocket", network);
+        }
         this._pollingInterval = -1;
         this._wsReady = false;
-        (0,properties_lib_esm/* defineReadOnly */.zG)(this, "_websocket", new WS(this.connection.url));
+        if (typeof (url) === "string") {
+            (0,properties_lib_esm/* defineReadOnly */.zG)(this, "_websocket", new WS(this.connection.url));
+        }
+        else {
+            (0,properties_lib_esm/* defineReadOnly */.zG)(this, "_websocket", url);
+        }
         (0,properties_lib_esm/* defineReadOnly */.zG)(this, "_requests", {});
         (0,properties_lib_esm/* defineReadOnly */.zG)(this, "_subs", {});
         (0,properties_lib_esm/* defineReadOnly */.zG)(this, "_subIds", {});
         (0,properties_lib_esm/* defineReadOnly */.zG)(this, "_detectNetwork", super.detectNetwork());
         // Stall sending requests until the socket is open...
-        this._websocket.onopen = () => {
+        this.websocket.onopen = () => {
             this._wsReady = true;
             Object.keys(this._requests).forEach((id) => {
-                this._websocket.send(this._requests[id].payload);
+                this.websocket.send(this._requests[id].payload);
             });
         };
-        this._websocket.onmessage = (messageEvent) => {
+        this.websocket.onmessage = (messageEvent) => {
             const data = messageEvent.data;
             const result = JSON.parse(data);
             if (result.id != null) {
@@ -25269,6 +25913,9 @@ class WebSocketProvider extends json_rpc_provider/* JsonRpcProvider */.r {
             fauxPoll.unref();
         }
     }
+    // Cannot narrow the type of _websocket, as that is not backwards compatible
+    // so we add a getter and let the WebSocket be a public API.
+    get websocket() { return this._websocket; }
     detectNetwork() {
         return this._detectNetwork;
     }
@@ -25320,7 +25967,7 @@ class WebSocketProvider extends json_rpc_provider/* JsonRpcProvider */.r {
             });
             this._requests[String(rid)] = { callback, payload };
             if (this._wsReady) {
-                this._websocket.send(payload);
+                this.websocket.send(payload);
             }
         });
     }
@@ -25424,19 +26071,19 @@ class WebSocketProvider extends json_rpc_provider/* JsonRpcProvider */.r {
     destroy() {
         return websocket_provider_awaiter(this, void 0, void 0, function* () {
             // Wait until we have connected before trying to disconnect
-            if (this._websocket.readyState === WS.CONNECTING) {
+            if (this.websocket.readyState === WS.CONNECTING) {
                 yield (new Promise((resolve) => {
-                    this._websocket.onopen = function () {
+                    this.websocket.onopen = function () {
                         resolve(true);
                     };
-                    this._websocket.onerror = function () {
+                    this.websocket.onerror = function () {
                         resolve(false);
                     };
                 }));
             }
             // Hangup
             // See: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Status_codes
-            this._websocket.close(1000);
+            this.websocket.close(1000);
         });
     }
 }
@@ -25628,6 +26275,56 @@ class AlchemyProvider extends UrlJsonRpcProvider {
     }
 }
 //# sourceMappingURL=alchemy-provider.js.map
+;// CONCATENATED MODULE: ../node_modules/@ethersproject/providers/lib.esm/ankr-provider.js
+
+
+
+
+const ankr_provider_logger = new logger_lib_esm/* Logger */.Yd(lib_esm_version/* version */.i);
+const ankr_provider_defaultApiKey = "9f7d929b018cdffb338517efa06f58359e86ff1ffd350bc889738523659e7972";
+function getHost(name) {
+    switch (name) {
+        case "homestead":
+            return "rpc.ankr.com/eth/";
+        case "matic":
+            return "rpc.ankr.com/polygon/";
+        case "arbitrum":
+            return "rpc.ankr.com/arbitrum/";
+    }
+    return ankr_provider_logger.throwArgumentError("unsupported network", "name", name);
+}
+class AnkrProvider extends UrlJsonRpcProvider {
+    isCommunityResource() {
+        return (this.apiKey === ankr_provider_defaultApiKey);
+    }
+    static getApiKey(apiKey) {
+        if (apiKey == null) {
+            return ankr_provider_defaultApiKey;
+        }
+        return apiKey;
+    }
+    static getUrl(network, apiKey) {
+        if (apiKey == null) {
+            apiKey = ankr_provider_defaultApiKey;
+        }
+        const connection = {
+            allowGzip: true,
+            url: ("https:/\/" + getHost(network.name) + apiKey),
+            throttleCallback: (attempt, url) => {
+                if (apiKey.apiKey === ankr_provider_defaultApiKey) {
+                    (0,formatter/* showThrottleMessage */.vh)();
+                }
+                return Promise.resolve(true);
+            }
+        };
+        if (apiKey.projectSecret != null) {
+            connection.user = "";
+            connection.password = apiKey.projectSecret;
+        }
+        return connection;
+    }
+}
+//# sourceMappingURL=ankr-provider.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/providers/lib.esm/cloudflare-provider.js
 
 var cloudflare_provider_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -27075,6 +27772,7 @@ var web3_provider = __webpack_require__(9450);
 
 
 
+
 const providers_lib_esm_logger = new logger_lib_esm/* Logger */.Yd(lib_esm_version/* version */.i);
 ////////////////////////
 // Helper Functions
@@ -27108,6 +27806,7 @@ function getDefaultProvider(network, options) {
     return n._defaultProvider({
         FallbackProvider: FallbackProvider,
         AlchemyProvider: AlchemyProvider,
+        AnkrProvider: AnkrProvider,
         CloudflareProvider: CloudflareProvider,
         EtherscanProvider: EtherscanProvider,
         InfuraProvider: InfuraProvider,
@@ -27139,7 +27838,7 @@ var base64 = __webpack_require__(6284);
 // EXTERNAL MODULE: ../node_modules/@ethersproject/hash/lib.esm/namehash.js
 var namehash = __webpack_require__(3314);
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/solidity/lib.esm/_version.js
-const solidity_lib_esm_version_version = "solidity/5.5.0";
+const solidity_lib_esm_version_version = "solidity/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/solidity/lib.esm/index.js
 
@@ -27271,7 +27970,7 @@ function parseBytes32String(bytes) {
 }
 //# sourceMappingURL=bytes32.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/units/lib.esm/_version.js
-const units_lib_esm_version_version = "units/5.5.0";
+const units_lib_esm_version_version = "units/5.6.0";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/@ethersproject/units/lib.esm/index.js
 
@@ -27390,7 +28089,7 @@ function parseEther(ether) {
 
 //# sourceMappingURL=utils.js.map
 ;// CONCATENATED MODULE: ../node_modules/ethers/lib.esm/_version.js
-const ethers_lib_esm_version_version = "ethers/5.5.4";
+const ethers_lib_esm_version_version = "ethers/5.6.2";
 //# sourceMappingURL=_version.js.map
 ;// CONCATENATED MODULE: ../node_modules/ethers/lib.esm/ethers.js
 
