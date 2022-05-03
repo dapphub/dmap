@@ -6,7 +6,7 @@
 
 /* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
 const ebnf = __webpack_require__(1425)
-const ethers = __webpack_require__(7043)
+const ethers = __webpack_require__(5341)
 
 const pack = __webpack_require__(3789)
 const artifact = __webpack_require__(791)
@@ -104,6 +104,29 @@ lib.walk = async (dmap, path) => {
     return {meta, data}
 }
 
+lib.walk2 = async (dmap, path) => {
+    if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
+    let [meta, data] = await lib.get(dmap, '0x' + '00'.repeat(32))
+    let ctx = {locked: path.charAt(0) === ':'}
+    const trace = [[meta,data]]
+    for (const step of lib.parse(path)) {
+        zone = data.slice(0, 21 * 2)
+        if (zone === '0x' + '00'.repeat(20)) {
+            fail(`zero register`)
+        }
+        const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length);
+        [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
+        trace.push([meta,data])
+        if (step.locked) {
+            need(ctx.locked, `Encountered ':' in unlocked subpath`)
+            need((Buffer.from(meta.slice(2), 'hex')[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            ctx.locked = true
+        }
+        ctx.locked = step.locked
+    }
+    return trace
+}
+
 
 /***/ }),
 
@@ -171,7 +194,9 @@ window.onload = async() => {
         if (dpath.length && dpath[0] != ':') {
             dpath = ':' + dpath
         }
-        line(`\nWALK  ${dpath}`)
+        line('')
+        line(`WALK  ${dpath}`)
+        line('')
         const provider = new ethers__WEBPACK_IMPORTED_MODULE_2__/* .Web3Provider */ .Q(window.ethereum)
         const dmapContract = new ethers__WEBPACK_IMPORTED_MODULE_3__/* .Contract */ .CH(
             dmap.address,
@@ -181,14 +206,22 @@ window.onload = async() => {
 
         let walkResult
         try {
-            walkResult = await dmap.walk(dmapContract, dpath)
-            line(`meta: ${walkResult.meta}`)
-            line(`data: ${walkResult.data}`)
+            walkResult = await dmap.walk2(dmapContract, dpath)
+            for (const step of walkResult) {
+                line(`step`)
+                line(`  meta: ${step[0]}`)
+                line(`  data: ${step[1]}`)
+            }
         }
         catch (error) {
+            line('')
             line(`FAIL: ${error}`)
             return
         }
+        line('')
+        const last = walkResult.pop()
+        console.log(last)
+        walkResult = { meta: last[0], data: last[1] }
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text

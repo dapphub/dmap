@@ -53,7 +53,9 @@ window.onload = async() => {
         if (dpath.length && dpath[0] != ':') {
             dpath = ':' + dpath
         }
-        line(`\nWALK  ${dpath}`)
+        line('')
+        line(`WALK  ${dpath}`)
+        line('')
         const provider = new ethers.providers.Web3Provider(window.ethereum)
         const dmapContract = new ethers.Contract(
             dmap.address,
@@ -63,14 +65,22 @@ window.onload = async() => {
 
         let walkResult
         try {
-            walkResult = await dmap.walk(dmapContract, dpath)
-            line(`meta: ${walkResult.meta}`)
-            line(`data: ${walkResult.data}`)
+            walkResult = await dmap.walk2(dmapContract, dpath)
+            for (const step of walkResult) {
+                line(`step`)
+                line(`  meta: ${step[0]}`)
+                line(`  data: ${step[1]}`)
+            }
         }
         catch (error) {
+            line('')
             line(`FAIL: ${error}`)
             return
         }
+        line('')
+        const last = walkResult.pop()
+        console.log(last)
+        walkResult = { meta: last[0], data: last[1] }
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text

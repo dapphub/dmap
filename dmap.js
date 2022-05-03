@@ -96,3 +96,26 @@ lib.walk = async (dmap, path) => {
     }
     return {meta, data}
 }
+
+lib.walk2 = async (dmap, path) => {
+    if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
+    let [meta, data] = await lib.get(dmap, '0x' + '00'.repeat(32))
+    let ctx = {locked: path.charAt(0) === ':'}
+    const trace = [[meta,data]]
+    for (const step of lib.parse(path)) {
+        zone = data.slice(0, 21 * 2)
+        if (zone === '0x' + '00'.repeat(20)) {
+            fail(`zero register`)
+        }
+        const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length);
+        [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
+        trace.push([meta,data])
+        if (step.locked) {
+            need(ctx.locked, `Encountered ':' in unlocked subpath`)
+            need((Buffer.from(meta.slice(2), 'hex')[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            ctx.locked = true
+        }
+        ctx.locked = step.locked
+    }
+    return trace
+}
