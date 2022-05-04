@@ -4,6 +4,8 @@ const ethers = require('ethers')
 const pack = require('./pack/dmap.json')
 const artifact = require('./pack/ipfs/Dmap.json')
 
+const dmap_utils = require("./utils/dmap_utils.js")
+
 const abi    = artifact.abi
 const dmap_i = new ethers.utils.Interface(abi)
 const dmap_address = pack.objects.dmap.address
@@ -41,8 +43,8 @@ lib.parse =s=> {
 }
 
 lib.get = async (dmap, slot) => {
-    const nextslot = ethers.utils.hexZeroPad(
-        ethers.BigNumber.from(slot).add(1).toHexString(), 32
+    const nextslot = dmap_utils.hexZeroPad(
+        dmap_utils.hexlify(BigInt(slot) + BigInt(1)), 32
     )
     let meta, data
     await Promise.all(
