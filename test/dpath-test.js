@@ -30,7 +30,7 @@ describe('dpath', ()=> {
     })
 
     describe('walk', () => {
-        const test_name = b32('testname1')
+        const test_name = b32('testname')
         const free_name = b32('free')
         const test_data = '0x' + '01'.repeat(32)
         const OPEN = '0x' + '00'.repeat(32)
@@ -61,7 +61,7 @@ describe('dpath', ()=> {
         })
 
         it('unlocked always works', async()=>{
-            const res = await lib.walk(dmap, '.free.free.free.testname1')
+            const res = await lib.walk(dmap, '.free.free.free.testname')
             want(res.data).eq(test_data)
             want(res.meta).eq(LOCK)
         })
@@ -74,28 +74,32 @@ describe('dpath', ()=> {
 
         it('reject malformed paths', async()=>{
             await want(
-                lib.walk(dmap, ':free.free:testname1')
+                lib.walk(dmap, ':free.free:testname')
             ).rejectedWith('Encountered \':\' in unlocked subpath')
 
             await want(
-                lib.walk(dmap, '.free:testname1')
+                lib.walk(dmap, '.free:testname')
             ).rejectedWith('Encountered \':\' in unlocked subpath')
 
             await want(
-                lib.walk(dmap, ':free:test_name1')
-            ).rejectedWith('Cannot read properties of null')
+                lib.walk(dmap, ':free:testname1')
+            ).rejectedWith('Invalid dpath')
 
             await want(
-                lib.walk(dmap, ':Free:testname1')
-            ).rejectedWith('Cannot read properties of null')
+                lib.walk(dmap, ':free:test_name')
+            ).rejectedWith('Invalid dpath')
 
             await want(
-                lib.walk(dmap, ':free;testname1')
-            ).rejectedWith('Cannot read properties of null')
+                lib.walk(dmap, ':Free:testname')
+            ).rejectedWith('Invalid dpath')
 
             await want(
-                lib.walk(dmap, 'free,testname1')
-            ).rejectedWith('Cannot read properties of null')
+                lib.walk(dmap, ':free;testname')
+            ).rejectedWith('Invalid dpath')
+
+            await want(
+                lib.walk(dmap, 'free,testname')
+            ).rejectedWith('Invalid dpath')
         })
 
         it('zero register', async()=>{
@@ -109,11 +113,11 @@ describe('dpath', ()=> {
         })
 
         it('valid paths', async()=>{
-            const res1 = await lib.walk(dmap, ':free:testname1')
+            const res1 = await lib.walk(dmap, ':free:testname')
             want(res1.data).eq(test_data)
             want(res1.meta).eq(LOCK)
 
-            const res2 = await lib.walk(dmap, ':free.free.testname1')
+            const res2 = await lib.walk(dmap, ':free.free.testname')
             want(res2.data).eq(test_data)
             want(res2.meta).eq(LOCK)
         })

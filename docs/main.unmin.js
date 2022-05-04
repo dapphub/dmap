@@ -5,8 +5,7 @@
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 /* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
-const ebnf = __webpack_require__(1425)
-const ethers = __webpack_require__(5341)
+const ethers = __webpack_require__(7043)
 
 const pack = __webpack_require__(3789)
 const artifact = __webpack_require__(791)
@@ -27,25 +26,6 @@ lib.address = dmap_address
 lib.artifact = artifact
 
 lib.FLAG_LOCK = 1
-lib.grammar = `
-dpath ::= (step)* EOF
-step  ::= (rune) (name)
-name  ::= [a-z0-9]+
-rune  ::= ":" | "."
-`
-
-lib.parser = new ebnf.Parser(ebnf.Grammars.W3C.getRules(lib.grammar))
-lib.parse =s=> {
-    const ast = lib.parser.getAST(s)
-    return ast.children.map(step => {
-        const rune = step.children[0]
-        const name = step.children[1]
-        return {
-            locked: rune.text === ":",
-            name:   name.text
-        }
-    })
-}
 
 lib.get = async (dmap, slot) => {
     const nextslot = ethers.utils.hexZeroPad(
@@ -82,7 +62,6 @@ lib.slot = async (dmap, slot) => {
     return res[0]
 }
 
-
 lib.walk = async (dmap, path) => {
     if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
     let [meta, data] = await lib.get(dmap, '0x' + '00'.repeat(32))
@@ -102,6 +81,18 @@ lib.walk = async (dmap, path) => {
         ctx.locked = step.locked
     }
     return {meta, data}
+}
+
+lib.parse = (path) => {
+    if (path === '') return []
+
+    const baned = path.match(/[^a-z.:]/)
+    const names = path.match(/[a-z]+/g)
+    const runes = path.match(/[:.]/g)
+
+    need(names.length === runes.length && baned === null, `Invalid dpath`)
+
+    return names.map((name, i) => ({locked: runes[i] === ':', name: name}))
 }
 
 lib.walk2 = async (dmap, path) => {
