@@ -4,7 +4,7 @@ const ethers = require('ethers')
 const pack = require('./pack/dmap.json')
 const artifact = require('./pack/ipfs/Dmap.json')
 
-const dmap_utils = require("./utils/dmap_utils.js")
+const dmap_utils = require("./utils/dmap_utils")
 
 const abi    = artifact.abi
 const dmap_i = new ethers.utils.Interface(abi)
