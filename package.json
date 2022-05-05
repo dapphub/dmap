@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "ebnf": "^1.9.0",
+    "js-sha3": "^0.8.0",
     "tapzero": "^0.6.1"
   }
 }

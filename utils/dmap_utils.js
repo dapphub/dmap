@@ -1,6 +1,9 @@
+const kek = require('js-sha3')
+
 module.exports = {
     hexZeroPad,
-    hexlify
+    hexlify,
+    keccak256
 }
 
 // GLOBAL TODO: !DMFXYZ! error and bounds checking for inputs
@@ -45,4 +48,22 @@ function hexlify(value) {
         return "0x" + value;
 
     }
+}
+
+// Assumes value is a hex encoded string for now
+function keccak256(value, to_string=false) {
+
+    // don't want to hash the prefix
+    if (value.substring(0,2) == "0x") {
+        value = value.substring(2)
+    }
+    // Need to create an array of bytes from hex string
+    // just grab 2 4-byte hex symbols at a time and parse them as base16
+    const bytes_array = []
+    for (let i = 0; i < value.length; i+= 2) {
+        bytes_array.push(parseInt(value.substring(i, i+2), 16));
+
+    }
+    // add back in prefix and return as unsigned 1byte int array
+    return "0x" + kek.keccak256(new Uint8Array(bytes_array));
 }

@@ -14,7 +14,6 @@ const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
 
 const coder = ethers.utils.defaultAbiCoder
-const keccak256 = ethers.utils.keccak256
 
 module.exports = lib = {}
 
@@ -59,7 +58,8 @@ lib.get = async (dmap, slot) => {
 }
 
 lib.getByZoneAndName = async (dmap, zone, name) => {
-    const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
+    const encoded_params = coder.encode(["address", "bytes32"], [zone, name]);
+    const slot = dmap_utils.keccak256(encoded_params)
     return lib.get(dmap, slot)
 }
 
