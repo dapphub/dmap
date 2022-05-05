@@ -67,7 +67,7 @@ task('dmap-mock-deploy', async (args, hh)=> {
 
     const show =(o)=> JSON.stringify(o, null, 2)
 
-    fs.writeFileSync(packdir + `Dmap.json`, show(dmap_type))
+    fs.writeFileSync(packdir + `MockDmap.json`, show(dmap_type))
     fs.writeFileSync(packdir + `RootZone.json`, show(root_type))
     fs.writeFileSync(packdir + `FreeZone.json`, show(free_type))
 
