@@ -13,8 +13,6 @@ const dmap_address = pack.objects.dmap.address
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
 
-const coder = ethers.utils.defaultAbiCoder
-
 module.exports = lib = {}
 
 lib.address = dmap_address
@@ -58,8 +56,24 @@ lib.get = async (dmap, slot) => {
 }
 
 lib.getByZoneAndName = async (dmap, zone, name) => {
-    const encoded_params = coder.encode(["address", "bytes32"], [zone, name]);
-    const slot = dmap_utils.keccak256(encoded_params)
+    // TODO: !DMFXYZ! Migrate this to a utils function that is not shitty
+    let params = '0x' + '00'.repeat(12);
+    if (zone.length == 0) {
+        params = params + '00'.repeat(20);
+    } else {
+        params = params + zone.slice(2); // assume has leading 0x, prob shouldn't do this
+    }
+    if (name.length == 0 || name == null) {
+        params = params + '00'.repeat(32);
+    } else if (typeof(name) == 'object') {
+        // if an object, create a buffer from data and encode as hex string
+        // note Buffer might be deprecated
+        params = params + new Buffer(name).toString('hex');
+    } else {
+        // if alredy a hex string, just drop the 0x
+        params = params + name.slice(2);
+    }
+    const slot = dmap_utils.keccak256(params)
     return lib.get(dmap, slot)
 }
 
