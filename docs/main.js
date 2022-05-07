@@ -79,7 +79,10 @@ const getFacade = async (url) => {
     if (chainId == '0x1') {
         storageFunction = RPCGetStorage.bind(null, url)
     }
-    return {provider:{getStorageAt:storageFunction}}
+    return {
+        provider: { getStorageAt:storageFunction },
+        address: dmap.address
+    }
 }
 
 window.onload = async() => {

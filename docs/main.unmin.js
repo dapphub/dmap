@@ -54,8 +54,8 @@ lib.get = async (dmap, slot) => {
     let meta, data
     await Promise.all(
         [
-            dmap.provider.getStorageAt(dmap_address, slot),
-            dmap.provider.getStorageAt(dmap_address, nextslot)
+            dmap.provider.getStorageAt(dmap.address, slot),
+            dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
     const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
@@ -218,7 +218,10 @@ const getFacade = async (url) => {
     if (chainId == '0x1') {
         storageFunction = RPCGetStorage.bind(null, url)
     }
-    return {provider:{getStorageAt:storageFunction}}
+    return {
+        provider: { getStorageAt:storageFunction },
+        address: dmap.address
+    }
 }
 
 window.onload = async() => {
