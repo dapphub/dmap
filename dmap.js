@@ -1,18 +1,14 @@
 const ebnf = require('ebnf')
-const ethers = require('ethers')
 
 const pack = require('./pack/dmap.json')
 const artifact = require('./pack/ipfs/Dmap.json')
 
-const abi    = artifact.abi
-const dmap_i = new ethers.utils.Interface(abi)
+const dmap_utils = require("./utils/dmap_utils")
+
 const dmap_address = pack.objects.dmap.address
 
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
-
-const coder = ethers.utils.defaultAbiCoder
-const keccak256 = ethers.utils.keccak256
 
 module.exports = lib = {}
 
@@ -41,8 +37,8 @@ lib.parse =s=> {
 }
 
 lib.get = async (dmap, slot) => {
-    const nextslot = ethers.utils.hexZeroPad(
-        ethers.BigNumber.from(slot).add(1).toHexString(), 32
+    const nextslot = dmap_utils.hexZeroPad(
+        dmap_utils.hexlify(BigInt(slot) + BigInt(1)), 32
     )
     let meta, data
     await Promise.all(
@@ -51,28 +47,24 @@ lib.get = async (dmap, slot) => {
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
-    const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
-    const res = dmap_i.decodeFunctionResult("get", resdata)
-    return res
+    return [meta, data]
 }
 
 lib.getByZoneAndName = async (dmap, zone, name) => {
-    const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
+    const slot = dmap_utils.keccak256(dmap_utils.encodeZoneAndName(zone, name));
     return lib.get(dmap, slot)
 }
 
 lib.set = async (dmap, name, meta, data) => {
-    const calldata = dmap_i.encodeFunctionData("set", [name, meta, data])
+    const calldata = dmap_utils.encodeFunctionCallBytes32Args("set(bytes32,bytes32,bytes32)", [name, meta, data])
     return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
 }
 
-const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
-const slot_i = new ethers.utils.Interface(slotabi)
+// const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
+// const slot_i = new ethers.utils.Interface(slotabi)
 lib.slot = async (dmap, slot) => {
     const val = await dmap.provider.getStorageAt(dmap.address, slot)
-    const resdata = slot_i.encodeFunctionResult("slot", [val])
-    const res = slot_i.decodeFunctionResult("slot", resdata)
-    return res[0]
+    return val
 }
 
 

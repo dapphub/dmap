@@ -67,16 +67,16 @@ const check_entry = async (dmap, usr, key, _meta, _data) => {
     const meta = typeof(_meta) == 'string' ? _meta : '0x'+_meta.toString('hex')
     const data = typeof(_data) == 'string' ? _data : '0x'+_data.toString('hex')
     const resZoneName = await lib.getByZoneAndName(dmap, usr, key)
-    want(resZoneName.meta).to.eql(meta)
-    want(resZoneName.data).to.eql(data)
+    want(resZoneName[0]).to.eql(meta)
+    want(resZoneName[1]).to.eql(data)
     want(resZoneName).to.eql([meta, data])
 
     const coder = ethers.utils.defaultAbiCoder
     const keccak256 = ethers.utils.keccak256
     const slot = keccak256(coder.encode(["address", "bytes32"], [usr, key]))
     const resGet = await testlib.get(dmap, slot)
-    want(resGet.meta).to.eql(meta)
-    want(resGet.data).to.eql(data)
+    want(resGet[0]).to.eql(meta)
+    want(resGet[1]).to.eql(data)
     want(resGet).to.eql([meta, data])
 
     const nextslot = ethers.utils.hexZeroPad(
