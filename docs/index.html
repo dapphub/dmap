@@ -39,12 +39,14 @@
 <h2>configure</h2>
 <div>
   <label for="ethNode">eth provider</label>
-  <input type="text" id="ethNode" name="ethNode" value="<using window.ethereum>" style='width:60ch'>
+  <input type="text" id="ethNode" name="ethNode" value="http://127.0.0.1:8545" style='width:60ch'
+         title="optional, falls back to window.ethereum (metamask)">
 </div>
 
 <div>
     <label for="ipfsNode">ipfs rpc url</label>
-    <input type="text" id="ipfsNode" name="ipfsNode" value="/ip4/127.0.0.1/tcp/5001" title="optional" style='width:60ch'>
+    <input type="text" id="ipfsNode" name="ipfsNode" value="/ip4/127.0.0.1/tcp/5001" style='width:60ch'
+           title="optional, falls back to IPFS gateways">
 </div>
 </br>
 

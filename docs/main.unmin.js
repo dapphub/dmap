@@ -6,7 +6,7 @@
 
 /* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
 const ebnf = __webpack_require__(1425)
-const ethers = __webpack_require__(5341)
+const ethers = __webpack_require__(5234)
 
 const pack = __webpack_require__(3789)
 const artifact = __webpack_require__(791)
@@ -134,19 +134,15 @@ lib.walk2 = async (dmap, path) => {
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 "use strict";
-/* harmony import */ var ethers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9450);
-/* harmony import */ var ethers__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3726);
 /* harmony import */ var multiformats_cid__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3036);
 /* harmony import */ var multiformats_hashes_sha2__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2671);
 /* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
-
 
 
 const IPFS = __webpack_require__(2708)
 
 const dmap = __webpack_require__(2971)
 const utils = __webpack_require__(4288)
-
 
 const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://gateway.pinata.cloud/ipfs/',
@@ -185,6 +181,49 @@ const resolveCID = async (cid, targetDigest, nodeAddress) => {
     throw 'unable to resolve cid'
 }
 
+const makeRPC = async (url, method, params) => {
+    let result = null
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                "jsonrpc": "2.0",
+                "method": method,
+                "params": params,
+                "id": 0
+            }),
+        });
+        ({result} = await response.json())
+    }
+    catch (err) {}
+    return result
+}
+
+const RPCGetStorage = async (url, address, slot) => {
+    const block = await makeRPC(url, "eth_blockNumber", [])
+    return await makeRPC(url, "eth_getStorageAt", [address, slot, block])
+}
+
+const windowGetStorage = async (address, slot) => {
+    const block  = await window.ethereum.request({ method: 'eth_blockNumber',  params: [] });
+    return await window.ethereum.request({ method: 'eth_getStorageAt', params: [address, slot, block] });
+}
+
+const getFacade = async (url) => {
+    const chainId = await makeRPC(url, "eth_chainId", [])
+    let storageFunction = windowGetStorage
+    if (chainId == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, url)
+    }
+    return {
+        provider: { getStorageAt:storageFunction },
+        address: dmap.address
+    }
+}
+
 window.onload = async() => {
     const $ = document.querySelector.bind(document);
     const line =s=> { $('#result').textContent += s + '\n' }
@@ -197,16 +236,11 @@ window.onload = async() => {
         line('')
         line(`WALK  ${dpath}`)
         line('')
-        const provider = new ethers__WEBPACK_IMPORTED_MODULE_2__/* .Web3Provider */ .Q(window.ethereum)
-        const dmapContract = new ethers__WEBPACK_IMPORTED_MODULE_3__/* .Contract */ .CH(
-            dmap.address,
-            dmap.artifact.abi,
-            provider
-        );
 
+        const dmapFacade = await getFacade($('#ethNode').value)
         let walkResult
         try {
-            walkResult = await dmap.walk2(dmapContract, dpath)
+            walkResult = await dmap.walk2(dmapFacade, dpath)
             for (const step of walkResult) {
                 line(`step`)
                 line(`  meta: ${step[0]}`)

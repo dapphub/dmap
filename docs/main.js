@@ -1,11 +1,9 @@
-import { ethers } from 'ethers'
 import { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
 const IPFS = require('ipfs-http-client')
 
 const dmap = require('../dmap.js')
 const utils = require('./utils.js')
-
 
 const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://gateway.pinata.cloud/ipfs/',
@@ -44,6 +42,49 @@ const resolveCID = async (cid, targetDigest, nodeAddress) => {
     throw 'unable to resolve cid'
 }
 
+const makeRPC = async (url, method, params) => {
+    let result = null
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                "jsonrpc": "2.0",
+                "method": method,
+                "params": params,
+                "id": 0
+            }),
+        });
+        ({result} = await response.json())
+    }
+    catch (err) {}
+    return result
+}
+
+const RPCGetStorage = async (url, address, slot) => {
+    const block = await makeRPC(url, "eth_blockNumber", [])
+    return await makeRPC(url, "eth_getStorageAt", [address, slot, block])
+}
+
+const windowGetStorage = async (address, slot) => {
+    const block  = await window.ethereum.request({ method: 'eth_blockNumber',  params: [] });
+    return await window.ethereum.request({ method: 'eth_getStorageAt', params: [address, slot, block] });
+}
+
+const getFacade = async (url) => {
+    const chainId = await makeRPC(url, "eth_chainId", [])
+    let storageFunction = windowGetStorage
+    if (chainId == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, url)
+    }
+    return {
+        provider: { getStorageAt:storageFunction },
+        address: dmap.address
+    }
+}
+
 window.onload = async() => {
     const $ = document.querySelector.bind(document);
     const line =s=> { $('#result').textContent += s + '\n' }
@@ -56,16 +97,11 @@ window.onload = async() => {
         line('')
         line(`WALK  ${dpath}`)
         line('')
-        const provider = new ethers.providers.Web3Provider(window.ethereum)
-        const dmapContract = new ethers.Contract(
-            dmap.address,
-            dmap.artifact.abi,
-            provider
-        );
 
+        const dmapFacade = await getFacade($('#ethNode').value)
         let walkResult
         try {
-            walkResult = await dmap.walk2(dmapContract, dpath)
+            walkResult = await dmap.walk2(dmapFacade, dpath)
             for (const step of walkResult) {
                 line(`step`)
                 line(`  meta: ${step[0]}`)
