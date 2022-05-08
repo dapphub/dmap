@@ -1,9 +1,12 @@
+const multiformats = require('multiformats')
 import { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
 const IPFS = require('ipfs-http-client')
 
 const dmap = require('../dmap.js')
-const utils = require('./utils.js')
+
+const fail =s=> { throw new Error(s) }
+const need =(b,s)=> b || fail(s)
 
 const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://gateway.pinata.cloud/ipfs/',
@@ -11,6 +14,42 @@ const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://storry.tv/ipfs/',
                   'https://ipfs.io/ipfs/',
                   'https://hub.textile.io/ipfs/']
+
+
+const prefLenIndex = 30
+
+const prepareCID = (cidStr, lock) => {
+    const cid = multiformats.CID.parse(cidStr)
+    need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
+    const prefixLen = cid.byteLength - cid.multihash.size
+    const meta = new Uint8Array(32).fill(0)
+    const data = new Uint8Array(32).fill(0)
+
+    data.set(cid.bytes.slice(-cid.multihash.size), 32 - cid.multihash.size)
+    meta.set(cid.bytes.slice(0, prefixLen))
+    if (lock) meta[31] |= dmap.FLAG_LOCK
+    meta[prefLenIndex] = prefixLen
+    return [meta, data]
+}
+
+const unpackCID = (metaStr, dataStr) => {
+    const meta = Buffer.from(metaStr.slice(2), 'hex')
+    const data = Buffer.from(dataStr.slice(2), 'hex')
+    const prefixLen = meta[prefLenIndex]
+    const specs = multiformats.CID.inspectBytes(meta.slice(0, prefixLen))
+    const hashLen = specs.digestSize
+    const cidBytes = new Uint8Array(prefixLen + hashLen)
+
+    cidBytes.set(meta.slice(0, prefixLen), 0)
+    cidBytes.set(data.slice(32 - hashLen), prefixLen)
+    const cid = multiformats.CID.decode(cidBytes)
+    return cid.toString()
+}
+
+const readCID = async (dmap, path) => {
+    const packed = await dmap.walk(dmap, path)
+    return unpackCID(packed.meta, packed.data)
+}
 
 const resolveCID = async (cid, targetDigest, nodeAddress) => {
     const verify = async bytes => {
@@ -120,7 +159,7 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
+            const cid = unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
             const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
