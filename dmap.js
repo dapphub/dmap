@@ -1,13 +1,10 @@
 const ebnf = require('ebnf')
-const ethers = require('ethers')
 
 const pack = require('./pack/dmap.json')
 const artifact = require('./pack/ipfs/Dmap.json')
 
 const dmap_utils = require("./utils/dmap_utils")
 
-const abi    = artifact.abi
-const dmap_i = new ethers.utils.Interface(abi)
 const dmap_address = pack.objects.dmap.address
 
 const fail =s=> { throw new Error(s) }
@@ -50,45 +47,24 @@ lib.get = async (dmap, slot) => {
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
-    const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
-    const res = dmap_i.decodeFunctionResult("get", resdata)
-    return res
+    return [meta, data]
 }
 
 lib.getByZoneAndName = async (dmap, zone, name) => {
-    // TODO: !DMFXYZ! Migrate this to a utils function that is not shitty
-    let params = '0x' + '00'.repeat(12);
-    if (zone.length == 0) {
-        params = params + '00'.repeat(20);
-    } else {
-        params = params + zone.slice(2); // assume has leading 0x, prob shouldn't do this
-    }
-    if (name.length == 0 || name == null) {
-        params = params + '00'.repeat(32);
-    } else if (typeof(name) == 'object') {
-        // if an object, create a buffer from data and encode as hex string
-        // note Buffer might be deprecated
-        params = params + new Buffer(name).toString('hex');
-    } else {
-        // if alredy a hex string, just drop the 0x
-        params = params + name.slice(2);
-    }
-    const slot = dmap_utils.keccak256(params)
+    const slot = dmap_utils.keccak256(dmap_utils.encodeZoneAndName(zone, name));
     return lib.get(dmap, slot)
 }
 
 lib.set = async (dmap, name, meta, data) => {
-    const calldata = dmap_i.encodeFunctionData("set", [name, meta, data])
+    const calldata = dmap_utils.encodeFunctionCallBytes32Args("set(bytes32,bytes32,bytes32)", [name, meta, data])
     return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
 }
 
-const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
-const slot_i = new ethers.utils.Interface(slotabi)
+// const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
+// const slot_i = new ethers.utils.Interface(slotabi)
 lib.slot = async (dmap, slot) => {
     const val = await dmap.provider.getStorageAt(dmap.address, slot)
-    const resdata = slot_i.encodeFunctionResult("slot", [val])
-    const res = slot_i.decodeFunctionResult("slot", resdata)
-    return res[0]
+    return val
 }
 
 
