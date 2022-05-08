@@ -1,4 +1,3 @@
-const { nameprep } = require('ethers/lib/utils');
 const kek = require('js-sha3')
 
 module.exports = {
@@ -15,10 +14,10 @@ const HexCharacters = "0123456789abcdef";
 function hexZeroPad(value, length) {
     if (typeof(value) !== "string") {
         value = hexlify(value);
-    } 
+    }
 
     if (value.length > 2 * length + 2) {
-       throw "Value too big"
+        throw "Value too big"
     }
 
     while (value.length < 2 * length + 2) {
@@ -38,7 +37,9 @@ function hexlify(value) {
         }
 
         if (hex.length) {
-            if (hex.length % 2) { hex = "0" + hex; }
+            if (hex.length % 2) {
+                hex = "0" + hex;
+            }
             return "0x" + hex;
         }
 
@@ -47,20 +48,22 @@ function hexlify(value) {
 
     if (typeof(value) === "bigint") {
         value = value.toString(16);
-        if (value.length % 2) { return ("0x0" + value); }
+        if (value.length % 2) {
+            return ("0x0" + value);
+        }
         return "0x" + value;
     }
 
     if (typeof(value) === 'string') {
-        return new Buffer(value).toString('hex');
+        return Buffer.from(value).toString('hex');
     }
 }
 
-// Assumes value is a hex encoded string for now
-function keccak256(value, to_string=false) {
+// Assumes value is a hex encoded string for now, or already a byte array
+function keccak256(value) {
 
     if (typeof(value) == "string") {
-    return "0x" + kek.keccak256(new Uint8Array(_toBytes(value)));
+        return "0x" + kek.keccak256(new Uint8Array(_toBytes(value)));
     }
     // add back in prefix and return as unsigned 1byte int array
     return "0x" + kek.keccak256(value);
@@ -89,7 +92,8 @@ function encodeZoneAndName(zone, name) {
 function encodeFunctionCallBytes32Args(signature, args) {
     const signature_as_buffer = Buffer.from(signature)
     // calculate function selector as first 4 bytes of hashed signature
-    const selector = keccak256(signature_as_buffer).slice(0,10).toString('hex')
+    // keccak256 returns a string, so we take the first 10 characters
+    const selector = keccak256(signature_as_buffer).slice(0, 10)
     let calldata = selector
     for (i = 0; i < args.length; ++i) {
         calldata += Buffer.from(_toBytes(args[i])).toString('hex');
@@ -98,17 +102,17 @@ function encodeFunctionCallBytes32Args(signature, args) {
 
 }
 
-function _toBytes(value){
+function _toBytes(value) {
     if (typeof(value) == 'string') {
-        if (value.substring(0,2) == "0x") {
-        value = value.substring(2)
-     }
+        if (value.substring(0, 2) == "0x") {
+            value = value.substring(2)
+        }
         // Need to create an array of bytes from hex string
         // just grab 2 4-byte hex symbols at a time and parse them as base16
         const bytes_array = []
-        for (let i = 0; i < value.length; i+= 2) {
-            bytes_array.push(parseInt(value.substring(i, i+2), 16));
-            }
+        for (let i = 0; i < value.length; i += 2) {
+            bytes_array.push(parseInt(value.substring(i, i + 2), 16));
+        }
         return bytes_array
     }
     // otherwise just return the object
