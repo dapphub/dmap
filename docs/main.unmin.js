@@ -233,15 +233,10 @@ function _toBytes(value) {
 /***/ }),
 
 /***/ 2220:
-/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-"use strict";
-/* harmony import */ var multiformats_cid__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3036);
-/* harmony import */ var multiformats_hashes_sha2__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2671);
 /* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
 const multiformats = __webpack_require__(7534)
-;
-
 const IPFS = __webpack_require__(2708)
 
 const dmap = __webpack_require__(2971)
@@ -256,10 +251,11 @@ const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://ipfs.io/ipfs/',
                   'https://hub.textile.io/ipfs/']
 
-
 const prefLenIndex = 30
 
-const prepareCID = (cidStr, lock) => {
+module.exports = utils = {}
+
+utils.prepareCID = (cidStr, lock) => {
     const cid = multiformats.CID.parse(cidStr)
     need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
     const prefixLen = cid.byteLength - cid.multihash.size
@@ -273,7 +269,7 @@ const prepareCID = (cidStr, lock) => {
     return [meta, data]
 }
 
-const unpackCID = (metaStr, dataStr) => {
+utils.unpackCID = (metaStr, dataStr) => {
     const meta = Buffer.from(metaStr.slice(2), 'hex')
     const data = Buffer.from(dataStr.slice(2), 'hex')
     const prefixLen = meta[prefLenIndex]
@@ -287,14 +283,14 @@ const unpackCID = (metaStr, dataStr) => {
     return cid.toString()
 }
 
-const readCID = async (dmap, path) => {
-    const packed = await dmap.walk(dmap, path)
-    return unpackCID(packed.meta, packed.data)
+utils.readCID = async (contract, path) => {
+    const packed = await dmap.walk(contract, path)
+    return utils.unpackCID(packed.meta, packed.data)
 }
 
 const resolveCID = async (cid, targetDigest, nodeAddress) => {
     const verify = async bytes => {
-        const hash = await multiformats_hashes_sha2__WEBPACK_IMPORTED_MODULE_1__.sha256.digest(bytes)
+        const hash = await multiformats.hashes.sha256.digest(bytes)
         const resultDigest = JSON.stringify(hash.digest)
         return targetDigest === resultDigest
     }
@@ -400,9 +396,9 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = unpackCID(walkResult.meta, walkResult.data)
+            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
-            const targetDigest = JSON.stringify(multiformats_cid__WEBPACK_IMPORTED_MODULE_0__.CID.parse(cid).multihash.digest)
+            const targetDigest = JSON.stringify(multiformats.CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
             let utf8decoder = new TextDecoder()
             line(utf8decoder.decode(resolved))

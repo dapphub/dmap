@@ -1,6 +1,4 @@
 const multiformats = require('multiformats')
-import { CID } from 'multiformats/cid'
-import { sha256 } from 'multiformats/hashes/sha2'
 const IPFS = require('ipfs-http-client')
 
 const dmap = require('../dmap.js')
@@ -15,10 +13,11 @@ const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://ipfs.io/ipfs/',
                   'https://hub.textile.io/ipfs/']
 
-
 const prefLenIndex = 30
 
-const prepareCID = (cidStr, lock) => {
+module.exports = utils = {}
+
+utils.prepareCID = (cidStr, lock) => {
     const cid = multiformats.CID.parse(cidStr)
     need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
     const prefixLen = cid.byteLength - cid.multihash.size
@@ -32,7 +31,7 @@ const prepareCID = (cidStr, lock) => {
     return [meta, data]
 }
 
-const unpackCID = (metaStr, dataStr) => {
+utils.unpackCID = (metaStr, dataStr) => {
     const meta = Buffer.from(metaStr.slice(2), 'hex')
     const data = Buffer.from(dataStr.slice(2), 'hex')
     const prefixLen = meta[prefLenIndex]
@@ -46,14 +45,14 @@ const unpackCID = (metaStr, dataStr) => {
     return cid.toString()
 }
 
-const readCID = async (dmap, path) => {
-    const packed = await dmap.walk(dmap, path)
-    return unpackCID(packed.meta, packed.data)
+utils.readCID = async (contract, path) => {
+    const packed = await dmap.walk(contract, path)
+    return utils.unpackCID(packed.meta, packed.data)
 }
 
 const resolveCID = async (cid, targetDigest, nodeAddress) => {
     const verify = async bytes => {
-        const hash = await sha256.digest(bytes)
+        const hash = await multiformats.hashes.sha256.digest(bytes)
         const resultDigest = JSON.stringify(hash.digest)
         return targetDigest === resultDigest
     }
@@ -159,9 +158,9 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = unpackCID(walkResult.meta, walkResult.data)
+            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
-            const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
+            const targetDigest = JSON.stringify(multiformats.CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
             let utf8decoder = new TextDecoder()
             line(utf8decoder.decode(resolved))
