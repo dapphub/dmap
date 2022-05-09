@@ -1,14 +1,14 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 2971:
+/***/ 971:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 /* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
 const kek = __webpack_require__(338)
-const ebnf = __webpack_require__(1425)
+const ebnf = __webpack_require__(425)
 
-const pack = __webpack_require__(3789)
+const pack = __webpack_require__(604)
 const artifact = __webpack_require__(791)
 
 const dmap_address = pack.objects.dmap.address
@@ -232,31 +232,31 @@ function _toBytes(value) {
 
 /***/ }),
 
-/***/ 2220:
+/***/ 220:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 /* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
-const multiformats = __webpack_require__(7534)
-const IPFS = __webpack_require__(2708)
+const { CID } = __webpack_require__(598)
+const { sha256 } = __webpack_require__ (865)
 
-const dmap = __webpack_require__(2971)
+const dmap = __webpack_require__(971)
 
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
 
-const gateways = ['https://ipfs.fleek.co/ipfs/',
-                  'https://gateway.pinata.cloud/ipfs/',
-                  'https://cloudflare-ipfs.com/ipfs/',
-                  'https://storry.tv/ipfs/',
-                  'https://ipfs.io/ipfs/',
-                  'https://hub.textile.io/ipfs/']
+const gateways = ['https://iapfs.fleek.co/ipfs/',
+                  'https://gaateway.pinata.cloud/ipfs/',
+                  'https://caloudflare-ipfs.com/ipfs/',
+                  'https://satorry.tv/ipfs/',
+                  'https://iapfs.io/ipfs/',
+                  'https://haub.textile.io/ipfs/']
 
 const prefLenIndex = 30
 
 module.exports = utils = {}
 
 utils.prepareCID = (cidStr, lock) => {
-    const cid = multiformats.CID.parse(cidStr)
+    const cid = CID.parse(cidStr)
     need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
     const prefixLen = cid.byteLength - cid.multihash.size
     const meta = new Uint8Array(32).fill(0)
@@ -273,13 +273,13 @@ utils.unpackCID = (metaStr, dataStr) => {
     const meta = Buffer.from(metaStr.slice(2), 'hex')
     const data = Buffer.from(dataStr.slice(2), 'hex')
     const prefixLen = meta[prefLenIndex]
-    const specs = multiformats.CID.inspectBytes(meta.slice(0, prefixLen))
+    const specs = CID.inspectBytes(meta.slice(0, prefixLen))
     const hashLen = specs.digestSize
     const cidBytes = new Uint8Array(prefixLen + hashLen)
 
     cidBytes.set(meta.slice(0, prefixLen), 0)
     cidBytes.set(data.slice(32 - hashLen), prefixLen)
-    const cid = multiformats.CID.decode(cidBytes)
+    const cid = CID.decode(cidBytes)
     return cid.toString()
 }
 
@@ -290,15 +290,18 @@ utils.readCID = async (contract, path) => {
 
 const resolveCID = async (cid, targetDigest, nodeAddress) => {
     const verify = async bytes => {
-        const hash = await multiformats.hashes.sha256.digest(bytes)
+        const hash = await sha256.digest(bytes)
         const resultDigest = JSON.stringify(hash.digest)
         return targetDigest === resultDigest
     }
-    const node = IPFS.create(nodeAddress)
-    const catResponse = await node.cat(cid)
+
+    const url = nodeAddress + '/api/v0/cat?arg=' + cid
+    const response = await fetch(url, { method: 'POST' })
+    const catResponse = response.body.getReader();
+
     // initially handle only single chunk verification and sha256
     try {
-        const chunk = await catResponse.next()
+        const chunk = await catResponse.read()
         if(await verify(chunk.value)) {
             return chunk.value
         }
@@ -398,7 +401,7 @@ window.onload = async() => {
             // display ipfs content from a CID if we can, otherwise display as text
             const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
-            const targetDigest = JSON.stringify(multiformats.CID.parse(cid).multihash.digest)
+            const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
             let utf8decoder = new TextDecoder()
             line(utf8decoder.decode(resolved))
@@ -424,25 +427,11 @@ window.onload = async() => {
 
 /***/ }),
 
-/***/ 7868:
-/***/ (() => {
-
-/* (ignored) */
-
-/***/ }),
-
-/***/ 3034:
-/***/ (() => {
-
-/* (ignored) */
-
-/***/ }),
-
-/***/ 3789:
+/***/ 604:
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"format":"dpack-1","network":"ethereum","types":{"Dmap":{"typename":"Dmap","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}}},"objects":{"dmap":{"objectname":"dmap","typename":"Dmap","address":"0x90949c9937A11BA943C7A72C3FA073a37E3FdD96","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}}}}');
+module.exports = JSON.parse('{"format":"dpack-1","network":"goerli","types":{"Dmap":{"typename":"Dmap","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}},"RootZone":{"typename":"RootZone","artifact":{"/":"bafkreifpdomogczabwueeedk6vqo7j53i2kptqpsewy2u7iswlh52rjxge"}},"FreeZone":{"typename":"FreeZone","artifact":{"/":"bafkreihekvimgm36smqur6uqucwdmv2bva4fmoizao7vmz5yoalpk6u4cq"}}},"objects":{"dmap":{"objectname":"dmap","typename":"Dmap","address":"0x523dEd1f500767A7f9a48A158c9D3D4754410992","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}},"rootzone":{"objectname":"rootzone","typename":"RootZone","address":"0xbB3104bb84954D2bd1010b86798B8091CBd2F771","artifact":{"/":"bafkreifpdomogczabwueeedk6vqo7j53i2kptqpsewy2u7iswlh52rjxge"}},"freezone":{"objectname":"freezone","typename":"FreeZone","address":"0x267aD7FF012b6aB82d28E446e58e4Cb8A3E0d5A0","artifact":{"/":"bafkreihekvimgm36smqur6uqucwdmv2bva4fmoizao7vmz5yoalpk6u4cq"}}}}');
 
 /***/ }),
 
@@ -474,7 +463,7 @@ module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -518,36 +507,6 @@ module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap
 /******/ 				}
 /******/ 			}
 /******/ 			return result;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/create fake namespace object */
-/******/ 	(() => {
-/******/ 		var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
-/******/ 		var leafPrototypes;
-/******/ 		// create a fake namespace object
-/******/ 		// mode & 1: value is a module id, require it
-/******/ 		// mode & 2: merge all properties of value into the ns
-/******/ 		// mode & 4: return value when already ns object
-/******/ 		// mode & 16: return value when it's Promise-like
-/******/ 		// mode & 8|1: behave like require
-/******/ 		__webpack_require__.t = function(value, mode) {
-/******/ 			if(mode & 1) value = this(value);
-/******/ 			if(mode & 8) return value;
-/******/ 			if(typeof value === 'object' && value) {
-/******/ 				if((mode & 4) && value.__esModule) return value;
-/******/ 				if((mode & 16) && typeof value.then === 'function') return value;
-/******/ 			}
-/******/ 			var ns = Object.create(null);
-/******/ 			__webpack_require__.r(ns);
-/******/ 			var def = {};
-/******/ 			leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
-/******/ 			for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
-/******/ 				Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
-/******/ 			}
-/******/ 			def['default'] = () => (value);
-/******/ 			__webpack_require__.d(ns, def);
-/******/ 			return ns;
 /******/ 		};
 /******/ 	})();
 /******/ 	
@@ -649,7 +608,7 @@ module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [697], () => (__webpack_require__(2220)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [697], () => (__webpack_require__(220)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

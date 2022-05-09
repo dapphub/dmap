@@ -1,5 +1,5 @@
-const multiformats = require('multiformats')
-const IPFS = require('ipfs-http-client')
+const { CID } = require('multiformats/cid')
+const { sha256 } = require ('multiformats/hashes/sha2')
 
 const dmap = require('../dmap.js')
 
@@ -18,7 +18,7 @@ const prefLenIndex = 30
 module.exports = utils = {}
 
 utils.prepareCID = (cidStr, lock) => {
-    const cid = multiformats.CID.parse(cidStr)
+    const cid = CID.parse(cidStr)
     need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
     const prefixLen = cid.byteLength - cid.multihash.size
     const meta = new Uint8Array(32).fill(0)
@@ -35,13 +35,13 @@ utils.unpackCID = (metaStr, dataStr) => {
     const meta = Buffer.from(metaStr.slice(2), 'hex')
     const data = Buffer.from(dataStr.slice(2), 'hex')
     const prefixLen = meta[prefLenIndex]
-    const specs = multiformats.CID.inspectBytes(meta.slice(0, prefixLen))
+    const specs = CID.inspectBytes(meta.slice(0, prefixLen))
     const hashLen = specs.digestSize
     const cidBytes = new Uint8Array(prefixLen + hashLen)
 
     cidBytes.set(meta.slice(0, prefixLen), 0)
     cidBytes.set(data.slice(32 - hashLen), prefixLen)
-    const cid = multiformats.CID.decode(cidBytes)
+    const cid = CID.decode(cidBytes)
     return cid.toString()
 }
 
@@ -52,15 +52,18 @@ utils.readCID = async (contract, path) => {
 
 const resolveCID = async (cid, targetDigest, nodeAddress) => {
     const verify = async bytes => {
-        const hash = await multiformats.hashes.sha256.digest(bytes)
+        const hash = await sha256.digest(bytes)
         const resultDigest = JSON.stringify(hash.digest)
         return targetDigest === resultDigest
     }
-    const node = IPFS.create(nodeAddress)
-    const catResponse = await node.cat(cid)
+
+    const url = nodeAddress + '/api/v0/cat?arg=' + cid
+    const response = await fetch(url, { method: 'POST' })
+    const catResponse = response.body.getReader();
+
     // initially handle only single chunk verification and sha256
     try {
-        const chunk = await catResponse.next()
+        const chunk = await catResponse.read()
         if(await verify(chunk.value)) {
             return chunk.value
         }
@@ -160,7 +163,7 @@ window.onload = async() => {
             // display ipfs content from a CID if we can, otherwise display as text
             const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
-            const targetDigest = JSON.stringify(multiformats.CID.parse(cid).multihash.digest)
+            const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
             let utf8decoder = new TextDecoder()
             line(utf8decoder.decode(resolved))
