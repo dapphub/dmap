@@ -8,7 +8,7 @@
 const kek = __webpack_require__(338)
 const ebnf = __webpack_require__(425)
 
-const pack = __webpack_require__(604)
+const pack = __webpack_require__(789)
 const artifact = __webpack_require__(791)
 
 const dmap_address = pack.objects.dmap.address
@@ -244,13 +244,13 @@ const dmap = __webpack_require__(971)
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
 
-const gateways = ['https://iapfs.fleek.co/ipfs/',
-                  'https://gaateway.pinata.cloud/ipfs/',
-                  'https://caloudflare-ipfs.com/ipfs/',
-                  'https://satorry.tv/ipfs/',
-                  'https://iapfs.io/ipfs/',
-                  'https://haub.textile.io/ipfs/']
-
+const gateways = ['https://ipfs.fleek.co/ipfs/',
+                  'https://gateway.pinata.cloud/ipfs/',
+                  'https://cloudflare-ipfs.com/ipfs/',
+                  'https://storry.tv/ipfs/',
+                  'https://ipfs.io/ipfs/',
+                  'https://hub.textile.io/ipfs/']
+const infuraURL = 'https://mainnet.infura.io/v3/c0a739d64257448f855847c6e3d173e1'
 const prefLenIndex = 30
 
 module.exports = utils = {}
@@ -352,16 +352,26 @@ const windowGetStorage = async (address, slot) => {
     return await window.ethereum.request({ method: 'eth_getStorageAt', params: [address, slot, block] });
 }
 
-const getFacade = async (url) => {
-    const chainId = await makeRPC(url, "eth_chainId", [])
-    let storageFunction = windowGetStorage
-    if (chainId == '0x1') {
-        storageFunction = RPCGetStorage.bind(null, url)
+const getFacade = async (customURL) => {
+    let storageFunction = null, description = ''
+
+    if (await makeRPC(customURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, customURL)
+        description = 'custom node'
+    } else if (typeof window.ethereum !== 'undefined' &&
+               await window.ethereum.request({ method: 'eth_chainId',  params: [] }) == '0x1') {
+        storageFunction = windowGetStorage
+        description = 'window.ethereum'
+    } else if (await makeRPC(infuraURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, infuraURL)
+        description = 'infura'
+    } else {
+        throw 'no ethereum connection'
     }
-    return {
-        provider: { getStorageAt:storageFunction },
-        address: dmap.address
-    }
+
+    return [{ provider: { getStorageAt:storageFunction },
+              address: dmap.address
+            }, description]
 }
 
 window.onload = async() => {
@@ -373,11 +383,12 @@ window.onload = async() => {
         if (dpath.length && dpath[0] != ':') {
             dpath = ':' + dpath
         }
+        const [dmapFacade, description] = await getFacade($('#ethNode').value)
+
         line('')
-        line(`WALK  ${dpath}`)
+        line(`WALK  ${dpath} (using ${description} for eth connection)`)
         line('')
 
-        const dmapFacade = await getFacade($('#ethNode').value)
         let walkResult
         try {
             walkResult = await dmap.walk2(dmapFacade, dpath)
@@ -427,11 +438,11 @@ window.onload = async() => {
 
 /***/ }),
 
-/***/ 604:
+/***/ 789:
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"format":"dpack-1","network":"goerli","types":{"Dmap":{"typename":"Dmap","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}},"RootZone":{"typename":"RootZone","artifact":{"/":"bafkreifpdomogczabwueeedk6vqo7j53i2kptqpsewy2u7iswlh52rjxge"}},"FreeZone":{"typename":"FreeZone","artifact":{"/":"bafkreihekvimgm36smqur6uqucwdmv2bva4fmoizao7vmz5yoalpk6u4cq"}}},"objects":{"dmap":{"objectname":"dmap","typename":"Dmap","address":"0x523dEd1f500767A7f9a48A158c9D3D4754410992","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}},"rootzone":{"objectname":"rootzone","typename":"RootZone","address":"0xbB3104bb84954D2bd1010b86798B8091CBd2F771","artifact":{"/":"bafkreifpdomogczabwueeedk6vqo7j53i2kptqpsewy2u7iswlh52rjxge"}},"freezone":{"objectname":"freezone","typename":"FreeZone","address":"0x267aD7FF012b6aB82d28E446e58e4Cb8A3E0d5A0","artifact":{"/":"bafkreihekvimgm36smqur6uqucwdmv2bva4fmoizao7vmz5yoalpk6u4cq"}}}}');
+module.exports = JSON.parse('{"format":"dpack-1","network":"ethereum","types":{"Dmap":{"typename":"Dmap","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}}},"objects":{"dmap":{"objectname":"dmap","typename":"Dmap","address":"0x90949c9937A11BA943C7A72C3FA073a37E3FdD96","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}}}}');
 
 /***/ }),
 

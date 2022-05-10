@@ -12,7 +12,7 @@ const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://storry.tv/ipfs/',
                   'https://ipfs.io/ipfs/',
                   'https://hub.textile.io/ipfs/']
-
+const infuraURL = 'https://mainnet.infura.io/v3/c0a739d64257448f855847c6e3d173e1'
 const prefLenIndex = 30
 
 module.exports = utils = {}
@@ -114,16 +114,26 @@ const windowGetStorage = async (address, slot) => {
     return await window.ethereum.request({ method: 'eth_getStorageAt', params: [address, slot, block] });
 }
 
-const getFacade = async (url) => {
-    const chainId = await makeRPC(url, "eth_chainId", [])
-    let storageFunction = windowGetStorage
-    if (chainId == '0x1') {
-        storageFunction = RPCGetStorage.bind(null, url)
+const getFacade = async (customURL) => {
+    let storageFunction = null, description = ''
+
+    if (await makeRPC(customURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, customURL)
+        description = 'custom node'
+    } else if (typeof window.ethereum !== 'undefined' &&
+               await window.ethereum.request({ method: 'eth_chainId',  params: [] }) == '0x1') {
+        storageFunction = windowGetStorage
+        description = 'window.ethereum'
+    } else if (await makeRPC(infuraURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, infuraURL)
+        description = 'infura'
+    } else {
+        throw 'no ethereum connection'
     }
-    return {
-        provider: { getStorageAt:storageFunction },
-        address: dmap.address
-    }
+
+    return [{ provider: { getStorageAt:storageFunction },
+              address: dmap.address
+            }, description]
 }
 
 window.onload = async() => {
@@ -135,11 +145,12 @@ window.onload = async() => {
         if (dpath.length && dpath[0] != ':') {
             dpath = ':' + dpath
         }
+        const [dmapFacade, description] = await getFacade($('#ethNode').value)
+
         line('')
-        line(`WALK  ${dpath}`)
+        line(`WALK  ${dpath} (using ${description} for eth connection)`)
         line('')
 
-        const dmapFacade = await getFacade($('#ethNode').value)
         let walkResult
         try {
             walkResult = await dmap.walk2(dmapFacade, dpath)
