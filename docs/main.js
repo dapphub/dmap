@@ -32,8 +32,8 @@ utils.prepareCID = (cidStr, lock) => {
 }
 
 utils.unpackCID = (metaStr, dataStr) => {
-    const meta = Buffer.from(metaStr.slice(2), 'hex')
-    const data = Buffer.from(dataStr.slice(2), 'hex')
+    const meta = dmap._hexToArrayBuffer(metaStr)
+    const data = dmap._hexToArrayBuffer(dataStr)
     const prefixLen = meta[prefLenIndex]
     const specs = CID.inspectBytes(meta.slice(0, prefixLen))
     const hashLen = specs.digestSize
@@ -181,7 +181,7 @@ window.onload = async() => {
         }
         catch(e){
             let utf8decoder = new TextDecoder()
-            const bytes = Buffer.from(walkResult.data.slice(2), 'hex')
+            const bytes = dmap._hexToArrayBuffer(walkResult.data)
             for (var i = 0; i < bytes.length; i++) {
                 if (bytes[bytes.length -1 - i] !== 0) {
                     break

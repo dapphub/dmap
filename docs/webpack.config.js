@@ -10,11 +10,6 @@ module.exports = {
         path: path.resolve(__dirname),
         filename: '[name].unmin.js',
     },
-    plugins: [
-        new webpack.ProvidePlugin({
-            Buffer: ['buffer', 'Buffer'],
-        })
-    ],
     optimization: {
         minimize: false,
         splitChunks: {

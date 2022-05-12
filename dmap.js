@@ -76,11 +76,11 @@ lib.walk = async (dmap, path) => {
         if (zone === '0x' + '00'.repeat(20)) {
             fail(`zero register`)
         }
-        const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length);
+        const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
         [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
-            need((Buffer.from(meta.slice(2), 'hex')[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            need((lib._hexToArrayBuffer(meta)[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
             ctx.locked = true
         }
         ctx.locked = step.locked
@@ -98,17 +98,29 @@ lib.walk2 = async (dmap, path) => {
         if (zone === '0x' + '00'.repeat(20)) {
             fail(`zero register`)
         }
-        const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length);
+        const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
         [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
         trace.push([meta,data])
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
-            need((Buffer.from(meta.slice(2), 'hex')[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            need((lib._hexToArrayBuffer(meta)[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
             ctx.locked = true
         }
         ctx.locked = step.locked
     }
     return trace
+}
+
+lib._hexToArrayBuffer = hex => {
+    const bytes = []
+    for (let c = 2; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.slice(c, c + 2), 16))
+    return new Uint8Array(bytes)
+}
+
+lib._strToHex = str => {
+    let codes =  str.split('').map(c => c.charCodeAt(0))
+    return codes.map(c => c.toString(16)).join('')
 }
 
 // GLOBAL TODO: !DMFXYZ! error and bounds checking for inputs
@@ -158,7 +170,7 @@ function hexlify(value) {
     }
 
     if (typeof(value) === 'string') {
-        return Buffer.from(value).toString('hex');
+        return lib._strToHex(value);
     }
 }
 
@@ -183,41 +195,28 @@ function encodeZoneAndName(zone, name) {
     if (name.length == 0 || name == null) {
         params = params + '00'.repeat(32);
     } else if (typeof(name) == 'object') {
-        // if an object, create a buffer from data and encode as hex string
-        params = params + Buffer.from(name).toString('hex');
+        params = params + name.toString('hex');
     } else {
-        // if alredy a hex string, just drop the 0x
+        // if already a hex string, just drop the 0x
         params = params + name.slice(2);
     }
     return params;
 }
 
 function encodeFunctionCallBytes32Args(signature, args) {
-    const signature_as_buffer = Buffer.from(signature)
     // calculate function selector as first 4 bytes of hashed signature
     // keccak256 returns a string, so we take the first 10 characters
-    const selector = keccak256(signature_as_buffer).slice(0, 10)
-    let calldata = selector
-    for (i = 0; i < args.length; ++i) {
-        calldata += Buffer.from(_toBytes(args[i])).toString('hex');
+    let data = keccak256(signature).slice(0, 10)
+    for (arg of args) {
+        typeof arg == 'object' ? data += arg.toString('hex') : data += arg.slice(2)
     }
-    return calldata;
+    return data;
 
 }
 
 function _toBytes(value) {
     if (typeof(value) == 'string') {
-        if (value.substring(0, 2) == "0x") {
-            value = value.substring(2)
-        }
-        // Need to create an array of bytes from hex string
-        // just grab 2 4-byte hex symbols at a time and parse them as base16
-        const bytes_array = []
-        for (let i = 0; i < value.length; i += 2) {
-            bytes_array.push(parseInt(value.substring(i, i + 2), 16));
-        }
-        return bytes_array
+        return lib._hexToArrayBuffer(value)
     }
-    // otherwise just return the object
     return value
 }
