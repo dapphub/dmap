@@ -7,7 +7,8 @@ const coder = ethers.utils.defaultAbiCoder
 const keccak256 = ethers.utils.keccak256
 const { b32, fail, revert, send, snapshot, want, mine } = require('minihat')
 const { bounds } = require('./bounds')
-const lib = require('../dmap.js')
+global.window = {}
+const utils = require('../docs/main')
 const {expectEvent, check_gas, testlib} = require("./utils/helpers");
 const constants = ethers.constants
 
@@ -132,31 +133,29 @@ describe('freezone', ()=>{
         await fail('LOCKED()', freezone.set, name, lock, data1)
     })
 
-    /*
     it('store CID variants', async ()=>{
         const cids = [cidDefault, cidSHA3, cidV0, cidBlake2b160]
         for (const [index, cid] of cids.entries()) {
             const name = b32(index.toString())
             await send(freezone.take, name)
-            const [meta, data] = lib.prepareCID(cid, false)
+            const [meta, data] = utils.prepareCID(cid, false)
             await send(freezone.set, name, meta, data)
 
-            const[lock_meta, lock_data] = lib.prepareCID(cid, true)
+            const[lock_meta, lock_data] = utils.prepareCID(cid, true)
             await send(freezone.set, name, lock_meta, lock_data)
             await fail('LOCK', freezone.set, name, lock_meta, lock_data)
 
             const slot = keccak256(coder.encode(["address", "bytes32"], [freezone.address, name]))
             const [read_meta, read_data] = await testlib.get(dmap, slot)
-            const res_cid = lib.unpackCID(read_meta, read_data)
-            const helper_cid = await lib.readCID(dmap, 'free:' + index.toString())
+            const res_cid = utils.unpackCID(read_meta, read_data)
+            const helper_cid = await utils.readCID(dmap, 'free:' + index.toString())
             want(cid).eq(res_cid)
             want(cid).eq(helper_cid)
         }
     })
-     */
 
     it('store 512 CID', async ()=>{
-        assert.throws(() => { lib.prepareCID(cid512, false) }, /Hash exceeds 256 bits/);
+        assert.throws(() => { utils.prepareCID(cid512, false) }, /Hash exceeds 256 bits/);
     })
 
     describe('Give event', () => {

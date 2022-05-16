@@ -5,36 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>dmap</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-<style>
-  * {
-      font-family: monospace;
-  }
-  #result {
-      white-space: pre;
-  }
-  #localNode {
-      width: 210px;
-  }
-</style>
+    <style>
+      body {
+          font-family: monospace;
+          max-width: 78ch;
+      }
+    </style>
+    <script defer src="dependencies.unmin.js"></script>
+    <script defer src="main.unmin.js"></script>
 </head>
 <body>
+
 <h1>dmap</h1>
 
+<p>
+  This page is designed to be saved (as in "File > Save") and be usable even if DNS or this web host go offline or are compromised.
+</p>
+<p>
+  You can also add it to ipfs, which is an easy way to monitor changes:
+</p>
+<pre>
+    wget -r dmap.sh && ipfs add dmap.sh -r --pin --cid-version=1
+</pre>
+<p>
+  Your local ETH thin client and IPFS client are fundamental to securing your software supply chain.
+</p>
+<p>
+  Do not depend on this domain name to resolve to the correct dmap interface.
+</p>
+<p>
+  Make sure you are bootstrapped and can get oriented <a href="https://gateway.pinata.cloud/ipfs/QmabsDLuyDbbfJ9nRo9NUY6WTchNNWCxjfZZ8PVBdkEgva">even if DNS goes offline</a>.
+</p>
+
+<p>
+The dmap address is <b>0x90949c9937A11BA943C7A72C3FA073a37E3FdD96</b> .
+</p>
+
+<h2>configure</h2>
 <div>
-    <label for="localNode">ipfs node</label>
-    <input type="text" id="localNode" name="localNode" value="/ip4/127.0.0.1/tcp/5001" title="optional">
+  <label for="ethNode">eth provider</label>
+  <input type="text" id="ethNode" name="ethNode" value="http://127.0.0.1:8545" style='width:60ch'
+         title="optional, falls back to window.ethereum (metamask)">
 </div>
 
 <div>
+    <label for="ipfsNode">ipfs rpc url</label>
+    <input type="text" id="ipfsNode" name="ipfsNode" value="http://127.0.0.1:5001" style='width:60ch'
+           title="optional, falls back to IPFS gateways">
+</div>
+</br>
+
+<h2>resolve a dpath</h2>
+
+<div>
+    <input type="button" id="btnGet" value="walk">
     <label for="dpath">dmap://</label>
-    <input type="text" id="dpath" name="dpath" value="free.weth">
-    <input type="button" id="btnGet" value="Get">
+    <input type="text" id="dpath" name="dpath" value=":free.bird" style='width:58ch'>
 </div>
 
-<div id="result"></div>
+<pre id="result"></pre>
 
-<script defer src="dependencies.unmin.js"></script>
-<script defer src="main.unmin.js"></script>
 
 <noscript>You need to enable JavaScript to use dmap.</noscript>
 </body>

@@ -1,34 +1,26 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 2971:
+/***/ 971:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-/* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
-const ebnf = __webpack_require__(1425)
-const ethers = __webpack_require__(5341)
-const multiformats = __webpack_require__(7534)
+const kek = __webpack_require__(338)
+const ebnf = __webpack_require__(425)
 
-const pack = __webpack_require__(1471)
-const artifact = __webpack_require__(6960)
+const pack = __webpack_require__(789)
+const artifact = __webpack_require__(791)
 
-const abi    = artifact.abi
-const dmap_i = new ethers.utils.Interface(abi)
 const dmap_address = pack.objects.dmap.address
 
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
-
-const coder = ethers.utils.defaultAbiCoder
-const keccak256 = ethers.utils.keccak256
-const prefLenIndex = 2
 
 module.exports = lib = {}
 
 lib.address = dmap_address
 lib.artifact = artifact
 
-lib.FLAG_LOCK = 1 << 7
+lib.FLAG_LOCK = 1
 lib.grammar = `
 dpath ::= (step)* EOF
 step  ::= (rune) (name)
@@ -50,8 +42,8 @@ lib.parse =s=> {
 }
 
 lib.get = async (dmap, slot) => {
-    const nextslot = ethers.utils.hexZeroPad(
-        ethers.BigNumber.from(slot).add(1).toHexString(), 32
+    const nextslot = hexZeroPad(
+        hexlify(BigInt(slot) + BigInt(1)), 32
     )
     let meta, data
     await Promise.all(
@@ -60,28 +52,24 @@ lib.get = async (dmap, slot) => {
             dmap.provider.getStorageAt(dmap.address, nextslot)
         ]
     ).then(res => [meta, data] = res)
-    const resdata = dmap_i.encodeFunctionResult("get", [meta, data])
-    const res = dmap_i.decodeFunctionResult("get", resdata)
-    return res
+    return [meta, data]
 }
 
 lib.getByZoneAndName = async (dmap, zone, name) => {
-    const slot = keccak256(coder.encode(["address", "bytes32"], [zone, name]))
+    const slot = keccak256(encodeZoneAndName(zone, name));
     return lib.get(dmap, slot)
 }
 
 lib.set = async (dmap, name, meta, data) => {
-    const calldata = dmap_i.encodeFunctionData("set", [name, meta, data])
+    const calldata = encodeFunctionCallBytes32Args("set(bytes32,bytes32,bytes32)", [name, meta, data])
     return dmap.signer.sendTransaction({to: dmap.address, data: calldata})
 }
 
-const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
-const slot_i = new ethers.utils.Interface(slotabi)
+// const slotabi = ["function slot(bytes32 s) external view returns (bytes32)"]
+// const slot_i = new ethers.utils.Interface(slotabi)
 lib.slot = async (dmap, slot) => {
     const val = await dmap.provider.getStorageAt(dmap.address, slot)
-    const resdata = slot_i.encodeFunctionResult("slot", [val])
-    const res = slot_i.decodeFunctionResult("slot", resdata)
-    return res[0]
+    return val
 }
 
 
@@ -94,11 +82,11 @@ lib.walk = async (dmap, path) => {
         if (zone === '0x' + '00'.repeat(20)) {
             fail(`zero register`)
         }
-        const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length);
+        const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
         [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
-            need((Buffer.from(meta.slice(2), 'hex')[0] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            need((lib._hexToArrayBuffer(meta)[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
             ctx.locked = true
         }
         ctx.locked = step.locked
@@ -106,58 +94,152 @@ lib.walk = async (dmap, path) => {
     return {meta, data}
 }
 
-lib.prepareCID = (cidStr, lock) => {
-    const cid = multiformats.CID.parse(cidStr)
-    need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
-    const prefixLen = cid.byteLength - cid.multihash.size
-    const meta = new Uint8Array(32).fill(0)
-    const data = new Uint8Array(32).fill(0)
-
-    data.set(cid.bytes.slice(-cid.multihash.size), 32 - cid.multihash.size)
-    meta.set(cid.bytes.slice(0, prefixLen), 32 - prefixLen)
-    if (lock) meta[0] |= lib.FLAG_LOCK
-    meta[prefLenIndex] = prefixLen
-    return [meta, data]
+lib.walk2 = async (dmap, path) => {
+    if ( path.length > 0 && ![':', '.'].includes(path.charAt(0))) path = ':' + path
+    let [meta, data] = await lib.get(dmap, '0x' + '00'.repeat(32))
+    let ctx = {locked: path.charAt(0) === ':'}
+    const trace = [[meta,data]]
+    for (const step of lib.parse(path)) {
+        zone = data.slice(0, 21 * 2)
+        if (zone === '0x' + '00'.repeat(20)) {
+            fail(`zero register`)
+        }
+        const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
+        [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
+        trace.push([meta,data])
+        if (step.locked) {
+            need(ctx.locked, `Encountered ':' in unlocked subpath`)
+            need((lib._hexToArrayBuffer(meta)[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            ctx.locked = true
+        }
+        ctx.locked = step.locked
+    }
+    return trace
 }
 
-lib.unpackCID = (metaStr, dataStr) => {
-    const meta = Buffer.from(metaStr.slice(2), 'hex')
-    const data = Buffer.from(dataStr.slice(2), 'hex')
-    const prefixLen = meta[prefLenIndex]
-    const specs = multiformats.CID.inspectBytes(meta.slice(-prefixLen))
-    const hashLen = specs.digestSize
-    const cidBytes = new Uint8Array(prefixLen + hashLen)
-
-    cidBytes.set(meta.slice(-prefixLen), 0)
-    cidBytes.set(data.slice(32 - hashLen), prefixLen)
-    const cid = multiformats.CID.decode(cidBytes)
-    return cid.toString()
+lib._hexToArrayBuffer = hex => {
+    const bytes = []
+    for (let c = 2; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.slice(c, c + 2), 16))
+    return new Uint8Array(bytes)
 }
 
-lib.readCID = async (dmap, path) => {
-    const packed = await lib.walk(dmap, path)
-    return lib.unpackCID(packed.meta, packed.data)
+lib._strToHex = str => {
+    let codes =  str.split('').map(c => c.charCodeAt(0))
+    return codes.map(c => c.toString(16)).join('')
+}
+
+// GLOBAL TODO: !DMFXYZ! error and bounds checking for inputs
+const HexCharacters = "0123456789abcdef";
+
+function hexZeroPad(value, length) {
+    if (typeof(value) !== "string") {
+        value = hexlify(value);
+    }
+
+    if (value.length > 2 * length + 2) {
+        throw "Value too big"
+    }
+
+    while (value.length < 2 * length + 2) {
+        value = "0x0" + value.substring(2);
+    }
+
+    return value;
+}
+
+function hexlify(value) {
+
+    if (typeof(value) === "number") {
+        let hex = "";
+        while (value) {
+            hex = HexCharacters[value & 0xf] + hex;
+            value = Math.floor(value / 16); // can bitshift instead
+        }
+
+        if (hex.length) {
+            if (hex.length % 2) {
+                hex = "0" + hex;
+            }
+            return "0x" + hex;
+        }
+
+        return "0x00";
+    }
+
+    if (typeof(value) === "bigint") {
+        value = value.toString(16);
+        if (value.length % 2) {
+            return ("0x0" + value);
+        }
+        return "0x" + value;
+    }
+
+    if (typeof(value) === 'string') {
+        return lib._strToHex(value);
+    }
+}
+
+// Assumes value is a hex encoded string for now, or already a byte array
+function keccak256(value) {
+
+    if (typeof(value) == "string") {
+        return "0x" + kek.keccak256(new Uint8Array(_toBytes(value)));
+    }
+    // add back in prefix and return as unsigned 1byte int array
+    return "0x" + kek.keccak256(value);
+}
+
+function encodeZoneAndName(zone, name) {
+    // zone should be an address, start by zero-padding 12 bytes
+    let params = '0x' + '00'.repeat(12);
+    if (zone.length == 0) {
+        params = params + '00'.repeat(20);
+    } else {
+        params = params + zone.slice(2); // assume has leading 0x, prob shouldn't do this
+    }
+    if (name.length == 0 || name == null) {
+        params = params + '00'.repeat(32);
+    } else if (typeof(name) == 'object') {
+        params = params + name.toString('hex');
+    } else {
+        // if already a hex string, just drop the 0x
+        params = params + name.slice(2);
+    }
+    return params;
+}
+
+function encodeFunctionCallBytes32Args(signature, args) {
+    // calculate function selector as first 4 bytes of hashed signature
+    // keccak256 returns a string, so we take the first 10 characters
+    let data = keccak256(signature).slice(0, 10)
+    for (arg of args) {
+        typeof arg == 'object' ? data += arg.toString('hex') : data += arg.slice(2)
+    }
+    return data;
+
+}
+
+function _toBytes(value) {
+    if (typeof(value) == 'string') {
+        return lib._hexToArrayBuffer(value)
+    }
+    return value
 }
 
 
 /***/ }),
 
-/***/ 2220:
-/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
+/***/ 220:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-"use strict";
-/* harmony import */ var ethers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9450);
-/* harmony import */ var ethers__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3726);
-/* harmony import */ var multiformats_cid__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3036);
-/* harmony import */ var multiformats_hashes_sha2__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2671);
-/* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
+const { CID } = __webpack_require__(598)
+const { sha256 } = __webpack_require__ (865)
 
+const dmap = __webpack_require__(971)
 
-
-const dmap = __webpack_require__(2971)
-const dmapAddress = dmap.address
-const dmapArtifact = dmap.artifact
-const IPFS = __webpack_require__(2708)
+const fail =s=> { throw new Error(s) }
+const need =(b,s)=> b || fail(s)
 
 const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://gateway.pinata.cloud/ipfs/',
@@ -165,18 +247,58 @@ const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://storry.tv/ipfs/',
                   'https://ipfs.io/ipfs/',
                   'https://hub.textile.io/ipfs/']
+const infuraURL = 'https://mainnet.infura.io/v3/c0a739d64257448f855847c6e3d173e1'
+const prefLenIndex = 30
+
+module.exports = utils = {}
+
+utils.prepareCID = (cidStr, lock) => {
+    const cid = CID.parse(cidStr)
+    need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
+    const prefixLen = cid.byteLength - cid.multihash.size
+    const meta = new Uint8Array(32).fill(0)
+    const data = new Uint8Array(32).fill(0)
+
+    data.set(cid.bytes.slice(-cid.multihash.size), 32 - cid.multihash.size)
+    meta.set(cid.bytes.slice(0, prefixLen))
+    if (lock) meta[31] |= dmap.FLAG_LOCK
+    meta[prefLenIndex] = prefixLen
+    return [meta, data]
+}
+
+utils.unpackCID = (metaStr, dataStr) => {
+    const meta = dmap._hexToArrayBuffer(metaStr)
+    const data = dmap._hexToArrayBuffer(dataStr)
+    const prefixLen = meta[prefLenIndex]
+    const specs = CID.inspectBytes(meta.slice(0, prefixLen))
+    const hashLen = specs.digestSize
+    const cidBytes = new Uint8Array(prefixLen + hashLen)
+
+    cidBytes.set(meta.slice(0, prefixLen), 0)
+    cidBytes.set(data.slice(32 - hashLen), prefixLen)
+    const cid = CID.decode(cidBytes)
+    return cid.toString()
+}
+
+utils.readCID = async (contract, path) => {
+    const packed = await dmap.walk(contract, path)
+    return utils.unpackCID(packed.meta, packed.data)
+}
 
 const resolveCID = async (cid, targetDigest, nodeAddress) => {
     const verify = async bytes => {
-        const hash = await multiformats_hashes_sha2__WEBPACK_IMPORTED_MODULE_1__.sha256.digest(bytes)
+        const hash = await sha256.digest(bytes)
         const resultDigest = JSON.stringify(hash.digest)
         return targetDigest === resultDigest
     }
-    const node = IPFS.create(nodeAddress)
-    const catResponse = await node.cat(cid)
+
+    const url = nodeAddress + '/api/v0/cat?arg=' + cid
+    const response = await fetch(url, { method: 'POST' })
+    const catResponse = response.body.getReader();
+
     // initially handle only single chunk verification and sha256
     try {
-        const chunk = await catResponse.next()
+        const chunk = await catResponse.read()
         if(await verify(chunk.value)) {
             return chunk.value
         }
@@ -196,43 +318,104 @@ const resolveCID = async (cid, targetDigest, nodeAddress) => {
     throw 'unable to resolve cid'
 }
 
+const makeRPC = async (url, method, params) => {
+    let result = null
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                "jsonrpc": "2.0",
+                "method": method,
+                "params": params,
+                "id": 0
+            }),
+        });
+        ({result} = await response.json())
+    }
+    catch (err) {}
+    return result
+}
+
+const RPCGetStorage = async (url, address, slot) => {
+    const block = await makeRPC(url, "eth_blockNumber", [])
+    return await makeRPC(url, "eth_getStorageAt", [address, slot, block])
+}
+
+const windowGetStorage = async (address, slot) => {
+    const block  = await window.ethereum.request({ method: 'eth_blockNumber',  params: [] });
+    return await window.ethereum.request({ method: 'eth_getStorageAt', params: [address, slot, block] });
+}
+
+const getFacade = async (customURL) => {
+    let storageFunction = null, description = ''
+
+    if (await makeRPC(customURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, customURL)
+        description = 'custom node'
+    } else if (typeof window.ethereum !== 'undefined' &&
+               await window.ethereum.request({ method: 'eth_chainId',  params: [] }) == '0x1') {
+        storageFunction = windowGetStorage
+        description = 'window.ethereum'
+    } else if (await makeRPC(infuraURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, infuraURL)
+        description = 'infura'
+    } else {
+        throw 'no ethereum connection'
+    }
+
+    return [{ provider: { getStorageAt:storageFunction },
+              address: dmap.address
+            }, description]
+}
+
 window.onload = async() => {
     const $ = document.querySelector.bind(document);
     const line =s=> { $('#result').textContent += s + '\n' }
 
     $('#btnGet').addEventListener('click', async () =>  {
-        const dpath = $('#dpath').value;
-        line(`WALK ${dpath}`)
-        const provider = new ethers__WEBPACK_IMPORTED_MODULE_2__/* .Web3Provider */ .Q(window.ethereum)
-        const dmapContract = new ethers__WEBPACK_IMPORTED_MODULE_3__/* .Contract */ .CH(
-            dmapAddress,
-            dmapArtifact.abi,
-            provider
-        );
+        let dpath = $('#dpath').value;
+        if (dpath.length && dpath[0] != ':') {
+            dpath = ':' + dpath
+        }
+        const [dmapFacade, description] = await getFacade($('#ethNode').value)
+
+        line(`(using ${description} for eth connection) \n`)
+        line(`WALK ${dpath} \n`)
 
         let walkResult
         try {
-            walkResult = await dmap.walk(dmapContract, dpath)
-            line(`meta: ${walkResult.meta}`)
-            line(`data: ${walkResult.data}`)
+            walkResult = await dmap.walk2(dmapFacade, dpath)
+            for (const step of walkResult) {
+                line(`step`)
+                line(`  meta: ${step[0]}`)
+                line(`  data: ${step[1]}`)
+            }
         }
         catch (error) {
+            line('')
             line(`FAIL: ${error}`)
             return
         }
+        line('')
+        const last = walkResult.pop()
+        console.log(last)
+        walkResult = { meta: last[0], data: last[1] }
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = dmap.unpackCID(walkResult.meta, walkResult.data)
+            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
-            const targetDigest = JSON.stringify(multiformats_cid__WEBPACK_IMPORTED_MODULE_0__.CID.parse(cid).multihash.digest)
-            const resolved = await resolveCID(cid, targetDigest, $('#localNode').value)
+            const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
+            const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
             let utf8decoder = new TextDecoder()
             line(utf8decoder.decode(resolved))
         }
         catch(e){
             let utf8decoder = new TextDecoder()
-            const bytes = Buffer.from(walkResult.data.slice(2), 'hex')
+            const bytes = dmap._hexToArrayBuffer(walkResult.data)
             for (var i = 0; i < bytes.length; i++) {
                 if (bytes[bytes.length -1 - i] !== 0) {
                     break
@@ -251,40 +434,19 @@ window.onload = async() => {
 
 /***/ }),
 
-/***/ 5545:
-/***/ (() => {
-
-/* (ignored) */
-
-/***/ }),
-
-/***/ 7868:
-/***/ (() => {
-
-/* (ignored) */
-
-/***/ }),
-
-/***/ 3034:
-/***/ (() => {
-
-/* (ignored) */
-
-/***/ }),
-
-/***/ 6960:
+/***/ 789:
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap","sourceName":"core/dmap.sol","abi":[{"inputs":[],"name":"LOCK","type":"error"},{"anonymous":true,"inputs":[{"indexed":true,"internalType":"address","name":"zone","type":"address"},{"indexed":true,"internalType":"bytes32","name":"name","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"meta","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"Set","type":"event"},{"inputs":[{"internalType":"bytes32","name":"slot","type":"bytes32"}],"name":"get","outputs":[{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"name","type":"bytes32"},{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"set","outputs":[],"stateMutability":"nonpayable","type":"function"}],"bytecode":"0x608060405234801561001057600080fd5b5060405161016738038061016783398101604081905261002f91610042565b600160ff1b60005560601b600155610072565b60006020828403121561005457600080fd5b81516001600160a01b038116811461006b57600080fd5b9392505050565b60e7806100806000396000f3fe608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580547f8000000000000000000000000000000000000000000000000000000000000000163660641817607757828155005b505050503660640360ac577fa4f0d7d00000000000000000000000000000000000000000000000000000000060005260046000fd5b600080fdfea2646970667358221220f1dd384635737b10f38bc53d8e50b1a499c75d139ab94907b42e7797a5e1f30c64736f6c634300080d0033","deployedBytecode":"0x608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580547f8000000000000000000000000000000000000000000000000000000000000000163660641817607757828155005b505050503660640360ac577fa4f0d7d00000000000000000000000000000000000000000000000000000000060005260046000fd5b600080fdfea2646970667358221220f1dd384635737b10f38bc53d8e50b1a499c75d139ab94907b42e7797a5e1f30c64736f6c634300080d0033","linkReferences":{},"deployedLinkReferences":{}}');
+module.exports = JSON.parse('{"format":"dpack-1","network":"ethereum","types":{"Dmap":{"typename":"Dmap","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}}},"objects":{"dmap":{"objectname":"dmap","typename":"Dmap","address":"0x90949c9937A11BA943C7A72C3FA073a37E3FdD96","artifact":{"/":"bafkreifpsbpx33jchsau6z63zvik3fnpxhaxgyzbtco6tpyq34wp2raggy"}}}}');
 
 /***/ }),
 
-/***/ 1471:
+/***/ 791:
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"format":"dpack-1","network":"goerli","types":{"Dmap":{"typename":"Dmap","artifact":{"/":"bafkreig6eylwv3ycrp5spwrtevdtllq4rkub44g6gy5c27lpc7hgy33uqi"}},"RootZone":{"typename":"RootZone","artifact":{"/":"bafkreihichgzifyxns7fmhywfugsaad2jbx2buubgcq7ofyg6n6iofp65y"}},"FreeZone":{"typename":"FreeZone","artifact":{"/":"bafkreic7kytcoyczzwc3bqi33wh7n7lejkxbrdruq2lpk2feowd2wf22je"}}},"objects":{"dmap":{"objectname":"dmap","typename":"Dmap","address":"0x6dAa8F4b23D220Ce08a4CFDb040eE705E643e449","artifact":{"/":"bafkreig6eylwv3ycrp5spwrtevdtllq4rkub44g6gy5c27lpc7hgy33uqi"}},"rootzone":{"objectname":"rootzone","typename":"RootZone","address":"0xEDa48aCC95daFF28f6f56e325d0b8A11802cAD66","artifact":{"/":"bafkreihichgzifyxns7fmhywfugsaad2jbx2buubgcq7ofyg6n6iofp65y"}},"freezone":{"objectname":"freezone","typename":"FreeZone","address":"0xb40832863d5D67d1F4e9d1192a17BAE8aC6a8081","artifact":{"/":"bafkreic7kytcoyczzwc3bqi33wh7n7lejkxbrdruq2lpk2feowd2wf22je"}}}}');
+module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap","sourceName":"core/dmap.sol","abi":[{"inputs":[],"name":"LOCKED","type":"error"},{"anonymous":true,"inputs":[{"indexed":true,"internalType":"address","name":"zone","type":"address"},{"indexed":true,"internalType":"bytes32","name":"name","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"meta","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"Set","type":"event"},{"inputs":[{"internalType":"bytes32","name":"slot","type":"bytes32"}],"name":"get","outputs":[{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"name","type":"bytes32"},{"internalType":"bytes32","name":"meta","type":"bytes32"},{"internalType":"bytes32","name":"data","type":"bytes32"}],"name":"set","outputs":[],"stateMutability":"nonpayable","type":"function"}],"bytecode":"0x608060405234801561001057600080fd5b5060405161012e38038061012e83398101604081905261002f91610041565b60016000558060601b60015550610071565b60006020828403121561005357600080fd5b81516001600160a01b038116811461006a57600080fd5b9392505050565b60af8061007f6000396000f3fe608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580546001163660641817605857828155005b505050503660640360745763a1422f6960e01b60005260046000fd5b600080fdfea2646970667358221220475e238f09c07b2df011287cd0b887d9e0864657776ab6a3484c43f79237fefa64736f6c634300080d0033","deployedBytecode":"0x608060405236602403602257600435546000526004356001015460205260406000f35b6004356024356044353360005282602052604060002081838533600080a481600182015580546001163660641817605857828155005b505050503660640360745763a1422f6960e01b60005260046000fd5b600080fdfea2646970667358221220475e238f09c07b2df011287cd0b887d9e0864657776ab6a3484c43f79237fefa64736f6c634300080d0033","linkReferences":{},"deployedLinkReferences":{}}');
 
 /***/ })
 
@@ -302,16 +464,13 @@ module.exports = JSON.parse('{"format":"dpack-1","network":"goerli","types":{"Dm
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			id: moduleId,
-/******/ 			loaded: false,
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -358,48 +517,6 @@ module.exports = JSON.parse('{"format":"dpack-1","network":"goerli","types":{"Dm
 /******/ 		};
 /******/ 	})();
 /******/ 	
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/create fake namespace object */
-/******/ 	(() => {
-/******/ 		var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
-/******/ 		var leafPrototypes;
-/******/ 		// create a fake namespace object
-/******/ 		// mode & 1: value is a module id, require it
-/******/ 		// mode & 2: merge all properties of value into the ns
-/******/ 		// mode & 4: return value when already ns object
-/******/ 		// mode & 16: return value when it's Promise-like
-/******/ 		// mode & 8|1: behave like require
-/******/ 		__webpack_require__.t = function(value, mode) {
-/******/ 			if(mode & 1) value = this(value);
-/******/ 			if(mode & 8) return value;
-/******/ 			if(typeof value === 'object' && value) {
-/******/ 				if((mode & 4) && value.__esModule) return value;
-/******/ 				if((mode & 16) && typeof value.then === 'function') return value;
-/******/ 			}
-/******/ 			var ns = Object.create(null);
-/******/ 			__webpack_require__.r(ns);
-/******/ 			var def = {};
-/******/ 			leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
-/******/ 			for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
-/******/ 				Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
-/******/ 			}
-/******/ 			def['default'] = () => (value);
-/******/ 			__webpack_require__.d(ns, def);
-/******/ 			return ns;
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -437,15 +554,6 @@ module.exports = JSON.parse('{"format":"dpack-1","network":"goerli","types":{"Dm
 /******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 /******/ 			}
 /******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/node module decorator */
-/******/ 	(() => {
-/******/ 		__webpack_require__.nmd = (module) => {
-/******/ 			module.paths = [];
-/******/ 			if (!module.children) module.children = [];
-/******/ 			return module;
 /******/ 		};
 /******/ 	})();
 /******/ 	
@@ -507,7 +615,7 @@ module.exports = JSON.parse('{"format":"dpack-1","network":"goerli","types":{"Dm
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [697], () => (__webpack_require__(2220)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [697], () => (__webpack_require__(220)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
