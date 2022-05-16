@@ -147,9 +147,8 @@ window.onload = async() => {
         }
         const [dmapFacade, description] = await getFacade($('#ethNode').value)
 
-        line('')
-        line(`WALK  ${dpath} (using ${description} for eth connection)`)
-        line('')
+        line(`(using ${description} for eth connection) \n`)
+        line(`WALK ${dpath} \n`)
 
         let walkResult
         try {
