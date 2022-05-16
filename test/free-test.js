@@ -7,7 +7,8 @@ const coder = ethers.utils.defaultAbiCoder
 const keccak256 = ethers.utils.keccak256
 const { b32, fail, revert, send, snapshot, want, mine } = require('minihat')
 const { bounds } = require('./bounds')
-const utils = require('../docs/utils')
+global.window = {}
+const utils = require('../docs/main')
 const {expectEvent, check_gas, testlib} = require("./utils/helpers");
 const constants = ethers.constants
 

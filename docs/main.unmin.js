@@ -1,14 +1,13 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 2971:
+/***/ 971:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-/* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
 const kek = __webpack_require__(338)
-const ebnf = __webpack_require__(1425)
+const ebnf = __webpack_require__(425)
 
-const pack = __webpack_require__(3789)
+const pack = __webpack_require__(789)
 const artifact = __webpack_require__(791)
 
 const dmap_address = pack.objects.dmap.address
@@ -83,11 +82,11 @@ lib.walk = async (dmap, path) => {
         if (zone === '0x' + '00'.repeat(20)) {
             fail(`zero register`)
         }
-        const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length);
+        const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
         [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
-            need((Buffer.from(meta.slice(2), 'hex')[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            need((lib._hexToArrayBuffer(meta)[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
             ctx.locked = true
         }
         ctx.locked = step.locked
@@ -105,17 +104,29 @@ lib.walk2 = async (dmap, path) => {
         if (zone === '0x' + '00'.repeat(20)) {
             fail(`zero register`)
         }
-        const fullname = '0x' + Buffer.from(step.name).toString('hex') + '00'.repeat(32-step.name.length);
+        const fullname = '0x' + lib._strToHex(step.name) + '00'.repeat(32-step.name.length);
         [meta, data] = await lib.getByZoneAndName(dmap, zone, fullname)
         trace.push([meta,data])
         if (step.locked) {
             need(ctx.locked, `Encountered ':' in unlocked subpath`)
-            need((Buffer.from(meta.slice(2), 'hex')[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
+            need((lib._hexToArrayBuffer(meta)[31] & lib.FLAG_LOCK) !== 0, `Entry is not locked`)
             ctx.locked = true
         }
         ctx.locked = step.locked
     }
     return trace
+}
+
+lib._hexToArrayBuffer = hex => {
+    const bytes = []
+    for (let c = 2; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.slice(c, c + 2), 16))
+    return new Uint8Array(bytes)
+}
+
+lib._strToHex = str => {
+    let codes =  str.split('').map(c => c.charCodeAt(0))
+    return codes.map(c => c.toString(16)).join('')
 }
 
 // GLOBAL TODO: !DMFXYZ! error and bounds checking for inputs
@@ -165,7 +176,7 @@ function hexlify(value) {
     }
 
     if (typeof(value) === 'string') {
-        return Buffer.from(value).toString('hex');
+        return lib._strToHex(value);
     }
 }
 
@@ -190,61 +201,42 @@ function encodeZoneAndName(zone, name) {
     if (name.length == 0 || name == null) {
         params = params + '00'.repeat(32);
     } else if (typeof(name) == 'object') {
-        // if an object, create a buffer from data and encode as hex string
-        params = params + Buffer.from(name).toString('hex');
+        params = params + name.toString('hex');
     } else {
-        // if alredy a hex string, just drop the 0x
+        // if already a hex string, just drop the 0x
         params = params + name.slice(2);
     }
     return params;
 }
 
 function encodeFunctionCallBytes32Args(signature, args) {
-    const signature_as_buffer = Buffer.from(signature)
     // calculate function selector as first 4 bytes of hashed signature
     // keccak256 returns a string, so we take the first 10 characters
-    const selector = keccak256(signature_as_buffer).slice(0, 10)
-    let calldata = selector
-    for (i = 0; i < args.length; ++i) {
-        calldata += Buffer.from(_toBytes(args[i])).toString('hex');
+    let data = keccak256(signature).slice(0, 10)
+    for (arg of args) {
+        typeof arg == 'object' ? data += arg.toString('hex') : data += arg.slice(2)
     }
-    return calldata;
+    return data;
 
 }
 
 function _toBytes(value) {
     if (typeof(value) == 'string') {
-        if (value.substring(0, 2) == "0x") {
-            value = value.substring(2)
-        }
-        // Need to create an array of bytes from hex string
-        // just grab 2 4-byte hex symbols at a time and parse them as base16
-        const bytes_array = []
-        for (let i = 0; i < value.length; i += 2) {
-            bytes_array.push(parseInt(value.substring(i, i + 2), 16));
-        }
-        return bytes_array
+        return lib._hexToArrayBuffer(value)
     }
-    // otherwise just return the object
     return value
 }
 
 
 /***/ }),
 
-/***/ 2220:
-/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
+/***/ 220:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-"use strict";
-/* harmony import */ var multiformats_cid__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3036);
-/* harmony import */ var multiformats_hashes_sha2__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2671);
-/* provided dependency */ var Buffer = __webpack_require__(816)["Buffer"];
-const multiformats = __webpack_require__(7534)
-;
+const { CID } = __webpack_require__(598)
+const { sha256 } = __webpack_require__ (865)
 
-const IPFS = __webpack_require__(2708)
-
-const dmap = __webpack_require__(2971)
+const dmap = __webpack_require__(971)
 
 const fail =s=> { throw new Error(s) }
 const need =(b,s)=> b || fail(s)
@@ -255,12 +247,13 @@ const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://storry.tv/ipfs/',
                   'https://ipfs.io/ipfs/',
                   'https://hub.textile.io/ipfs/']
-
-
+const infuraURL = 'https://mainnet.infura.io/v3/c0a739d64257448f855847c6e3d173e1'
 const prefLenIndex = 30
 
-const prepareCID = (cidStr, lock) => {
-    const cid = multiformats.CID.parse(cidStr)
+module.exports = utils = {}
+
+utils.prepareCID = (cidStr, lock) => {
+    const cid = CID.parse(cidStr)
     need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
     const prefixLen = cid.byteLength - cid.multihash.size
     const meta = new Uint8Array(32).fill(0)
@@ -273,36 +266,39 @@ const prepareCID = (cidStr, lock) => {
     return [meta, data]
 }
 
-const unpackCID = (metaStr, dataStr) => {
-    const meta = Buffer.from(metaStr.slice(2), 'hex')
-    const data = Buffer.from(dataStr.slice(2), 'hex')
+utils.unpackCID = (metaStr, dataStr) => {
+    const meta = dmap._hexToArrayBuffer(metaStr)
+    const data = dmap._hexToArrayBuffer(dataStr)
     const prefixLen = meta[prefLenIndex]
-    const specs = multiformats.CID.inspectBytes(meta.slice(0, prefixLen))
+    const specs = CID.inspectBytes(meta.slice(0, prefixLen))
     const hashLen = specs.digestSize
     const cidBytes = new Uint8Array(prefixLen + hashLen)
 
     cidBytes.set(meta.slice(0, prefixLen), 0)
     cidBytes.set(data.slice(32 - hashLen), prefixLen)
-    const cid = multiformats.CID.decode(cidBytes)
+    const cid = CID.decode(cidBytes)
     return cid.toString()
 }
 
-const readCID = async (dmap, path) => {
-    const packed = await dmap.walk(dmap, path)
-    return unpackCID(packed.meta, packed.data)
+utils.readCID = async (contract, path) => {
+    const packed = await dmap.walk(contract, path)
+    return utils.unpackCID(packed.meta, packed.data)
 }
 
 const resolveCID = async (cid, targetDigest, nodeAddress) => {
     const verify = async bytes => {
-        const hash = await multiformats_hashes_sha2__WEBPACK_IMPORTED_MODULE_1__.sha256.digest(bytes)
+        const hash = await sha256.digest(bytes)
         const resultDigest = JSON.stringify(hash.digest)
         return targetDigest === resultDigest
     }
-    const node = IPFS.create(nodeAddress)
-    const catResponse = await node.cat(cid)
+
+    const url = nodeAddress + '/api/v0/cat?arg=' + cid
+    const response = await fetch(url, { method: 'POST' })
+    const catResponse = response.body.getReader();
+
     // initially handle only single chunk verification and sha256
     try {
-        const chunk = await catResponse.next()
+        const chunk = await catResponse.read()
         if(await verify(chunk.value)) {
             return chunk.value
         }
@@ -353,16 +349,26 @@ const windowGetStorage = async (address, slot) => {
     return await window.ethereum.request({ method: 'eth_getStorageAt', params: [address, slot, block] });
 }
 
-const getFacade = async (url) => {
-    const chainId = await makeRPC(url, "eth_chainId", [])
-    let storageFunction = windowGetStorage
-    if (chainId == '0x1') {
-        storageFunction = RPCGetStorage.bind(null, url)
+const getFacade = async (customURL) => {
+    let storageFunction = null, description = ''
+
+    if (await makeRPC(customURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, customURL)
+        description = 'custom node'
+    } else if (typeof window.ethereum !== 'undefined' &&
+               await window.ethereum.request({ method: 'eth_chainId',  params: [] }) == '0x1') {
+        storageFunction = windowGetStorage
+        description = 'window.ethereum'
+    } else if (await makeRPC(infuraURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, infuraURL)
+        description = 'infura'
+    } else {
+        throw 'no ethereum connection'
     }
-    return {
-        provider: { getStorageAt:storageFunction },
-        address: dmap.address
-    }
+
+    return [{ provider: { getStorageAt:storageFunction },
+              address: dmap.address
+            }, description]
 }
 
 window.onload = async() => {
@@ -374,11 +380,12 @@ window.onload = async() => {
         if (dpath.length && dpath[0] != ':') {
             dpath = ':' + dpath
         }
+        const [dmapFacade, description] = await getFacade($('#ethNode').value)
+
         line('')
-        line(`WALK  ${dpath}`)
+        line(`WALK  ${dpath} (using ${description} for eth connection)`)
         line('')
 
-        const dmapFacade = await getFacade($('#ethNode').value)
         let walkResult
         try {
             walkResult = await dmap.walk2(dmapFacade, dpath)
@@ -400,16 +407,16 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = unpackCID(walkResult.meta, walkResult.data)
+            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
-            const targetDigest = JSON.stringify(multiformats_cid__WEBPACK_IMPORTED_MODULE_0__.CID.parse(cid).multihash.digest)
+            const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
             let utf8decoder = new TextDecoder()
             line(utf8decoder.decode(resolved))
         }
         catch(e){
             let utf8decoder = new TextDecoder()
-            const bytes = Buffer.from(walkResult.data.slice(2), 'hex')
+            const bytes = dmap._hexToArrayBuffer(walkResult.data)
             for (var i = 0; i < bytes.length; i++) {
                 if (bytes[bytes.length -1 - i] !== 0) {
                     break
@@ -428,21 +435,7 @@ window.onload = async() => {
 
 /***/ }),
 
-/***/ 7868:
-/***/ (() => {
-
-/* (ignored) */
-
-/***/ }),
-
-/***/ 3034:
-/***/ (() => {
-
-/* (ignored) */
-
-/***/ }),
-
-/***/ 3789:
+/***/ 789:
 /***/ ((module) => {
 
 "use strict";
@@ -478,7 +471,7 @@ module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -522,36 +515,6 @@ module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap
 /******/ 				}
 /******/ 			}
 /******/ 			return result;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/create fake namespace object */
-/******/ 	(() => {
-/******/ 		var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
-/******/ 		var leafPrototypes;
-/******/ 		// create a fake namespace object
-/******/ 		// mode & 1: value is a module id, require it
-/******/ 		// mode & 2: merge all properties of value into the ns
-/******/ 		// mode & 4: return value when already ns object
-/******/ 		// mode & 16: return value when it's Promise-like
-/******/ 		// mode & 8|1: behave like require
-/******/ 		__webpack_require__.t = function(value, mode) {
-/******/ 			if(mode & 1) value = this(value);
-/******/ 			if(mode & 8) return value;
-/******/ 			if(typeof value === 'object' && value) {
-/******/ 				if((mode & 4) && value.__esModule) return value;
-/******/ 				if((mode & 16) && typeof value.then === 'function') return value;
-/******/ 			}
-/******/ 			var ns = Object.create(null);
-/******/ 			__webpack_require__.r(ns);
-/******/ 			var def = {};
-/******/ 			leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
-/******/ 			for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
-/******/ 				Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
-/******/ 			}
-/******/ 			def['default'] = () => (value);
-/******/ 			__webpack_require__.d(ns, def);
-/******/ 			return ns;
 /******/ 		};
 /******/ 	})();
 /******/ 	
@@ -653,7 +616,7 @@ module.exports = JSON.parse('{"_format":"hh-sol-artifact-1","contractName":"Dmap
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [697], () => (__webpack_require__(2220)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [697], () => (__webpack_require__(220)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

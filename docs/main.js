@@ -1,7 +1,5 @@
-const multiformats = require('multiformats')
-import { CID } from 'multiformats/cid'
-import { sha256 } from 'multiformats/hashes/sha2'
-const IPFS = require('ipfs-http-client')
+const { CID } = require('multiformats/cid')
+const { sha256 } = require ('multiformats/hashes/sha2')
 
 const dmap = require('../dmap.js')
 
@@ -14,12 +12,13 @@ const gateways = ['https://ipfs.fleek.co/ipfs/',
                   'https://storry.tv/ipfs/',
                   'https://ipfs.io/ipfs/',
                   'https://hub.textile.io/ipfs/']
-
-
+const infuraURL = 'https://mainnet.infura.io/v3/c0a739d64257448f855847c6e3d173e1'
 const prefLenIndex = 30
 
-const prepareCID = (cidStr, lock) => {
-    const cid = multiformats.CID.parse(cidStr)
+module.exports = utils = {}
+
+utils.prepareCID = (cidStr, lock) => {
+    const cid = CID.parse(cidStr)
     need(cid.multihash.size <= 32, `Hash exceeds 256 bits`)
     const prefixLen = cid.byteLength - cid.multihash.size
     const meta = new Uint8Array(32).fill(0)
@@ -32,23 +31,23 @@ const prepareCID = (cidStr, lock) => {
     return [meta, data]
 }
 
-const unpackCID = (metaStr, dataStr) => {
-    const meta = Buffer.from(metaStr.slice(2), 'hex')
-    const data = Buffer.from(dataStr.slice(2), 'hex')
+utils.unpackCID = (metaStr, dataStr) => {
+    const meta = dmap._hexToArrayBuffer(metaStr)
+    const data = dmap._hexToArrayBuffer(dataStr)
     const prefixLen = meta[prefLenIndex]
-    const specs = multiformats.CID.inspectBytes(meta.slice(0, prefixLen))
+    const specs = CID.inspectBytes(meta.slice(0, prefixLen))
     const hashLen = specs.digestSize
     const cidBytes = new Uint8Array(prefixLen + hashLen)
 
     cidBytes.set(meta.slice(0, prefixLen), 0)
     cidBytes.set(data.slice(32 - hashLen), prefixLen)
-    const cid = multiformats.CID.decode(cidBytes)
+    const cid = CID.decode(cidBytes)
     return cid.toString()
 }
 
-const readCID = async (dmap, path) => {
-    const packed = await dmap.walk(dmap, path)
-    return unpackCID(packed.meta, packed.data)
+utils.readCID = async (contract, path) => {
+    const packed = await dmap.walk(contract, path)
+    return utils.unpackCID(packed.meta, packed.data)
 }
 
 const resolveCID = async (cid, targetDigest, nodeAddress) => {
@@ -57,11 +56,14 @@ const resolveCID = async (cid, targetDigest, nodeAddress) => {
         const resultDigest = JSON.stringify(hash.digest)
         return targetDigest === resultDigest
     }
-    const node = IPFS.create(nodeAddress)
-    const catResponse = await node.cat(cid)
+
+    const url = nodeAddress + '/api/v0/cat?arg=' + cid
+    const response = await fetch(url, { method: 'POST' })
+    const catResponse = response.body.getReader();
+
     // initially handle only single chunk verification and sha256
     try {
-        const chunk = await catResponse.next()
+        const chunk = await catResponse.read()
         if(await verify(chunk.value)) {
             return chunk.value
         }
@@ -112,16 +114,26 @@ const windowGetStorage = async (address, slot) => {
     return await window.ethereum.request({ method: 'eth_getStorageAt', params: [address, slot, block] });
 }
 
-const getFacade = async (url) => {
-    const chainId = await makeRPC(url, "eth_chainId", [])
-    let storageFunction = windowGetStorage
-    if (chainId == '0x1') {
-        storageFunction = RPCGetStorage.bind(null, url)
+const getFacade = async (customURL) => {
+    let storageFunction = null, description = ''
+
+    if (await makeRPC(customURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, customURL)
+        description = 'custom node'
+    } else if (typeof window.ethereum !== 'undefined' &&
+               await window.ethereum.request({ method: 'eth_chainId',  params: [] }) == '0x1') {
+        storageFunction = windowGetStorage
+        description = 'window.ethereum'
+    } else if (await makeRPC(infuraURL, "eth_chainId", []) == '0x1') {
+        storageFunction = RPCGetStorage.bind(null, infuraURL)
+        description = 'infura'
+    } else {
+        throw 'no ethereum connection'
     }
-    return {
-        provider: { getStorageAt:storageFunction },
-        address: dmap.address
-    }
+
+    return [{ provider: { getStorageAt:storageFunction },
+              address: dmap.address
+            }, description]
 }
 
 window.onload = async() => {
@@ -133,11 +145,12 @@ window.onload = async() => {
         if (dpath.length && dpath[0] != ':') {
             dpath = ':' + dpath
         }
+        const [dmapFacade, description] = await getFacade($('#ethNode').value)
+
         line('')
-        line(`WALK  ${dpath}`)
+        line(`WALK  ${dpath} (using ${description} for eth connection)`)
         line('')
 
-        const dmapFacade = await getFacade($('#ethNode').value)
         let walkResult
         try {
             walkResult = await dmap.walk2(dmapFacade, dpath)
@@ -159,7 +172,7 @@ window.onload = async() => {
 
         try {
             // display ipfs content from a CID if we can, otherwise display as text
-            const cid = unpackCID(walkResult.meta, walkResult.data)
+            const cid = utils.unpackCID(walkResult.meta, walkResult.data)
             line(`ipfs: ${cid}`)
             const targetDigest = JSON.stringify(CID.parse(cid).multihash.digest)
             const resolved = await resolveCID(cid, targetDigest, $('#ipfsNode').value)
@@ -168,7 +181,7 @@ window.onload = async() => {
         }
         catch(e){
             let utf8decoder = new TextDecoder()
-            const bytes = Buffer.from(walkResult.data.slice(2), 'hex')
+            const bytes = dmap._hexToArrayBuffer(walkResult.data)
             for (var i = 0; i < bytes.length; i++) {
                 if (bytes[bytes.length -1 - i] !== 0) {
                     break
