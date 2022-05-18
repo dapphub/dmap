@@ -8,9 +8,9 @@
   "devDependencies": {
     "@defi-wonderland/smock": "^2.0.7",
     "@etherpacks/dpack": "^0.0.29",
-    "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@nomiclabs/hardhat-ethers": "2.0.6",
     "@types/mocha": "^9.0.0",
-    "hardhat": "^2.8.3",
+    "hardhat": "^2.9.4",
     "minihat": "^0.0.5",
     "web3-utils": "^1.7.1",
     "webpack": "^5.70.0",
