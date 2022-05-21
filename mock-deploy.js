@@ -74,4 +74,5 @@ task('dmap-mock-deploy', async (args, hh)=> {
     fs.writeFileSync(packdir + `dmap_core_${hh.network.name}.dpack.json`, show(corepack))
     fs.writeFileSync(packdir + `dmap_full_${hh.network.name}.dpack.json`, show(fullpack))
 
+    return fullpack
 })

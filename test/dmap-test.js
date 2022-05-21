@@ -28,8 +28,8 @@ describe('dmap', ()=>{
         [ali, bob, cat] = await ethers.getSigners();
         [ALI, BOB, CAT] = [ali, bob, cat].map(x => x.address)
 
-        await hh.run('dmap-mock-deploy')
-        const dapp = await dpack.load(require('../pack/dmap_full_hardhat.dpack.json'), hh.ethers, ali)
+        const pack = await hh.run('dmap-mock-deploy')
+        const dapp = await dpack.load(pack, hh.ethers, ali)
         dmap = dapp.dmap
         rootzone = dapp.rootzone
         freezone = dapp.freezone
