@@ -18,13 +18,14 @@ lib.FLAG_LOCK = 1
 lib.grammar = `
 dpath ::= (step)* EOF
 step  ::= (rune) (name)
-name  ::= [a-z0-9]+
+name  ::= [a-z]+
 rune  ::= ":" | "."
 `
 
 lib.parser = new ebnf.Parser(ebnf.Grammars.W3C.getRules(lib.grammar))
 lib.parse =s=> {
     const ast = lib.parser.getAST(s)
+    need(ast !== null, `Invalid dpath`)
     return ast.children.map(step => {
         const rune = step.children[0]
         const name = step.children[1]

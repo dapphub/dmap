@@ -136,7 +136,7 @@ describe('freezone', ()=>{
     it('store CID variants', async ()=>{
         const cids = [cidDefault, cidSHA3, cidV0, cidBlake2b160]
         for (const [index, cid] of cids.entries()) {
-            const name = b32(index.toString())
+            const name = b32(String.fromCharCode(97 + index))
             await send(freezone.take, name)
             const [meta, data] = utils.prepareCID(cid, false)
             await send(freezone.set, name, meta, data)
@@ -148,7 +148,7 @@ describe('freezone', ()=>{
             const slot = keccak256(coder.encode(["address", "bytes32"], [freezone.address, name]))
             const [read_meta, read_data] = await testlib.get(dmap, slot)
             const res_cid = utils.unpackCID(read_meta, read_data)
-            const helper_cid = await utils.readCID(dmap, 'free:' + index.toString())
+            const helper_cid = await utils.readCID(dmap, 'free:' + String.fromCharCode(97 + index))
             want(cid).eq(res_cid)
             want(cid).eq(helper_cid)
         }
