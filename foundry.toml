@@ -1,0 +1,6 @@
+[default]
+src = 'foundry_tests'
+out = 'out'
+libs = ['lib']
+fuzz_runs = 1
+# See more config options https://github.com/gakonst/foundry/tree/master/config
