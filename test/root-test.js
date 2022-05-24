@@ -1,9 +1,9 @@
 const dpack = require('@etherpacks/dpack')
 const hh = require('hardhat')
 const ethers = hh.ethers
-const { b32, fail, revert, send, snapshot, wait, want } = require('minihat')
+const { b32, fail, hear, revert, send, snapshot, wait, want } = require('minihat')
 
-const {expectEvent, padRight, check_gas, check_entry} = require('./utils/helpers')
+const {padRight, check_gas, check_entry} = require('./utils/helpers')
 const {bounds} = require("./bounds");
 const debug = require('debug')('dmap:test')
 const constants = ethers.constants
@@ -141,7 +141,7 @@ describe('rootzone', ()=>{
         await wait(hh, delay_period)
         const commitment = getCommitment(b32('zone1'), zone1)
         const rx = await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
-        expectEvent(rx, "Hark", [commitment])
+        hear(rx, "Hark", [commitment])
     })
 
     it('Etch event', async () => {
@@ -149,7 +149,7 @@ describe('rootzone', ()=>{
         const commitment = getCommitment(b32('zone1'), zone1)
         await send(rootzone.hark, commitment, { value: ethers.utils.parseEther('1') })
         const rx = await send(rootzone.etch, b32('salt'), b32('zone1'), zone1)
-        expectEvent(rx, "Etch", ['0x' + b32('zone1').toString('hex'), zone1])
+        hear(rx, "Etch", ['0x' + b32('zone1').toString('hex'), zone1])
         await check_entry(dmap, rootzone.address, b32('zone1'), LOCK, padRight(zone1))
     })
 

@@ -5,11 +5,11 @@ const assert = require('assert');
 const ethers = hh.ethers
 const coder = ethers.utils.defaultAbiCoder
 const keccak256 = ethers.utils.keccak256
-const { b32, fail, revert, send, snapshot, want, mine } = require('minihat')
+const { b32, fail, hear, revert, send, snapshot, want, mine } = require('minihat')
 const { bounds } = require('./bounds')
 global.window = {}
 const utils = require('../docs/main')
-const {expectEvent, check_gas, testlib} = require("./utils/helpers");
+const {check_gas, testlib} = require("./utils/helpers");
 const constants = ethers.constants
 
 describe('freezone', ()=>{
@@ -161,12 +161,12 @@ describe('freezone', ()=>{
     describe('Give event', () => {
         it('take', async () => {
             const rx = await send(freezone.take, name)
-            expectEvent(rx, "Give", [constants.AddressZero, '0x'+name.toString('hex'), ALI])
+            hear(rx, "Give", [constants.AddressZero, '0x'+name.toString('hex'), ALI])
         })
         it('give', async () => {
             await send(freezone.take, name)
             const rx = await send(freezone.give, name, BOB)
-            expectEvent(rx, "Give", [ALI, '0x'+name.toString('hex'), BOB])
+            hear(rx, "Give", [ALI, '0x'+name.toString('hex'), BOB])
         })
     })
 
