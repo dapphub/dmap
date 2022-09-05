@@ -19,6 +19,19 @@
 <h1>dmap</h1>
 
 <p>
+dmap is a minimal decentralized key-value store built to mitigate the problem of (temporarily) backdoored DNS and certificate authority PKIs. As ENS (the "Ethereum Name System"), dmap uses Ethereum as a storage backend.
+</p>
+
+<p>
+dmap is implemented as a concise Solidity smart contract allowing users to store a triplet of: `bytes32 key`, `bytes32 meta`, and `bytes32 value`. Setting `bytes32 meta`'s last bit to `1` allows dmap users to lock records permanently.
+</p>
+
+<p>
+dmap implements name zoning by setting `bytes32 value` to a contract address and allows subzones to have an independent economic functionality compared to their parent zones.
+</p>
+
+<h2>use</h2>
+<p>
   This page is designed to be saved (as in "File > Save") and be usable even if DNS or this web host go offline or are compromised.
 </p>
 <p>
